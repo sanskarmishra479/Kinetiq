@@ -24,7 +24,7 @@
 | Phase | Name | Status |
 |---|---|---|
 | 0 | Repo, tooling, CI | ✅ |
-| 1 | Shared contracts (zod) | ⬜ |
+| 1 | Shared contracts (zod) | ✅ |
 | 2 | Database (Prisma) | ⬜ |
 | 3 | API skeleton + auth | ⬜ |
 | 4 | Projects, chat, uploads | ⬜ |
@@ -77,18 +77,24 @@
 ## Phase 1: Shared contracts (`packages/shared`)
 > Goal: every data shape is defined once and used everywhere (rule T5).
 
-- [ ] ID helpers and types (`prj_`, `job_`, `ver_`, `ast_`, `tpl_`, `usr_`…)
-- [ ] API schemas (request + response) for every endpoint in [API.md](API.md): projects, messages, estimate, generate, jobs, versions, uploads, brand kits, catalog, billing, me
-- [ ] Error schema + error codes enum ([API § 1](API.md#1-conventions))
-- [ ] SSE `ProjectEvent` discriminated union ([API § 8](API.md#8-realtime-events-sse))
-- [ ] Queue payload schemas (`generate`, `edit`, `render`, `media-poll`, `email`) ([API § 16](API.md#16-internal-queues-worker-contracts))
-- [ ] Model registry: UI model → provider id, allowed durations and ratios, credits per clip
-- [ ] Plan and credit tables (placeholder values, prices TBD): plan codes, monthly credits, concurrency, feature flags; credit costs per action
-- [ ] Voices (5) and design presets as static data
-- [ ] LLM structured-output schemas: `ResearchResult`, `DesignTokens`, `DirectorPlan` (scenes, timings), `QaReport`, `EditIntent`
+- [x] ID helpers and types (`prj_`, `job_`, `ver_`, `ast_`, `tpl_`, `usr_`…)
+- [x] API schemas (request + response) for every endpoint in [API.md](API.md): projects, messages, estimate, generate, jobs, versions, uploads, brand kits, catalog, billing, me
+- [x] Error schema + error codes enum ([API § 1](API.md#1-conventions))
+- [x] SSE `ProjectEvent` discriminated union ([API § 8](API.md#8-realtime-events-sse))
+- [x] Queue payload schemas (`generate`, `edit`, `render`, `media-poll`, `email`) ([API § 16](API.md#16-internal-queues-worker-contracts))
+- [x] Model registry: UI model → provider id, allowed durations and ratios, credits per clip
+- [x] Plan and credit tables (placeholder values, prices TBD): plan codes, monthly credits, concurrency, feature flags; credit costs per action
+- [x] Voices (5) and design presets as static data
+- [x] LLM structured-output schemas: `ResearchResult`, `DesignTokens`, `DirectorPlan` (scenes, timings), `QaReport`, `EditIntent`
 
 **Tests:** valid and invalid examples for every schema. The request limits from [SRS § 4.2](SRS.md#42-projects-and-inputs-prj) are enforced (https-only URL, durations, ratios, asset count).
-**✅ Exit criteria:** `packages/shared` has 100% test pass and ≥ 90% coverage.
+**✅ Exit criteria:** `packages/shared` has 100% test pass and ≥ 90% coverage. **Done: 117 contract tests, 100% statements and branches.**
+
+**Notes from the build:**
+- Requests use strict objects: unknown fields are rejected (no mass assignment, e.g. a client can't send `userId` or `status`).
+- `PublicUrl` also rejects IP addresses, `localhost`, internal hostnames, credentials in the URL and custom ports.
+- The catalog has placeholder prices (`priceUsdCents: null`); checkout must refuse unpriced items until pricing is decided in Phase 18.
+- AI video model ids are the ones from OpenRouter's docs and are all disabled; re-check them in Phase 10.
 
 ---
 

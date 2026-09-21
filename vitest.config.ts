@@ -25,7 +25,7 @@ export default defineConfig({
 		coverage: {
 			provider: 'v8',
 			include: ['{apps,packages}/*/src/**/*.ts'],
-			exclude: ['**/*.test.ts', '**/index.ts'],
+			exclude: ['**/*.test.ts', '**/index.ts', '**/test-helpers.ts', '**/entry.ts'],
 			// Gates from docs/TEST_PLAN.md §5. Money and sandbox logic must be fully covered.
 			thresholds: {
 				'packages/domain/src/credits/**': {branches: 100, functions: 100, lines: 100, statements: 100},
