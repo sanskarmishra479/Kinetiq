@@ -5,7 +5,13 @@ export type {Keyframe} from './motion';
 export {darkCinematic, minimalLight, ThemeProvider, useTheme} from './theme';
 export type {Theme} from './theme';
 
+export {isDark, luminance} from './color';
+
 export {Background} from './primitives/Background';
+export {Browser, browserChrome} from './primitives/Browser';
+export type {ScrollKey} from './primitives/Browser';
+export {browserLayout, browserTimeline, chromeScale, splitUrl} from './primitives/browserLayout';
+export type {BrowserLayout, BrowserTimeline} from './primitives/browserLayout';
 export {Camera} from './primitives/Camera';
 export type {Shot} from './primitives/Camera';
 export {CaptionPills} from './primitives/CaptionPill';
