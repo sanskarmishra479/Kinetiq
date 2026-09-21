@@ -2,7 +2,8 @@ import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 import {keyframes, openClose, tween} from '../motion';
 import {useTheme} from '../theme';
 import {Camera} from '../primitives/Camera';
-import {Cursor, cursorAt, CursorPoint, isPressed} from '../primitives/Cursor';
+import {Cursor, cursorAt, isPressed} from '../primitives/Cursor';
+import type {CursorPoint} from '../primitives/Cursor';
 import {Chip, Dropdown, menuRowY} from '../primitives/Menu';
 import {Typewriter} from '../primitives/Typewriter';
 
@@ -205,7 +206,12 @@ const PromptBox: React.FC = () => {
 				{frame < T.promptType ? (
 					<span style={{color: theme.muted}}>Make a launch video for my product…</span>
 				) : (
-					<Typewriter text="Make a 30-second launch video for" startAt={T.promptType} charsPerSecond={25} fontSize={22} />
+					<Typewriter
+						text="Make a 30-second launch video for"
+						startAt={T.promptType}
+						charsPerSecond={25}
+						fontSize={22}
+					/>
 				)}
 			</div>
 			{/* Chips are positioned in scene pixels, so offset by the box origin. */}
@@ -279,7 +285,15 @@ const PromptBox: React.FC = () => {
 						justifyContent: 'center',
 					}}
 				>
-					<svg width={16} height={16} viewBox="0 0 24 24" fill="none" stroke="#000" strokeWidth={2.6} strokeLinecap="round">
+					<svg
+						width={16}
+						height={16}
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="#000"
+						strokeWidth={2.6}
+						strokeLinecap="round"
+					>
 						<path d="M12 19V5M6 11l6-6 6 6" />
 					</svg>
 				</div>
@@ -324,7 +338,18 @@ const DesignPanel: React.FC<{cursor: {x: number; y: number}}> = ({cursor}) => {
 		['scroll'],
 	);
 	const label = (text: string) => (
-		<div style={{height: LABEL_H, display: 'flex', alignItems: 'flex-end', paddingBottom: 8, fontSize: 13, letterSpacing: '0.08em', color: theme.muted, fontWeight: 600}}>
+		<div
+			style={{
+				height: LABEL_H,
+				display: 'flex',
+				alignItems: 'flex-end',
+				paddingBottom: 8,
+				fontSize: 13,
+				letterSpacing: '0.08em',
+				color: theme.muted,
+				fontWeight: 600,
+			}}
+		>
 			{text}
 		</div>
 	);
@@ -356,7 +381,10 @@ const DesignPanel: React.FC<{cursor: {x: number; y: number}}> = ({cursor}) => {
 				</div>
 				{label('CREATE NEW')}
 				{['Import from website', 'Upload DESIGN.md', 'Paste DESIGN.md'].map((t) => (
-					<div key={t} style={{height: CREATE_H, display: 'flex', alignItems: 'center', gap: 12, color: theme.fg, fontSize: 17}}>
+					<div
+						key={t}
+						style={{height: CREATE_H, display: 'flex', alignItems: 'center', gap: 12, color: theme.fg, fontSize: 17}}
+					>
 						<FileIcon />
 						{t}
 					</div>
@@ -364,7 +392,11 @@ const DesignPanel: React.FC<{cursor: {x: number; y: number}}> = ({cursor}) => {
 				{label('PRESETS')}
 				{PRESETS.map(([name, desc, c1, c2], i) => {
 					const rowTop = PRESET_Y0 + i * PRESET_H + scroll;
-					const hovered = cursor.y > rowTop && cursor.y < rowTop + PRESET_H && cursor.x > PANEL.left && cursor.x < PANEL.left + PANEL.width;
+					const hovered =
+						cursor.y > rowTop &&
+						cursor.y < rowTop + PRESET_H &&
+						cursor.x > PANEL.left &&
+						cursor.x < PANEL.left + PANEL.width;
 					const chosen = i === 0 && frame >= T.presetClick;
 					return (
 						<div
@@ -392,7 +424,17 @@ const DesignPanel: React.FC<{cursor: {x: number; y: number}}> = ({cursor}) => {
 							/>
 							<div style={{flex: 1, minWidth: 0}}>
 								<div style={{color: theme.fg, fontSize: 17, fontWeight: 600}}>{name}</div>
-								<div style={{color: theme.muted, fontSize: 14, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{desc}</div>
+								<div
+									style={{
+										color: theme.muted,
+										fontSize: 14,
+										whiteSpace: 'nowrap',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+									}}
+								>
+									{desc}
+								</div>
 							</div>
 							{chosen && (
 								<svg width={18} height={18} viewBox="0 0 16 16" fill="none" stroke="#b3a3ff" strokeWidth={2}>

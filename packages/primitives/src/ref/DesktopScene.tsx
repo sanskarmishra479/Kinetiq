@@ -41,7 +41,12 @@ export const DesktopScene: React.FC = () => {
 						<div style={{position: 'absolute', left: 720, top: 250}}>
 							<Window variant="mac" title="Mom" width={400} height={480}>
 								<AbsoluteFill style={{background: '#000', justifyContent: 'flex-end', padding: 18, gap: 12}}>
-									<ChatBubble fontSize={18} from="me" delay={14} text="Mom I hit 500k views across both the platforms!!" />
+									<ChatBubble
+										fontSize={18}
+										from="me"
+										delay={14}
+										text="Mom I hit 500k views across both the platforms!!"
+									/>
 									<ChatBubble fontSize={18} from="them" delay={30} text="I'm so proud of you!" />
 								</AbsoluteFill>
 							</Window>
@@ -138,7 +143,9 @@ const LaunchPost: React.FC = () => (
 				overflow: 'hidden',
 			}}
 		>
-			<div style={{position: 'absolute', left: 40, top: 110, display: 'grid', gridTemplateColumns: '14px 14px', gap: 6}}>
+			<div
+				style={{position: 'absolute', left: 40, top: 110, display: 'grid', gridTemplateColumns: '14px 14px', gap: 6}}
+			>
 				{['#111', '#e0505f', '#111', '#111'].map((c, i) => (
 					<div key={i} style={{width: 14, height: 14, borderRadius: 4, background: c}} />
 				))}
@@ -196,7 +203,16 @@ const LaunchPost: React.FC = () => (
 				1:36
 			</div>
 		</div>
-		<div style={{display: 'flex', justifyContent: 'space-between', color: grey, fontSize: 15, marginTop: 16, padding: '0 8px'}}>
+		<div
+			style={{
+				display: 'flex',
+				justifyContent: 'space-between',
+				color: grey,
+				fontSize: 15,
+				marginTop: 16,
+				padding: '0 8px',
+			}}
+		>
 			<Stat d="M4 5h16v11H9l-5 4V5z" value="826" />
 			<Stat d="M7 7h11v6M17 17H6v-6M15 4l3 3-3 3M9 20l-3-3 3-3" value="141" />
 			<Stat d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z" value="1.4K" color="#f91880" fill />
@@ -237,7 +253,16 @@ const VideoPost: React.FC = () => (
 			</div>
 		</div>
 		<div style={{height: 380, background: '#000', position: 'relative'}}>
-			<AbsoluteFill style={{justifyContent: 'center', alignItems: 'center', color: '#fff', fontSize: 56, fontWeight: 700, letterSpacing: '-0.02em'}}>
+			<AbsoluteFill
+				style={{
+					justifyContent: 'center',
+					alignItems: 'center',
+					color: '#fff',
+					fontSize: 56,
+					fontWeight: 700,
+					letterSpacing: '-0.02em',
+				}}
+			>
 				I am Kinetiq.
 			</AbsoluteFill>
 			<div
@@ -272,7 +297,16 @@ const VideoPost: React.FC = () => (
 
 const Stat: React.FC<{d: string; value: string; color?: string; fill?: boolean}> = ({d, value, color = grey, fill}) => (
 	<span style={{display: 'flex', alignItems: 'center', gap: 6, color}}>
-		<svg width={18} height={18} viewBox="0 0 24 24" fill={fill ? color : 'none'} stroke={color} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+		<svg
+			width={18}
+			height={18}
+			viewBox="0 0 24 24"
+			fill={fill ? color : 'none'}
+			stroke={color}
+			strokeWidth={2}
+			strokeLinecap="round"
+			strokeLinejoin="round"
+		>
 			<path d={d} />
 		</svg>
 		{value}

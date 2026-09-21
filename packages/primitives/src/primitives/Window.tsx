@@ -13,15 +13,7 @@ type Props = {
 const BAR_HEIGHT = 44;
 
 // A macOS app window or a browser window to put a rebuilt product UI inside.
-export const Window: React.FC<Props> = ({
-	variant = 'browser',
-	title,
-	url,
-	width,
-	height,
-	style,
-	children,
-}) => {
+export const Window: React.FC<Props> = ({variant = 'browser', title, url, width, height, style, children}) => {
 	const theme = useTheme();
 	return (
 		<div

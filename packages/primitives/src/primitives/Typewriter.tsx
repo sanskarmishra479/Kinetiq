@@ -10,13 +10,7 @@ type Props = {
 };
 
 // Text that types itself out, with a caret that blinks once typing stops.
-export const Typewriter: React.FC<Props> = ({
-	text,
-	startAt = 0,
-	charsPerSecond = 22,
-	fontSize = 40,
-	color,
-}) => {
+export const Typewriter: React.FC<Props> = ({text, startAt = 0, charsPerSecond = 22, fontSize = 40, color}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
 	const theme = useTheme();

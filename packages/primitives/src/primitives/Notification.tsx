@@ -51,7 +51,15 @@ export const Notification: React.FC<Props> = ({app, title, body, at, width = 460
 					justifyContent: 'center',
 				}}
 			>
-				<svg width={28} height={28} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.2} strokeLinejoin="round">
+				<svg
+					width={28}
+					height={28}
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="#fff"
+					strokeWidth={2.2}
+					strokeLinejoin="round"
+				>
 					<path d="M4 5h16v11H9l-5 4V5z" />
 				</svg>
 			</div>

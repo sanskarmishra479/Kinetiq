@@ -64,9 +64,9 @@ export const Dropdown: React.FC<{
 	width: number;
 	items: MenuItem[];
 	openAt: number;
-	closeAt?: number;
-	cursor?: Point;
-	selected?: number;
+	closeAt?: number | undefined;
+	cursor?: Point | undefined;
+	selected?: number | undefined;
 }> = ({left, top, width, items, openAt, closeAt, cursor, selected}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();

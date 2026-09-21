@@ -23,7 +23,7 @@
 
 | Phase | Name | Status |
 |---|---|---|
-| 0 | Repo, tooling, CI | ✅ (1 task deferred) |
+| 0 | Repo, tooling, CI | ✅ |
 | 1 | Shared contracts (zod) | ⬜ |
 | 2 | Database (Prisma) | ⬜ |
 | 3 | API skeleton + auth | ⬜ |
@@ -59,13 +59,13 @@
 - [x] Base `tsconfig.base.json`: strict, `noUncheckedIndexedAccess`, ES2022, path aliases `@kinetiq/*`
 - [x] ESLint + Prettier shared config. Custom rule for `packages/domain`: ban `new Date()`, `Date.now()`, `Math.random()` (testability rule T3)
 - [x] Vitest workspace config, with coverage via v8 and per-package thresholds ([TEST_PLAN § 5](TEST_PLAN.md#5-ci-quality-gates))
-- [ ] ⏸ **Move `primitives/` → `packages/primitives`**. Deferred: another session is actively building primitives in `primitives/`. Move it when that work settles; it stays outside the pnpm workspace until then
+- [x] **Move `primitives/` → `packages/primitives`**. It's now a pnpm workspace package with a public `index.ts` API and an `entry.ts` for studio/render, under the strict shared tsconfig and lint. The demos (`Showcase`, `RefIntro`) still render. Motion math has unit tests. zod is pinned to Remotion's version (4.5.4) across the repo
 - [x] `infra/docker-compose.yml`: Postgres 16, Redis 7, MinIO (plus a bucket-init container)
 - [x] `.env.example`: every variable documented (DB, Redis, R2/MinIO, BetterAuth, Google OAuth, Turnstile, OpenRouter, ElevenLabs, Sarvam, Firecrawl, Dodo, AWS/Remotion, Sentry, LangSmith, Resend, `MOCK_PROVIDERS`, `RENDER_MODE`). `.env` stays git-ignored
 - [x] Typed config loader in `packages/shared/src/config.ts` (zod-validated env; the app crashes on start if config is invalid)
 - [x] GitHub Actions `ci.yml`: install → build → typecheck → lint → test → coverage gate → test:int (with Postgres and Redis service containers) → gitleaks → `pnpm audit --prod`
 - [x] Root scripts: `pnpm dev`, `pnpm test`, `pnpm test:int`, `pnpm check`, `pnpm infra:up/down` (`db:migrate` and `db:seed` arrive with Phase 2)
-- [ ] ⏸ Re-render the primitives demos with the Kinetiq name. Handled in the primitives session
+- [x] Re-render the primitives demos with the Kinetiq name (`packages/primitives/out/`: showcase, ref-intro, compare)
 - [x] 🔒 Renovate for dependency updates. Every GitHub Action pinned by commit SHA. gitleaks runs in CI; a local pre-commit hook is optional (install the gitleaks binary) [NFR-SEC-17]
 - [x] 🔒 pnpm only runs install scripts for allowlisted packages (`allowBuilds`: esbuild only)
 

@@ -21,7 +21,11 @@ export const Captions: React.FC<Props> = ({words, wordsPerPage = 4, fontSize = 5
 	for (let i = 0; i < words.length; i += wordsPerPage) {
 		pages.push(words.slice(i, i + wordsPerPage));
 	}
-	const page = pages.find((p) => frame >= p[0].start && frame <= p[p.length - 1].end + 6);
+	const page = pages.find((p) => {
+		const first = p[0];
+		const last = p[p.length - 1];
+		return first !== undefined && last !== undefined && frame >= first.start && frame <= last.end + 6;
+	});
 	if (!page) return null;
 
 	return (

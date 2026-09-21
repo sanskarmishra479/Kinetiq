@@ -21,17 +21,17 @@ pnpm check                # everything CI checks: lint, format, types, tests + c
 
 ## Layout
 
-| Path                | What                                                             |
-| ------------------- | ---------------------------------------------------------------- |
-| `apps/api`          | Express API                                                      |
-| `apps/worker`       | BullMQ worker + AI pipeline                                      |
-| `packages/shared`   | zod contracts + typed config                                     |
-| `packages/domain`   | Pure business logic + ports (fully unit-tested)                  |
-| `packages/db`       | Prisma schema + repositories                                     |
-| `packages/renderer` | Remotion renderer (dynamic scene runtime)                        |
-| `primitives/`       | Motion primitives library (moves to `packages/primitives` later) |
-| `infra/`            | Docker Compose for local services                                |
-| `docs/`             | Product and engineering docs                                     |
+| Path                  | What                                                        |
+| --------------------- | ----------------------------------------------------------- |
+| `apps/api`            | Express API                                                 |
+| `apps/worker`         | BullMQ worker + AI pipeline                                 |
+| `packages/shared`     | zod contracts + typed config                                |
+| `packages/domain`     | Pure business logic + ports (fully unit-tested)             |
+| `packages/db`         | Prisma schema + repositories                                |
+| `packages/renderer`   | Remotion renderer (dynamic scene runtime)                   |
+| `packages/primitives` | Motion primitives library (Remotion): Cursor, Camera, Lens… |
+| `infra/`              | Docker Compose for local services                           |
+| `docs/`               | Product and engineering docs                                |
 
 ## Rules
 

@@ -1,4 +1,5 @@
-import {Easing, interpolate, spring, SpringConfig} from 'remotion';
+import {Easing, interpolate, spring} from 'remotion';
+import type {SpringConfig} from 'remotion';
 
 // Easing curves: the "taste" of the motion. Every primitive uses these,
 // so tuning one curve here changes the feel of the whole video.
@@ -48,13 +49,16 @@ export function keyframes<K extends string>(
 	keys: K[],
 	easing: (t: number) => number = ease.inOut,
 ): Record<K, number> & {t: number; segment: number} {
-	const pick = (kf: Keyframe<K>) =>
-		Object.fromEntries(keys.map((k) => [k, kf[k] as number])) as Record<K, number>;
+	const first = kfs[0];
+	const last = kfs[kfs.length - 1];
+	if (!first || !last) throw new Error('keyframes() needs at least one keyframe');
 
-	if (frame <= kfs[0].frame) return {...pick(kfs[0]), t: 0, segment: 0};
+	const pick = (kf: Keyframe<K>) => Object.fromEntries(keys.map((k) => [k, kf[k] as number])) as Record<K, number>;
+
+	if (frame <= first.frame) return {...pick(first), t: 0, segment: 0};
 	for (let i = 0; i < kfs.length - 1; i++) {
-		const a = kfs[i];
-		const b = kfs[i + 1];
+		const a = kfs[i] as Keyframe<K>;
+		const b = kfs[i + 1] as Keyframe<K>;
 		if (frame <= b.frame) {
 			const t = tween(frame, [a.frame, b.frame], [0, 1], easing);
 			const out = Object.fromEntries(
@@ -63,7 +67,7 @@ export function keyframes<K extends string>(
 			return {...out, t, segment: i};
 		}
 	}
-	return {...pick(kfs[kfs.length - 1]), t: 1, segment: kfs.length - 2};
+	return {...pick(last), t: 1, segment: Math.max(0, kfs.length - 2)};
 }
 
 // 0→1 spring when something opens at `start`, back to 0 when it closes at `end`.

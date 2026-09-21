@@ -17,8 +17,7 @@ const RIPPLE_FRAMES = 18;
 
 // Where the cursor tip is at a frame (ignoring the arc). Lets menus and
 // buttons react to hover without hand-timing every highlight.
-export const cursorAt = (frame: number, path: CursorPoint[]) =>
-	keyframes(frame, path, ['x', 'y']);
+export const cursorAt = (frame: number, path: CursorPoint[]) => keyframes(frame, path, ['x', 'y']);
 
 export const Cursor: React.FC<Props> = ({path, clicks = [], arc = 0.12, hideBefore = -Infinity}) => {
 	const frame = useCurrentFrame();
@@ -27,6 +26,7 @@ export const Cursor: React.FC<Props> = ({path, clicks = [], arc = 0.12, hideBefo
 
 	// Push the point sideways in the middle of each move to make an arc.
 	const a = path[segment];
+	if (!a) return null;
 	const b = path[segment + 1] ?? a;
 	const dx = b.x - a.x;
 	const dy = b.y - a.y;
@@ -37,9 +37,7 @@ export const Cursor: React.FC<Props> = ({path, clicks = [], arc = 0.12, hideBefo
 	// Press: shrink fast, release slower.
 	const press = clicks.reduce((s, c) => {
 		if (frame < c - 3 || frame > c + 8) return s;
-		return frame <= c
-			? tween(frame, [c - 3, c], [1, 0.82])
-			: tween(frame, [c, c + 8], [0.82, 1]);
+		return frame <= c ? tween(frame, [c - 3, c], [1, 0.82]) : tween(frame, [c, c + 8], [0.82, 1]);
 	}, 1);
 
 	return (
@@ -91,5 +89,4 @@ export const Cursor: React.FC<Props> = ({path, clicks = [], arc = 0.12, hideBefo
 };
 
 // True for a few frames after a click: lets UI elements react (button press).
-export const isPressed = (frame: number, clicks: number[]) =>
-	clicks.some((c) => frame >= c - 2 && frame <= c + 5);
+export const isPressed = (frame: number, clicks: number[]) => clicks.some((c) => frame >= c - 2 && frame <= c + 5);

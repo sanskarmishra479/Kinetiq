@@ -1,0 +1,28 @@
+{
+	"name": "@kinetiq/primitives",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Kinetiq motion primitives: reusable animation building blocks for launch videos",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"studio": "remotion studio src/entry.ts",
+		"render:showcase": "remotion render src/entry.ts Showcase out/showcase.mp4",
+		"render:ref": "remotion render src/entry.ts RefIntro out/ref-intro.mp4",
+		"typecheck": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@remotion/cli": "4.0.526",
+		"@remotion/google-fonts": "4.0.526",
+		"@remotion/transitions": "4.0.526",
+		"react": "19.3.0",
+		"react-dom": "19.3.0",
+		"remotion": "4.0.526"
+	},
+	"devDependencies": {
+		"@types/react": "^19.3.0",
+		"@types/react-dom": "^19.3.0"
+	}
+}

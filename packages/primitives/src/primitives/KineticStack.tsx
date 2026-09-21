@@ -22,15 +22,10 @@ export const KineticStack: React.FC<Props> = ({lines, fontSize = 150, indent = 9
 				const start = i * dur.stagger * 1.4;
 				const enter = tween(frame, [start, start + dur.base], [110, 0]);
 				const exit =
-					exitAt === undefined
-						? 0
-						: tween(frame, [exitAt + i * 2, exitAt + i * 2 + dur.base], [0, -110], ease.in);
+					exitAt === undefined ? 0 : tween(frame, [exitAt + i * 2, exitAt + i * 2 + dur.base], [0, -110], ease.in);
 				const bar = tween(frame, [start + 4, start + 4 + dur.base], [0, 1]);
 				return (
-					<div
-						key={line}
-						style={{display: 'flex', alignItems: 'center', marginLeft: i * indent}}
-					>
+					<div key={line} style={{display: 'flex', alignItems: 'center', marginLeft: i * indent}}>
 						{i > 0 && (
 							<div
 								style={{

@@ -3,6 +3,5 @@ dist
 coverage
 .turbo
 pnpm-lock.yaml
-primitives
 docs
 what-i-want.md

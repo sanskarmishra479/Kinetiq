@@ -2,10 +2,7 @@ import {AbsoluteFill, useCurrentFrame} from 'remotion';
 import {useTheme} from '../theme';
 
 // Scene background with a soft accent glow that slowly drifts.
-export const Background: React.FC<{glow?: boolean; children?: React.ReactNode}> = ({
-	glow = true,
-	children,
-}) => {
+export const Background: React.FC<{glow?: boolean; children?: React.ReactNode}> = ({glow = true, children}) => {
 	const frame = useCurrentFrame();
 	const theme = useTheme();
 	const x = 50 + Math.sin(frame / 60) * 8;

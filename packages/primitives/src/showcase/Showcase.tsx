@@ -5,8 +5,7 @@ import {ChatScene, LogoScene, ProductScene, PromptScene, SCENES, TitleScene} fro
 
 export const TRANSITION = 12;
 
-export const SHOWCASE_DURATION =
-	Object.values(SCENES).reduce((a, b) => a + b, 0) - TRANSITION * 4;
+export const SHOWCASE_DURATION = Object.values(SCENES).reduce((a, b) => a + b, 0) - TRANSITION * 4;
 
 // All primitives in one short launch video, for judging the look and feel.
 export const Showcase: React.FC = () => (

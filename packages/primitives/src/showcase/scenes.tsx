@@ -3,7 +3,8 @@ import {springs, tween} from '../motion';
 import {minimalLight, ThemeProvider, useTheme} from '../theme';
 import {Background} from '../primitives/Background';
 import {Camera} from '../primitives/Camera';
-import {Captions, CaptionWord} from '../primitives/Captions';
+import {Captions} from '../primitives/Captions';
+import type {CaptionWord} from '../primitives/Captions';
 import {ChatBubble, TypingDots} from '../primitives/ChatBubble';
 import {Cursor, isPressed} from '../primitives/Cursor';
 import {KineticStack} from '../primitives/KineticStack';
@@ -74,12 +75,8 @@ export const ProductScene: React.FC = () => {
 								transform: `translateY(${(1 - toast) * 40}px)`,
 							}}
 						>
-							<div style={{color: theme.fg, fontSize: 22, fontWeight: 600}}>
-								Generating launch video…
-							</div>
-							<div style={{color: theme.muted, fontSize: 17, marginTop: 6}}>
-								30s · 16:9 · Dark cinematic
-							</div>
+							<div style={{color: theme.fg, fontSize: 22, fontWeight: 600}}>Generating launch video…</div>
+							<div style={{color: theme.muted, fontSize: 17, marginTop: 6}}>30s · 16:9 · Dark cinematic</div>
 							<div style={{height: 8, borderRadius: 4, background: theme.border, marginTop: 18}}>
 								<div
 									style={{
@@ -140,7 +137,9 @@ const AppUI: React.FC<{pressed: boolean}> = ({pressed}) => {
 				))}
 			</div>
 			<div style={{flex: 1, position: 'relative', padding: '22px 40px'}}>
-				<div style={{height: 48, display: 'flex', alignItems: 'center', color: theme.fg, fontSize: 30, fontWeight: 600}}>
+				<div
+					style={{height: 48, display: 'flex', alignItems: 'center', color: theme.fg, fontSize: 30, fontWeight: 600}}
+				>
 					Projects
 				</div>
 				<div
@@ -170,7 +169,16 @@ const AppUI: React.FC<{pressed: boolean}> = ({pressed}) => {
 							<div style={{height: 170, background: `linear-gradient(135deg, ${a}, ${b})`}} />
 							<div style={{padding: 14}}>
 								<div style={{height: 12, width: '60%', borderRadius: 6, background: theme.muted, opacity: 0.5}} />
-								<div style={{height: 10, width: '35%', borderRadius: 5, background: theme.muted, opacity: 0.25, marginTop: 10}} />
+								<div
+									style={{
+										height: 10,
+										width: '35%',
+										borderRadius: 5,
+										background: theme.muted,
+										opacity: 0.25,
+										marginTop: 10,
+									}}
+								/>
 							</div>
 						</div>
 					))}
@@ -245,7 +253,16 @@ export const PromptScene: React.FC = () => {
 							transform: `scale(${1 + Math.sin(send * Math.PI) * 0.15})`,
 						}}
 					>
-						<svg width={36} height={36} viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+						<svg
+							width={36}
+							height={36}
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="#fff"
+							strokeWidth={2.5}
+							strokeLinecap="round"
+							strokeLinejoin="round"
+						>
 							<path d="M5 12h14M13 6l6 6-6 6" />
 						</svg>
 					</div>
