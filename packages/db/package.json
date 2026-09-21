@@ -4,9 +4,29 @@
 	"private": true,
 	"type": "module",
 	"exports": {
-		".": "./src/index.ts"
+		".": "./src/index.ts",
+		"./testing": "./src/testing/index.ts"
 	},
 	"scripts": {
-		"typecheck": "tsc -p tsconfig.json"
+		"generate": "prisma generate",
+		"migrate:dev": "dotenv -e ../../.env -- prisma migrate dev",
+		"migrate:deploy": "prisma migrate deploy",
+		"seed": "dotenv -e ../../.env -- prisma db seed",
+		"typecheck": "prisma generate >/dev/null && tsc -p tsconfig.json",
+		"postinstall": "prisma generate"
+	},
+	"dependencies": {
+		"@kinetiq/domain": "workspace:*",
+		"@kinetiq/shared": "workspace:*",
+		"@prisma/adapter-pg": "7.10.0",
+		"@prisma/client": "7.10.0",
+		"pg": "8.23.0",
+		"zod": "4.5.4"
+	},
+	"devDependencies": {
+		"@types/pg": "^8.23.1",
+		"dotenv-cli": "^11.0.0",
+		"prisma": "7.10.0",
+		"vitest": "5.0.1"
 	}
 }

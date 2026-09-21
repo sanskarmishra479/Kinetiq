@@ -1,0 +1,532 @@
+// Kinetiq database schema (docs/ARCHITECTURE.md §7).
+//
+// Rules:
+// - Every user-owned table has `userId`; repositories always filter by it (NFR-SEC-08).
+// - Money and credits are integers only (credits, cents, micro-dollars). No floats.
+// - Ids are app-generated, prefixed and time-sortable ("prj_01J…"), so ordering
+//   by id gives newest-first pagination without extra indexes.
+// - Product catalog (plans, packs, voices, presets) lives in code
+//   (packages/shared/src/catalog.ts), not in the database.
+// - Extra CHECK constraints the schema language can't express live in the
+//   migration SQL (search "CHECK" in prisma/migrations).
+
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "esm"
+  importFileExtension = "js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── Auth (BetterAuth core + admin role + two-factor) ────────────────────────
+
+enum UserRole {
+  user
+  admin
+}
+
+model User {
+  id               String    @id
+  name             String?
+  email            String    @unique
+  emailVerified    Boolean   @default(false)
+  image            String?
+  role             UserRole  @default(user)
+  twoFactorEnabled Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  sessions      Session[]
+  accounts      Account[]
+  twoFactors    TwoFactor[]
+  projects      Project[]
+  assets        Asset[]
+  brandKits     BrandKit[]
+  jobs          Job[]
+  buckets       CreditBucket[]
+  ledger        CreditLedger[]
+  subscriptions Subscription[]
+  payments      Payment[]
+  idempotency   IdempotencyRecord[]
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  userId                String
+  accountId             String
+  providerId            String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+  @@map("verification")
+}
+
+model TwoFactor {
+  id          String @id
+  userId      String
+  secret      String
+  backupCodes String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("two_factor")
+}
+
+// ─── Projects and chat ───────────────────────────────────────────────────────
+
+enum ProjectStatus {
+  setup
+  ready
+  generating
+  done
+  failed
+}
+
+model Project {
+  id          String        @id
+  userId      String
+  url         String
+  durationSec Int
+  ratio       String // "16:9" | "9:16" | "1:1" (CHECK in migration)
+  model       String?
+  templateId  String?
+  prompt      String?
+  status      ProjectStatus @default(setup)
+  /// Setup answers, validated by ProjectSettings (packages/shared).
+  settings    Json          @default("{\"voiceover\":null,\"design\":null}")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  messages Message[]
+  assets   Asset[]
+  jobs     Job[]
+  versions Version[]
+
+  @@index([userId, id])
+  @@map("project")
+}
+
+enum MessageRole {
+  user
+  assistant
+}
+
+model Message {
+  id        String      @id
+  projectId String
+  userId    String
+  role      MessageRole
+  content   String
+  /// Optional widget (MessageUi in packages/shared).
+  ui        Json?
+  createdAt DateTime    @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId, id])
+  @@map("message")
+}
+
+enum AssetKind {
+  screenshot
+  recording
+  logo
+  reference
+  designMd
+  other
+}
+
+enum AssetStatus {
+  pending
+  ready
+  rejected
+}
+
+model Asset {
+  id          String      @id
+  userId      String
+  projectId   String?
+  kind        AssetKind
+  mime        String
+  size        Int
+  filename    String
+  /// Server-generated object key; never chosen by the client.
+  storageKey  String      @unique
+  sha256      String?
+  durationSec Float?
+  status      AssetStatus @default(pending)
+  createdAt   DateTime    @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId, id])
+  @@index([projectId])
+  @@map("asset")
+}
+
+model BrandKit {
+  id        String   @id
+  userId    String
+  designMd  String
+  /// DesignTokens (packages/shared), validated before saving.
+  tokens    Json
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, id])
+  @@map("brand_kit")
+}
+
+// ─── Jobs, versions, scenes ──────────────────────────────────────────────────
+
+enum JobType {
+  generate
+  edit
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+model Job {
+  id              String    @id
+  userId          String
+  projectId       String
+  type            JobType
+  status          JobStatus @default(queued)
+  reservedCredits Int       @default(0)
+  chargedCredits  Int?
+  /// { code, message } when failed.
+  error           Json?
+  deadlineAt      DateTime
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime  @default(now())
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  steps   JobStep[]
+  version Version?
+  costs   ProviderCost[]
+
+  @@index([userId, status])
+  @@index([projectId, id])
+  @@index([status, deadlineAt])
+  @@map("job")
+}
+
+enum StepStatus {
+  pending
+  running
+  done
+  failed
+  skipped
+}
+
+model JobStep {
+  id        String     @id
+  jobId     String
+  node      String
+  status    StepStatus @default(pending)
+  attempt   Int        @default(0)
+  /// { done, total } for parallel nodes.
+  progress  Json?
+  startedAt DateTime?
+  endedAt   DateTime?
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([jobId, node])
+  @@map("job_step")
+}
+
+model Version {
+  id              String   @id
+  projectId       String
+  userId          String
+  number          Int
+  parentVersionId String?
+  jobId           String?  @unique
+  videoKey        String?
+  posterKey       String?
+  durationSec     Float?
+  freeEditsUsed   Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  job     Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  parent  Version? @relation("VersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  childs  Version[] @relation("VersionParent")
+  scenes  Scene[]
+
+  @@unique([projectId, number])
+  @@index([userId])
+  @@map("version")
+}
+
+model Scene {
+  id             String @id
+  versionId      String
+  index          Int
+  /// Validated, LLM-written TSX (docs/ARCHITECTURE.md §6).
+  code           String
+  /// sha256 of code, used to prove unchanged scenes are reused on edits.
+  codeHash       String
+  durationFrames Int
+  qaReport       Json?
+
+  version Version @relation(fields: [versionId], references: [id], onDelete: Cascade)
+
+  @@unique([versionId, index])
+  @@map("scene")
+}
+
+// ─── Templates (post-MVP content, schema ready now) ──────────────────────────
+
+model Template {
+  id                String   @id
+  slug              String   @unique
+  title             String
+  previewKey        String
+  posterKey         String
+  ratios            String[]
+  durations         Int[]
+  creditDiscountPct Int      @default(0)
+  published         Boolean  @default(false)
+  /// Template structure (scenes, camera, timing) with slot placeholders.
+  definition        Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  slots    TemplateSlot[]
+  projects Project[]
+
+  @@map("template")
+}
+
+model TemplateSlot {
+  id         String @id
+  templateId String
+  key        String
+  type       String
+  maxChars   Int?
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, key])
+  @@map("template_slot")
+}
+
+// ─── Credits and billing ─────────────────────────────────────────────────────
+
+enum BucketSource {
+  subscription
+  purchase
+  grant
+}
+
+model CreditBucket {
+  id             String       @id
+  userId         String
+  source         BucketSource
+  granted        Int
+  remaining      Int
+  expiresAt      DateTime?
+  subscriptionId String?
+  paymentId      String?
+  createdAt      DateTime     @default(now())
+
+  user   User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ledger CreditLedger[]
+
+  @@index([userId, expiresAt])
+  @@map("credit_bucket")
+}
+
+enum LedgerType {
+  grant
+  reserve
+  settle
+  refund
+  expire
+  clawback
+}
+
+/// Append-only: rows are never updated or deleted (enforced by a trigger).
+model CreditLedger {
+  id             String     @id
+  userId         String
+  type           LedgerType
+  amount         Int
+  bucketId       String?
+  jobId          String?
+  /// Makes every balance change exactly-once (FR-CRD-07).
+  idempotencyKey String     @unique
+  createdAt      DateTime   @default(now())
+
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bucket CreditBucket? @relation(fields: [bucketId], references: [id], onDelete: NoAction)
+
+  @@index([userId, id])
+  @@index([jobId])
+  @@map("credit_ledger")
+}
+
+enum SubscriptionStatus {
+  active
+  past_due
+  cancelled
+}
+
+model Subscription {
+  id                 String             @id
+  userId             String
+  dodoSubscriptionId String             @unique
+  planCode           String
+  status             SubscriptionStatus
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean            @default(false)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("subscription")
+}
+
+enum PaymentStatus {
+  succeeded
+  refunded
+  disputed
+}
+
+model Payment {
+  id            String        @id
+  userId        String
+  dodoPaymentId String        @unique
+  /// "plan:go" or "pack:pack_small".
+  item          String
+  amountCents   Int
+  currency      String
+  status        PaymentStatus
+  createdAt     DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("payment")
+}
+
+// ─── Operations ──────────────────────────────────────────────────────────────
+
+/// Deduplicates webhooks: the same provider event is processed once (NFR-SEC-04).
+model WebhookEvent {
+  id          String    @id
+  provider    String
+  eventId     String
+  type        String
+  receivedAt  DateTime  @default(now())
+  processedAt DateTime?
+
+  @@unique([provider, eventId])
+  @@map("webhook_event")
+}
+
+/// Cost of every provider call, for margin tracking (NFR-COST-01).
+model ProviderCost {
+  id        String   @id
+  jobId     String
+  provider  String
+  units     Int
+  /// Cost in millionths of a US dollar.
+  usdMicros Int
+  createdAt DateTime @default(now())
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([createdAt])
+  @@map("provider_cost")
+}
+
+/// Kill-switches and runtime flags (FR-ADM-01).
+model FeatureFlag {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+
+  @@map("feature_flag")
+}
+
+/// Stored responses for Idempotency-Key requests, scoped per user (NFR-SEC-16).
+model IdempotencyRecord {
+  id             String   @id
+  userId         String
+  key            String
+  requestHash    String
+  responseStatus Int
+  responseBody   Json
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([expiresAt])
+  @@map("idempotency_record")
+}

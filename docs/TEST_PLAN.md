@@ -37,7 +37,7 @@ These rules are what make the code testable. Code review rejects anything that b
 ```
                  ▲  E2E (Playwright)          ~15 journeys      slow, few
                 ▲▲▲ Visual + LLM evals        stills diff, golden sites
-              ▲▲▲▲▲ Integration (API/worker)  real Postgres/Redis (Testcontainers), fakes for providers
+              ▲▲▲▲▲ Integration (API/worker)  real Postgres/Redis (Docker Compose), fakes for providers
           ▲▲▲▲▲▲▲▲▲ Contract (zod, MSW)       every endpoint/event/queue/provider response
    ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ Unit (Vitest)            domain logic, validators, primitives math   fast, many
 ```
@@ -47,7 +47,7 @@ These rules are what make the code testable. Code review rejects anything that b
 | **Unit** | Vitest | Pure domain logic: credits, estimate, bucket order, AST validator, slot filling, edit classifier, motion math (`keyframes`, `tween`, `openClose`), theme parsing | `packages/*/src/**/*.test.ts` | Every commit |
 | **Component** | Vitest + Testing Library | Web UI: chat widgets, estimate modal, live-steps pane, upload flow (API mocked with MSW) | `apps/web/**/*.test.tsx` | Every commit |
 | **Contract** | Vitest + zod + MSW | API request/response schemas; SSE event schemas; queue payloads; **provider adapters against recorded real responses** (OpenRouter, ElevenLabs, Firecrawl, Dodo) | `packages/shared`, `apps/*/src/adapters/*.contract.test.ts` | Every commit |
-| **Integration** | Vitest + Supertest + Testcontainers (Postgres, Redis) | API routes end to end with a real DB and queue: auth guard, IDOR, credits transactions, webhooks, idempotency, rate limits; worker graphs with fake providers | `apps/api/test/`, `apps/worker/test/` | Every PR |
+| **Integration** | Vitest + Supertest + a throwaway `kinetiq_test` Postgres database (recreated from migrations per run) + Redis, via Docker Compose | API routes end to end with a real DB and queue: auth guard, IDOR, credits transactions, webhooks, idempotency, rate limits; worker graphs with fake providers | `apps/api/test/`, `apps/worker/test/` | Every PR |
 | **Visual regression** | Remotion `renderStill` + pixelmatch | Every primitive and template renders the same keyframes as its approved baseline PNG (within a tolerance) | `packages/primitives/test/visual/`, `packages/renderer/test/visual/` | Every PR touching primitives or renderer |
 | **LLM evals** | Custom runner + fixed set of "golden" sites | Director and scene coder quality: valid structure, allowlist pass rate, QA pass rate, text overflow, cost per video | `evals/` | Nightly on staging (real LLM, cost-capped) and before prompt changes |
 | **E2E** | Playwright | Full user journeys in a browser against the local stack with `MOCK_PROVIDERS=true` and `RENDER_MODE=local` | `e2e/` | Every PR (smoke), nightly (full) |
@@ -83,7 +83,7 @@ GitHub Actions runs on every pull request. **Merging is blocked** unless every g
 | Lint | `pnpm lint` (ESLint incl. the no-`Date`/`Math.random` rule in the domain package, plus Prettier) | 0 errors |
 | Unit + component + contract | `pnpm test` | 100% pass |
 | Coverage | `vitest --coverage` | **100% branches** for `domain/credits`, `domain/validator`, webhook handlers (NFR-MNT-04); **≥ 85%** for `packages/domain` overall; **≥ 70%** for API and worker |
-| Integration | `pnpm test:int` (Testcontainers) | 100% pass |
+| Integration | `pnpm test:int` (Compose Postgres + Redis) | 100% pass |
 | Visual | `pnpm test:visual` (when primitives or renderer change) | Pixel diff ≤ 0.1% per baseline |
 | E2E smoke | `pnpm e2e:smoke` | 100% pass |
 | Prisma | `prisma migrate diff` / migrations apply cleanly | Must pass |

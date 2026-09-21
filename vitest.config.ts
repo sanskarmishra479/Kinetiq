@@ -17,6 +17,9 @@ export default defineConfig({
 					name: 'int',
 					include: ['{apps,packages,tooling}/**/*.int.test.ts'],
 					exclude: ['**/node_modules/**'],
+					globalSetup: ['tooling/int-db-setup.ts'],
+					// One shared test database, so files run one at a time.
+					fileParallelism: false,
 					testTimeout: 60_000,
 					hookTimeout: 120_000,
 				},
@@ -25,7 +28,7 @@ export default defineConfig({
 		coverage: {
 			provider: 'v8',
 			include: ['{apps,packages}/*/src/**/*.ts'],
-			exclude: ['**/*.test.ts', '**/index.ts', '**/test-helpers.ts', '**/entry.ts'],
+			exclude: ['**/*.test.ts', '**/index.ts', '**/test-helpers.ts', '**/entry.ts', '**/generated/**', '**/testing/**'],
 			// Gates from docs/TEST_PLAN.md §5. Money and sandbox logic must be fully covered.
 			thresholds: {
 				'packages/domain/src/credits/**': {branches: 100, functions: 100, lines: 100, statements: 100},

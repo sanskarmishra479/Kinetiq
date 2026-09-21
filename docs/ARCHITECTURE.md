@@ -183,7 +183,7 @@ User 1─* Subscription          (dodoId UNIQUE, planCode, status, currentPeriod
 User 1─* Payment               (dodoPaymentId UNIQUE)
 WebhookEvent                   (provider + eventId UNIQUE, processedAt)
 Template 1─* TemplateSlot      (key, type: text|image|ui|color|logo, maxChars?)
-Plan / CreditPack              (code, price, credits, concurrency, flags)
+Plan / CreditPack / voices / presets → in code (packages/shared/src/catalog.ts), not the database
 ProviderCost                   (jobId, provider, units, usd)
 FeatureFlag                    (key, value)   ← kill-switches (FR-ADM-01)
 ```
@@ -300,7 +300,7 @@ Cinelaunch/
 | Environment | Web | API / Worker | DB | Providers | Render |
 |---|---|---|---|---|---|
 | **local** | `next dev` | `tsx watch` | Docker Postgres | `MOCK_PROVIDERS=true` (fakes) | `RENDER_MODE=local` |
-| **CI** | build only | tests | Testcontainers Postgres + Redis | fakes + MSW | local stills (visual tests) |
+| **CI** | build only | tests | Docker Compose Postgres + Redis (throwaway test DB) | fakes + MSW | local stills (visual tests) |
 | **staging** | Vercel preview | Railway staging | Neon branch | real, with low limits | Lambda (staging) |
 | **production** | Vercel | Railway | Neon main | real | Lambda |
 

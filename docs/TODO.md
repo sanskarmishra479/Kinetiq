@@ -25,7 +25,7 @@
 |---|---|---|
 | 0 | Repo, tooling, CI | ✅ |
 | 1 | Shared contracts (zod) | ✅ |
-| 2 | Database (Prisma) | ⬜ |
+| 2 | Database (Prisma) | ✅ |
 | 3 | API skeleton + auth | ⬜ |
 | 4 | Projects, chat, uploads | ⬜ |
 | 5 | Credits domain + ledger | ⬜ |
@@ -101,22 +101,29 @@
 ## Phase 2: Database (`packages/db`)
 > Goal: the full data model plus repositories that always require `userId`.
 
-- [ ] Prisma schema for every model in [ARCHITECTURE § 7](ARCHITECTURE.md#7-data-model-prisma):
+- [x] Prisma schema for every model in [ARCHITECTURE § 7](ARCHITECTURE.md#7-data-model-prisma):
   - BetterAuth tables
   - Project, Message, Asset, BrandKit
   - Job, JobStep, Version, Scene
-  - Template, TemplateSlot, Plan, CreditPack
+  - Template, TemplateSlot (Plan and CreditPack stay in code: `packages/shared/src/catalog.ts`)
   - Subscription, CreditBucket, CreditLedger, Payment
   - WebhookEvent, ProviderCost, FeatureFlag, IdempotencyRecord
-- [ ] Constraints: unique `CreditLedger.idempotencyKey`, unique `(provider, eventId)` on WebhookEvent, unique `Subscription.dodoId`, indexes on `(userId, createdAt)`
-- [ ] Money and credits are integers only (no floats)
-- [ ] First migration + `pnpm db:migrate`
-- [ ] Repositories (`projectsRepo`, `jobsRepo`, `versionsRepo`, `assetsRepo`, `ledgerRepo`…). **Every method that reads user data takes `userId`** [NFR-SEC-08]
-- [ ] Seed script: plans, packs, voices, presets, one admin user, a demo template
-- [ ] Test helpers: Testcontainers setup, `resetDb()`, factories (`makeUser`, `makeProject`, `withCredits`)
+- [x] Constraints: unique `CreditLedger.idempotencyKey`, unique `(provider, eventId)` on WebhookEvent, unique `Subscription.dodoId`, indexes on `(userId, createdAt)`
+- [x] Money and credits are integers only (no floats)
+- [x] First migration + `pnpm db:migrate`
+- [x] Repositories (`projectsRepo`, `jobsRepo`, `versionsRepo`, `assetsRepo`, `ledgerRepo`…). **Every method that reads user data takes `userId`** [NFR-SEC-08]
+- [x] Seed script (idempotent): default feature flags, the unpublished "Desktop story" template, and a local-only admin user. Plans, packs, voices and presets live in code, not the database
+- [x] Test helpers: a throwaway `kinetiq_test` database recreated from the migrations before every integration run (on the Docker Compose Postgres; same in CI), `resetDb()`, factories (`makeUser`, `grantCredits`)
 
 **Tests (integration):** migrations apply cleanly. Repos never return another user's rows. Unique constraints hold.
-**✅ Exit criteria:** `pnpm test:int` runs against a real Postgres container in CI.
+**✅ Exit criteria:** `pnpm test:int` runs against a real Postgres container in CI. **Done: 29 integration tests.**
+
+**Notes from the build:**
+- Prisma **7.10** (stable). Prisma's `latest` tag points to an 8.0 release candidate, which we skip.
+- Database-level safety rules in the init migration: CHECK constraints (ratios, durations, upload types, credit signs, bucket bounds, charged ≤ reserved) and a trigger that makes `credit_ledger` **append-only**.
+- The ledger → bucket foreign key is `NO ACTION`, so account deletion works with the append-only trigger (tested).
+- Ids are time-sortable (`prj_` + 26 chars), so pagination is simply `ORDER BY id DESC`.
+- ⚠ Local dev database: reset it once with `pnpm --filter @kinetiq/db exec dotenv -e ../../.env -- prisma migrate reset` (Prisma requires the user's own consent for resets).
 
 ---
 

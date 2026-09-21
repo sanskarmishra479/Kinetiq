@@ -22,3 +22,6 @@ out/
 
 # logs
 *.log
+
+# generated Prisma client (rebuilt by postinstall / pnpm db:generate)
+packages/db/src/generated/

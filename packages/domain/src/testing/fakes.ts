@@ -18,13 +18,14 @@ export class FixedClock implements ClockPort {
 	}
 }
 
-// Predictable ids: prj_1, prj_2, job_1, ...
+// Predictable ids that match the real id format: prj_00000001, prj_00000002, …
+// (zero-padded so they also sort in creation order, like real ids).
 export class SeqId implements IdPort {
 	private counters = new Map<string, number>();
 
 	next(prefix: string): string {
 		const n = (this.counters.get(prefix) ?? 0) + 1;
 		this.counters.set(prefix, n);
-		return `${prefix}_${n}`;
+		return `${prefix}_${String(n).padStart(8, '0')}`;
 	}
 }

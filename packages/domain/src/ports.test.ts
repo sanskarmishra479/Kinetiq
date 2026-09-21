@@ -16,7 +16,11 @@ describe('FixedClock', () => {
 describe('SeqId', () => {
 	it('counts per prefix', () => {
 		const ids = new SeqId();
-		expect([ids.next('prj'), ids.next('prj'), ids.next('job')]).toEqual(['prj_1', 'prj_2', 'job_1']);
+		expect([ids.next('prj'), ids.next('prj'), ids.next('job')]).toEqual([
+			'prj_00000001',
+			'prj_00000002',
+			'job_00000001',
+		]);
 	});
 });
 
