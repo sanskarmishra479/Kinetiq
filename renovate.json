@@ -1,0 +1,15 @@
+{
+	"$schema": "https://docs.renovatebot.com/renovate-schema.json",
+	"extends": ["config:recommended", "helpers:pinGitHubActionDigests", ":pinDevDependencies"],
+	"schedule": ["before 6am on monday"],
+	"timezone": "Asia/Kolkata",
+	"lockFileMaintenance": {"enabled": true},
+	"vulnerabilityAlerts": {"enabled": true, "schedule": ["at any time"]},
+	"packageRules": [
+		{
+			"description": "Batch low-risk updates into one weekly PR",
+			"matchUpdateTypes": ["minor", "patch", "digest"],
+			"groupName": "weekly minor/patch updates"
+		}
+	]
+}

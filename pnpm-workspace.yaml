@@ -1,0 +1,7 @@
+packages:
+  - apps/*
+  - packages/*
+# primitives/ stays outside the workspace until it moves to packages/primitives
+# (another session is actively building it; see docs/TODO.md Phase 0).
+allowBuilds:
+  esbuild: true

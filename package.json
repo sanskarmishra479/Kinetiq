@@ -1,0 +1,37 @@
+{
+	"name": "kinetiq",
+	"private": true,
+	"type": "module",
+	"packageManager": "pnpm@12.4.1",
+	"engines": {
+		"node": ">=24"
+	},
+	"scripts": {
+		"build": "turbo run build",
+		"dev": "turbo run dev",
+		"typecheck": "turbo run typecheck && tsc -p tsconfig.json",
+		"lint": "eslint .",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"test": "vitest run --project unit",
+		"test:watch": "vitest --project unit",
+		"test:coverage": "vitest run --project unit --coverage",
+		"test:int": "vitest run --project int",
+		"check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm test:coverage",
+		"infra:up": "docker compose -f infra/docker-compose.yml up -d --wait postgres redis minio && docker compose -f infra/docker-compose.yml run --rm minio-init",
+		"infra:down": "docker compose -f infra/docker-compose.yml down"
+	},
+	"devDependencies": {
+		"@eslint/js": "10.0.1",
+		"@types/node": "^24.13.6",
+		"@vitest/coverage-v8": "5.0.1",
+		"eslint": "10.11.0",
+		"globals": "17.12.0",
+		"prettier": "3.9.8",
+		"tsx": "4.23.15",
+		"turbo": "2.11.2",
+		"typescript": "6.0.3",
+		"typescript-eslint": "8.70.0",
+		"vitest": "5.0.1"
+	}
+}
