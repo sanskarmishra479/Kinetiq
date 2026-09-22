@@ -27,7 +27,7 @@
 | 1 | Shared contracts (zod) | ✅ |
 | 2 | Database (Prisma) | ✅ |
 | 3 | API skeleton + auth | ✅ |
-| 4 | Projects, chat, uploads | ⬜ |
+| 4 | Projects, chat, uploads | ✅ |
 | 5 | Credits domain + ledger | ⬜ |
 | 6 | Queue, jobs, realtime events | ⬜ |
 | 7 | Renderer + scene sandbox | ⬜ |
@@ -174,15 +174,22 @@
 ## Phase 4: Projects, chat, uploads
 > Goal: users can create projects, chat, and upload assets safely.
 
-- [ ] `StoragePort` + adapters: `MinioStorage` (dev), `R2Storage` (prod), `MemoryStorage` (tests)
-- [ ] 🔒 `POST /v1/uploads` (presigned POST with size, MIME and prefix conditions; **the server generates the key**) + `POST /v1/uploads/:id/complete` (HEAD + magic-byte sniff). Allowed: png/jpg/webp ≤ 10 MB, mp4/webm ≤ 100 MB. **SVG and HTML are never accepted** [FR-PRJ-04, 05]
-- [ ] 🔒 Worker `ffprobe` check on uploaded videos (codec, duration ≤ 2 min, dimensions) before use [FR-PRJ-04]
-- [ ] 🔒 Serve all user files and renders from the **separate domain `kinetiqcontent.com`** with `nosniff` + `Content-Disposition: attachment` on downloads [NFR-SEC-10]
-- [ ] Projects CRUD: `POST /v1/projects`, `GET /v1/projects` (cursor), `GET /v1/projects/:id`, `DELETE` [FR-PRJ-01…03]
-- [ ] Messages: `GET /v1/projects/:id/messages`, `POST` (idempotent) [FR-CHAT-03, 04]
-- [ ] Setup dialog state machine (pure, in `packages/domain/setup`, **no LLM calls** [FR-GEN-13]): which question to ask next (voiceover → voice → language → script → design style), and applying answers to project settings [FR-CHAT-01, 02]
-- [ ] Brand kits: `POST /v1/brand-kits` (paste or upload a DESIGN.md → parse tokens, 20 KB cap)
-- [ ] Catalog: `GET /v1/voices`, `/v1/design-presets`, `/v1/templates`, `/v1/billing/plans` with `Cache-Control`
+- [x] `StoragePort` + adapters: `MinioStorage` (dev), `R2Storage` (prod), `MemoryStorage` (tests)
+- [x] 🔒 `POST /v1/uploads` (presigned PUT with a signed content type; **the server generates the key**) + `POST /v1/uploads/:id/complete` (HEAD + magic-byte sniff). Allowed: png/jpg/webp ≤ 10 MB, mp4/webm ≤ 100 MB. **SVG and HTML are never accepted** [FR-PRJ-04, 05]
+- [ ] 🔒 Worker `ffprobe` check on uploaded videos (codec, duration ≤ 2 min, dimensions) before use [FR-PRJ-04]. ⏭ Moved to Phase 6 (needs the worker). Until then videos stay in `processing` and can't be attached
+- [x] 🔒 Serve all user files and renders from the **separate domain `kinetiqcontent.com`** with `nosniff` + `Content-Disposition: attachment` on downloads [NFR-SEC-10]
+- [x] Projects CRUD: `POST /v1/projects`, `GET /v1/projects` (cursor), `GET /v1/projects/:id`, `DELETE` [FR-PRJ-01…03]
+- [x] Messages: `GET /v1/projects/:id/messages`, `POST` (idempotent) [FR-CHAT-03, 04]
+- [x] Setup dialog state machine (pure, in `packages/domain/setup`, **no LLM calls** [FR-GEN-13]): which question to ask next (voiceover → voice → language → script → design style), and applying answers to project settings [FR-CHAT-01, 02]
+- [x] Brand kits: `POST /v1/brand-kits` (paste or upload a DESIGN.md → parse tokens, 20 KB cap)
+- [x] Catalog: `GET /v1/voices`, `/v1/design-presets`, `/v1/templates`, `/v1/billing/plans` with `Cache-Control`
+
+**Notes from the build:**
+- Uploads use a **presigned PUT** (R2 has no presigned POST). The content type is signed; size and file bytes are verified on `complete`, and mismatches are deleted.
+- New asset status `processing` for videos waiting for the worker's probe.
+- Deleting a project with a running job returns 409 until cancel/refund exists (Phase 6).
+- ⏭ Phase 6 cron: delete storage objects of deleted projects/assets and of uploads never completed.
+- ⏭ Phase 13: CORS rules on the MinIO/R2 bucket so the browser can PUT directly.
 
 **Tests:**
 - IDOR returns 404 for another user's project, asset or message
@@ -192,7 +199,7 @@
 - the setup state machine is covered 100%
 - pagination works
 
-**✅ Exit criteria:** with Postman or curl you can create a project, upload a screenshot, and answer the setup questions.
+**✅ Exit criteria:** with Postman or curl you can create a project, upload a screenshot, and answer the setup questions. **Done: covered by 45 API integration tests (incl. real MinIO).**
 
 ---
 

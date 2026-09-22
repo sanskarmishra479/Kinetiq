@@ -9,6 +9,8 @@
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
+		"@aws-sdk/client-s3": "3.1137.0",
+		"@aws-sdk/s3-request-presigner": "3.1137.0",
 		"@kinetiq/db": "workspace:*",
 		"@kinetiq/shared": "workspace:*",
 		"better-auth": "1.7.5",

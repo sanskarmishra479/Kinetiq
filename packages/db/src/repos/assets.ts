@@ -48,10 +48,24 @@ export function assetsRepo({db, ids, clock}: RepoDeps) {
 			return row ? toAsset(row) : null;
 		},
 
-		async markReady(userId: string, assetId: string, facts: {sha256: string; durationSec?: number}) {
+		/** pending → ready (images, DESIGN.md) or processing → ready (videos, after the worker's probe). */
+		async markReady(
+			userId: string,
+			assetId: string,
+			facts: {sha256?: string | null; durationSec?: number | null} = {},
+		) {
+			const {count} = await db.asset.updateMany({
+				where: {id: assetId, userId, status: {in: ['pending', 'processing']}},
+				data: {status: 'ready', sha256: facts.sha256 ?? null, durationSec: facts.durationSec ?? null},
+			});
+			return count > 0;
+		},
+
+		/** pending → processing: uploaded video waiting for the worker's ffprobe check. */
+		async markProcessing(userId: string, assetId: string) {
 			const {count} = await db.asset.updateMany({
 				where: {id: assetId, userId, status: 'pending'},
-				data: {status: 'ready', sha256: facts.sha256, durationSec: facts.durationSec ?? null},
+				data: {status: 'processing'},
 			});
 			return count > 0;
 		},

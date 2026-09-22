@@ -5,6 +5,7 @@ import {loadConfig} from '@kinetiq/shared';
 import {pino} from 'pino';
 import {fakeCaptcha, memoryEmail, memoryLocks} from '../adapters/misc.js';
 import {memoryRateLimiter} from '../adapters/rate-limit.js';
+import {memoryStorage} from '../adapters/storage.js';
 import {buildApp} from '../app.js';
 import {assemble} from '../container.js';
 import type {HealthPort} from '../ports.js';
@@ -60,6 +61,7 @@ export const DEPLOYED_ENV: Record<string, string> = {
 export function testApi(options: {db: Db; env?: Record<string, string>; health?: HealthPort}) {
 	const config = loadConfig({...TEST_ENV, ...options.env});
 	const email = memoryEmail();
+	const storage = memoryStorage();
 	const container = assemble({
 		config,
 		logger: pino({level: 'silent'}),
@@ -70,7 +72,26 @@ export function testApi(options: {db: Db; env?: Record<string, string>; health?:
 		captcha: fakeCaptcha(),
 		rateLimiter: memoryRateLimiter(),
 		locks: memoryLocks(),
+		storage,
 		health: options.health ?? {check: async () => []},
 	});
-	return {app: buildApp(container), container, email};
+	return {app: buildApp(container), container, email, storage};
+}
+
+/** Logs a user in through the real magic-link flow; returns a cookie-carrying agent. */
+export async function loginAs(api: ReturnType<typeof testApi>, email: string) {
+	const {default: request} = await import('supertest');
+	const res = await request(api.app)
+		.post('/api/auth/sign-in/magic-link')
+		.set('Origin', api.container.config.WEB_ORIGIN)
+		.set('x-turnstile-token', 'ok')
+		.send({email, callbackURL: `${api.container.config.WEB_ORIGIN}/app`});
+	if (res.status !== 200) throw new Error(`login request failed: ${res.status}`);
+	const sent = [...api.email.sent].reverse().find((m) => m.template === 'magicLink' && m.to === email);
+	if (sent?.template !== 'magicLink') throw new Error('no login email');
+	const link = new URL(sent.url);
+	const agent = request.agent(api.app);
+	await agent.get(link.pathname + link.search);
+	const me = await agent.get('/v1/me');
+	return {agent, userId: me.body.user.id as string};
 }

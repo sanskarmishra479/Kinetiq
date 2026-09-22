@@ -8,6 +8,7 @@ export const RULES = {
 	magicLinkEmail: {name: 'magic-link-email', points: 3, durationSec: 3600},
 	apiUser: {name: 'api-user', points: 120, durationSec: 60},
 	apiIp: {name: 'api-ip', points: 300, durationSec: 60},
+	uploadsUser: {name: 'uploads-user', points: 30, durationSec: 3600},
 } satisfies Record<string, RateLimitRule>;
 
 export function setRateLimitHeaders(res: Response, result: RateLimitResult) {

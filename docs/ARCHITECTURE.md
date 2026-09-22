@@ -265,7 +265,7 @@ Details on how we test all of this: [TEST_PLAN.md](TEST_PLAN.md).
 | SSRF | User URLs are fetched only by Firecrawl |
 | Malicious AI code | AST allowlist, whitelisted scope, sandboxed Lambda (§ 6) |
 | Prompt injection | Scraped content treated as delimited data; structured, validated outputs |
-| Upload abuse | Presigned POST with size, MIME and prefix conditions; the server generates the key; server-side magic-byte check on complete; `ffprobe` on videos; SVG and HTML never accepted |
+| Upload abuse | Presigned PUT with a signed content type; the server generates the key and checks size + magic bytes on complete; server-side magic-byte check on complete; `ffprobe` on videos; SVG and HTML never accepted |
 | Same-site attacks through user content | User files served from a separate registrable domain with `nosniff` and `attachment` (NFR-SEC-10) |
 | Cross-site request forgery on the API | `Origin` header check on every state-changing request, plus SameSite cookies (NFR-SEC-11) |
 | Account takeover / email bombing | Per-email + per-IP magic-link limits, no user enumeration, 2FA for admins, verified-email-only account linking (FR-AUTH-06, 07) |

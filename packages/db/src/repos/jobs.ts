@@ -87,6 +87,16 @@ export function jobsRepo({db, ids, clock}: RepoDeps) {
 			return db.job.count({where: {userId, status: {in: [...ACTIVE]}}});
 		},
 
+		/** The project's queued or running job, if any. */
+		async getActiveForProject(userId: string, projectId: string): Promise<Job | null> {
+			const row = await db.job.findFirst({
+				where: {userId, projectId, status: {in: [...ACTIVE]}},
+				orderBy: {id: 'desc'},
+				include: {steps: true, version: {select: {id: true}}},
+			});
+			return row ? toJob(row) : null;
+		},
+
 		/** Whether this project already has a queued or running job (409 CONFLICT). */
 		async hasActiveForProject(userId: string, projectId: string): Promise<boolean> {
 			return (await db.job.count({where: {userId, projectId, status: {in: [...ACTIVE]}}})) > 0;

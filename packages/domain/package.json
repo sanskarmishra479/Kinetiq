@@ -9,5 +9,9 @@
 	},
 	"scripts": {
 		"typecheck": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@kinetiq/shared": "workspace:*",
+		"zod": "4.5.4"
 	}
 }

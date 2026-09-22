@@ -1,5 +1,7 @@
 import {z} from 'zod';
 import {CreditPack, DesignPreset, DesignTokens, PackCode, Plan, PlanCode, PlanLimits, Voice} from '../catalog.js';
+import {Job} from './jobs.js';
+import {Project} from './projects.js';
 import {
 	AssetId,
 	BrandKitId,
@@ -62,6 +64,14 @@ export const Version = z.object({
 });
 export type Version = z.infer<typeof Version>;
 
+// ── Project detail (GET /v1/projects/:id) ───────────────────────────────────
+export const ProjectDetailResponse = z.object({
+	project: Project,
+	latestVersion: Version.nullable(),
+	activeJob: Job.nullable(),
+});
+export type ProjectDetailResponse = z.infer<typeof ProjectDetailResponse>;
+
 // ── Catalog responses ────────────────────────────────────────────────────────
 export const TemplateSummary = z.object({
 	id: TemplateId,
@@ -100,6 +110,7 @@ export const CreateBrandKitRequest = z.union([
 export type CreateBrandKitRequest = z.infer<typeof CreateBrandKitRequest>;
 
 export const BrandKitResponse = z.object({brandKit: z.object({id: BrandKitId, tokens: DesignTokens})});
+export type BrandKitResponse = z.infer<typeof BrandKitResponse>;
 
 // ── Billing ──────────────────────────────────────────────────────────────────
 export const CheckoutRequest = z.union([z.strictObject({planCode: PlanCode}), z.strictObject({packCode: PackCode})]);

@@ -13,6 +13,21 @@ describe('CreateUploadRequest', () => {
 		accepts(CreateUploadRequest, {filename: 'demo.mp4', mime: 'video/mp4', size: 100 * MB, kind: 'recording'});
 	});
 
+	it('accepts markdown only as a small DESIGN.md', () => {
+		accepts(CreateUploadRequest, {filename: 'DESIGN.md', mime: 'text/markdown', size: 4000, kind: 'designMd'});
+		rejects(
+			CreateUploadRequest,
+			{filename: 'DESIGN.md', mime: 'text/markdown', size: 4000, kind: 'other'},
+			'DESIGN.md',
+		);
+		rejects(CreateUploadRequest, {...png, kind: 'designMd'}, 'DESIGN.md');
+		rejects(
+			CreateUploadRequest,
+			{filename: 'DESIGN.md', mime: 'text/markdown', size: 20 * 1024 + 1, kind: 'designMd'},
+			'at most 20 KB',
+		);
+	});
+
 	it.each(['image/svg+xml', 'text/html', 'application/pdf', 'application/octet-stream', 'video/quicktime'])(
 		'rejects %s (script-capable or unsupported)',
 		(mime) => {
@@ -46,7 +61,11 @@ describe('upload responses', () => {
 	it('validates the presigned upload and asset shapes', () => {
 		accepts(CreateUploadResponse, {
 			assetId: ids.asset,
-			upload: {url: 'https://r2.example.com/bucket', fields: {key: 'u/usr_abc12345/ast_abc12345'}},
+			upload: {
+				method: 'PUT',
+				url: 'https://r2.example.com/bucket/u/usr_abc12345/ast_abc12345?sig=x',
+				headers: {'content-type': 'image/png'},
+			},
 			expiresAt: now,
 		});
 		accepts(Asset, {id: ids.asset, kind: 'logo', mime: 'image/png', size: 1234, status: 'ready', createdAt: now});

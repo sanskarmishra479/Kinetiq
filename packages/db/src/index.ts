@@ -5,6 +5,7 @@ import {jobsRepo, versionsRepo} from './repos/jobs.js';
 import {brandKitsRepo, messagesRepo, projectsRepo} from './repos/projects.js';
 import type {RepoDeps} from './repos/shared.js';
 import {accountsRepo, featureFlagsRepo, idempotencyRepo, webhookEventsRepo} from './repos/system.js';
+import {templatesRepo} from './repos/templates.js';
 
 export {createDb, type Db} from './client.js';
 export {createIdGenerator} from './ids.js';
@@ -24,6 +25,7 @@ export function createRepos(deps: RepoDeps) {
 		idempotency: idempotencyRepo(deps),
 		webhookEvents: webhookEventsRepo(deps),
 		featureFlags: featureFlagsRepo(deps),
+		templates: templatesRepo(deps),
 	};
 }
 export type Repos = ReturnType<typeof createRepos>;

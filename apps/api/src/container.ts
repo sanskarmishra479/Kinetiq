@@ -12,9 +12,10 @@ import {
 	turnstileCaptcha,
 } from './adapters/misc.js';
 import {redisRateLimiter} from './adapters/rate-limit.js';
+import {s3Storage} from './adapters/storage.js';
 import {createAuth, type Auth} from './auth.js';
 import {createLogger} from './middleware/logging.js';
-import type {CaptchaPort, EmailPort, HealthPort, LockPort, RateLimitPort} from './ports.js';
+import type {CaptchaPort, EmailPort, HealthPort, LockPort, RateLimitPort, StoragePort} from './ports.js';
 
 // Composition root: the only place that picks real implementations
 // (docs/TEST_PLAN.md rule T4). Tests build the same shape with fakes.
@@ -31,6 +32,7 @@ export type Container = {
 	captcha: CaptchaPort;
 	rateLimiter: RateLimitPort;
 	locks: LockPort;
+	storage: StoragePort;
 	health: HealthPort;
 	close(): Promise<void>;
 };
@@ -62,6 +64,13 @@ export function buildContainer(config: Config): Container {
 		captcha: config.TURNSTILE_SECRET_KEY ? turnstileCaptcha(config.TURNSTILE_SECRET_KEY) : fakeCaptcha(),
 		rateLimiter: redisRateLimiter(redis),
 		locks: redisLocks(redis),
+		storage: s3Storage({
+			endpoint: config.S3_ENDPOINT,
+			region: config.S3_REGION,
+			accessKeyId: config.S3_ACCESS_KEY_ID,
+			secretAccessKey: config.S3_SECRET_ACCESS_KEY,
+			bucket: config.S3_BUCKET_CONTENT,
+		}),
 		health: dependencyHealth({database: () => db.$queryRaw`SELECT 1`, redis: () => redis.ping()}),
 		close: async () => {
 			await Promise.allSettled([db.$disconnect(), redis.quit()]);

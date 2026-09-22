@@ -7,6 +7,9 @@ import {byIp, byUser, rateLimit, RULES} from './middleware/rate-limit.js';
 import {corsFor, originCheck, securityHeaders} from './middleware/security.js';
 import {loadSession} from './middleware/session.js';
 import {accountRoutes, healthRoutes} from './routes/account.js';
+import {catalogRoutes} from './routes/catalog.js';
+import {projectRoutes} from './routes/projects.js';
+import {uploadRoutes} from './routes/uploads.js';
 
 // The Express app. Order matters:
 //  1. logging, security headers, CORS
@@ -37,7 +40,7 @@ export function buildApp(container: Container): Express {
 		rateLimit(rateLimiter, RULES.apiIp, byIp),
 		rateLimit(rateLimiter, RULES.apiUser, byUser),
 	);
-	app.use('/v1', accountRoutes(container));
+	app.use('/v1', catalogRoutes(container), accountRoutes(container), uploadRoutes(container), projectRoutes(container));
 
 	app.use(notFoundHandler);
 	app.use(errorHandler);

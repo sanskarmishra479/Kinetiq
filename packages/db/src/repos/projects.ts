@@ -96,6 +96,14 @@ export function projectsRepo({db, ids, clock}: RepoDeps) {
 			return count === 0 ? null : this.get(userId, projectId);
 		},
 
+		async setStatus(userId: string, projectId: string, status: Project['status']): Promise<boolean> {
+			const {count} = await db.project.updateMany({
+				where: {id: projectId, userId},
+				data: {status, updatedAt: new Date(clock.now())},
+			});
+			return count > 0;
+		},
+
 		/** Returns false when the project doesn't exist or isn't this user's. */
 		async delete(userId: string, projectId: string): Promise<boolean> {
 			const {count} = await db.project.deleteMany({where: {id: projectId, userId}});

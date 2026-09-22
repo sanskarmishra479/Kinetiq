@@ -203,12 +203,12 @@ Allowed: `image/png`, `image/jpeg`, `image/webp` (≤ 10 MB); `video/mp4`, `vide
 // request
 { "filename": "dashboard.png", "mime": "image/png", "size": 482133, "kind": "screenshot" }
 // 201
-{ "assetId": "ast_1", "upload": { "url": "https://<r2-endpoint>/...", "fields": { "key": "u/usr_1/ast_1", "Policy": "...", "X-Amz-Signature": "..." } }, "expiresAt": "..." }
+{ "assetId": "ast_1", "upload": { "method": "PUT", "url": "https://<r2-endpoint>/kinetiq-content/u/usr_1/ast_1?X-Amz-Signature=...", "headers": { "content-type": "image/png" } }, "expiresAt": "..." }
 ```
-The presigned POST enforces `content-length-range`, `Content-Type` and the key prefix. The browser uploads straight to R2.
+The presigned PUT signs the `Content-Type` (R2 has no presigned POST), and the server picks the key. The browser uploads straight to R2 with exactly the returned method, URL and headers.
 
 ### `POST /v1/uploads/:assetId/complete`
-The server runs a HEAD request on the object, checks size and MIME type (magic bytes), and sets the status to `ready`. Otherwise the asset is deleted and the call returns `400`.
+The server runs a HEAD request on the object and checks the real size and the file's first bytes (magic bytes). Images and DESIGN.md files become `ready`; videos become `processing` until the worker's ffprobe check. Anything that doesn't match is deleted, marked `rejected`, and the call returns `400`. Completing twice is harmless.
 
 ## 10. Catalog (public, cached at the CDN)
 
