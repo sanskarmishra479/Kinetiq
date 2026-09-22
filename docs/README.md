@@ -37,7 +37,8 @@ This folder is the single source of truth for **what** we are building, **why**,
 | File | What it is |
 |---|---|
 | [`../what-i-want.md`](../what-i-want.md) | The founder's original vision and running decision log |
-| [`../primitives/`](../primitives/) | The motion primitives library (Remotion): Cursor, Camera, Lens… |
+| [`../packages/primitives/`](../packages/primitives/) | The motion primitives library (Remotion): Cursor, Camera, Browser, BlurInText… |
+| [PRIMITIVES.md](PRIMITIVES.md) | Primitives catalog: what's built, what reference videos use, and the build backlog |
 | [`../image.png`](../image.png) | UI reference for the project page (chat on the left, live preview on the right) |
 
 ## Golden rules for everyone (humans and AI)
