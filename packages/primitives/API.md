@@ -19,6 +19,7 @@ Read the theme with `useTheme()`; never hard-code brand colors.
 ### <Background>
 
 Scene background with a soft accent glow that slowly drifts.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type BackgroundProps = {glow?: boolean; children?: React.ReactNode};
@@ -28,6 +29,7 @@ type BackgroundProps = {glow?: boolean; children?: React.ReactNode};
 
 Text that comes into focus: each piece starts soft, faint and slightly to
 the right, then sharpens into place. The main text style of cinematic videos.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type BlurInTextProps = {
@@ -56,6 +58,8 @@ type BlurInTextProps = {
 
 A macOS-style browser window with a real address bar. Put a rebuilt page
 (children) or a screenshot (src) inside; it can type its URL, load, and scroll.
+Kind: real-world replica. The chrome is never brand-styled (only light/dark,
+picked from the theme); the page inside shows the product as it really looks.
 
 ```ts
 type BrowserProps = {
@@ -82,6 +86,9 @@ type BrowserProps = {
 
 ### <Camera>
 
+A camera over the scene: pans and zooms between shots, with motion blur on fast moves.
+Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
+
 ```ts
 type CameraProps = {
 	shots: Shot[];
@@ -94,6 +101,7 @@ type CameraProps = {
 ### <CaptionPills>
 
 Creator-style captions: a short phrase in a white pill near the bottom.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type CaptionPillsProps = {lines: CaptionLine[]; bottom?: number};
@@ -102,6 +110,7 @@ type CaptionPillsProps = {lines: CaptionLine[]; bottom?: number};
 ### <Captions>
 
 Word-by-word captions: shows a few words at a time and highlights the one being spoken.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type CaptionsProps = {
@@ -115,6 +124,7 @@ type CaptionsProps = {
 
 Feature cards styled by the theme (fill, border, shadow, heading font, palette),
 so each brand gets its own look instead of the same template recolored.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type CardGridProps = {
@@ -134,6 +144,7 @@ type CardGridProps = {
 ### <ChatBubble>
 
 A message bubble that pops in from its tail corner with a small bounce.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type ChatBubbleProps = {
@@ -147,6 +158,7 @@ type ChatBubbleProps = {
 ### <Chip>
 
 Rounded pill button, e.g. "Aspect ▾". Turns accent-colored when active.
+Kind: product UI (styled by the theme, because it stands for the product's own interface).
 
 ```ts
 type ChipProps = {
@@ -163,6 +175,9 @@ type ChipProps = {
 
 ### <Cursor>
 
+An arrow cursor that moves along curved paths and clicks with a ripple.
+Kind: real-world replica (fixed system look; not brand-styled).
+
 ```ts
 type CursorProps = {
 	path: CursorPoint[];
@@ -178,6 +193,7 @@ type CursorProps = {
 ### <Dock>
 
 Dock with generic app icons (no real brand logos).
+Kind: real-world replica (fixed; not brand-styled).
 
 ```ts
 type DockProps = {};
@@ -186,6 +202,7 @@ type DockProps = {};
 ### <Dropdown>
 
 Dropdown menu. Rows highlight on their own when the cursor is over them.
+Kind: product UI (styled by the theme, because it stands for the product's own interface).
 
 ```ts
 type DropdownProps = {
@@ -204,6 +221,7 @@ type DropdownProps = {
 
 A lens focus pull for a whole scene: it starts blurred and slightly zoomed,
 sharpens, and can blur away again. Use it to move between scenes softly.
+Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 
 ```ts
 type FocusPullProps = {
@@ -221,6 +239,7 @@ type FocusPullProps = {
 ### <KineticStack>
 
 Big stacked words that slide up from behind a mask, one line after another.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type KineticStackProps = {
@@ -237,6 +256,7 @@ type KineticStackProps = {
 
 Curved-glass look: barrel distortion (center magnified, edges squeezed,
 corners stay pinned so no black borders) plus a soft vignette.
+Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 
 ```ts
 type LensProps = {
@@ -251,6 +271,7 @@ type LensProps = {
 ### <LogoReveal>
 
 End card: logo mark springs in, then the name wipes in beside it.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type LogoRevealProps = {
@@ -264,6 +285,7 @@ type LogoRevealProps = {
 ### <MenuBar>
 
 macOS menu bar: translucent strip with status icons and the clock.
+Kind: real-world replica (fixed system look; not brand-styled).
 
 ```ts
 type MenuBarProps = {clock: string};
@@ -272,6 +294,7 @@ type MenuBarProps = {clock: string};
 ### <Notification>
 
 macOS-style notification banner that slides in from the right edge.
+Kind: real-world replica (fixed system look; not brand-styled).
 
 ```ts
 type NotificationProps = {
@@ -288,6 +311,8 @@ type NotificationProps = {
 
 Dims the whole scene except one element, which gets a glowing accent ring.
 Place it after the UI it highlights, inside the same Camera if there is one.
+Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
+Its ring and label use only the theme accent.
 
 ```ts
 type SpotlightProps = {
@@ -310,6 +335,7 @@ type SpotlightProps = {
 ### <Typewriter>
 
 Text that types itself out, with a caret that blinks once typing stops.
+Kind: brand-styled (colors, fonts and style come from the theme).
 
 ```ts
 type TypewriterProps = {
@@ -332,6 +358,7 @@ type TypingDotsProps = {from?: number; to?: number};
 ### <Wallpaper>
 
 Colorful wave wallpaper in the style of recent macOS versions.
+Kind: real-world replica (fixed; not brand-styled).
 
 ```ts
 type WallpaperProps = {};
@@ -339,7 +366,9 @@ type WallpaperProps = {};
 
 ### <Window>
 
-A macOS app window or a browser window to put a rebuilt product UI inside.
+A macOS app window or a simple browser window to put a rebuilt product UI inside.
+Kind: real-world replica. The chrome is fixed macOS (light/dark from the theme);
+only the content area uses the theme, because it shows the product.
 
 ```ts
 type WindowProps = {
@@ -357,6 +386,7 @@ type WindowProps = {
 
 Depth of field: the camera zooms onto one element, which stays sharp and
 lifts off the page, while everything around it blurs and darkens.
+Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 
 ```ts
 type ZoomFocusProps = {

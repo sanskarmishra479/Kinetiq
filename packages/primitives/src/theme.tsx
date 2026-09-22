@@ -1,10 +1,5 @@
 import {createContext, useContext} from 'react';
-import {loadFont} from '@remotion/google-fonts/Inter';
-
-const {fontFamily} = loadFont('normal', {
-	weights: ['400', '500', '600', '800'],
-	subsets: ['latin'],
-});
+import {systemFont as fontFamily} from './fonts';
 
 // A Theme is the code form of a DESIGN.md: the LLM fills this from the
 // user's website (or a preset) and every primitive reads from it.

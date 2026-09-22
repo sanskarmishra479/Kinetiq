@@ -15,6 +15,7 @@ type Props = {
 
 // A lens focus pull for a whole scene: it starts blurred and slightly zoomed,
 // sharpens, and can blur away again. Use it to move between scenes softly.
+// Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 export const FocusPull: React.FC<Props> = ({inAt = 0, outAt, duration = dur.slow, blur = 28, children}) => {
 	const frame = useCurrentFrame();
 	const f = focusPull(frame, {inAt, outAt, duration});

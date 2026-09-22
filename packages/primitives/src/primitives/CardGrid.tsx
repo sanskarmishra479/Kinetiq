@@ -24,6 +24,7 @@ type Props = {
 
 // Feature cards styled by the theme (fill, border, shadow, heading font, palette),
 // so each brand gets its own look instead of the same template recolored.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const CardGrid: React.FC<Props> = ({cards, variant = 'grid', at = 0, stagger = 6, columns, maxWidth}) => {
 	const {width, height} = useVideoConfig();
 	const theme = useTheme();

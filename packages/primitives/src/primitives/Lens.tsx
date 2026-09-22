@@ -15,6 +15,7 @@ const MAP_H = 540;
 
 // Curved-glass look: barrel distortion (center magnified, edges squeezed,
 // corners stay pinned so no black borders) plus a soft vignette.
+// Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 export const Lens: React.FC<Props> = ({strength = 0.12, vignette = 0.35, children}) => {
 	const {width, height} = useVideoConfig();
 	const id = `lens-${useId().replace(/:/g, '')}`;

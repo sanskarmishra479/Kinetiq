@@ -1,6 +1,6 @@
 import {useCurrentFrame, useVideoConfig} from 'remotion';
 import {openClose, springs} from '../motion';
-import {useTheme} from '../theme';
+import {systemFont} from '../fonts';
 
 type Props = {
 	app: string;
@@ -12,10 +12,10 @@ type Props = {
 };
 
 // macOS-style notification banner that slides in from the right edge.
+// Kind: real-world replica (fixed system look; not brand-styled).
 export const Notification: React.FC<Props> = ({app, title, body, at, width = 460, style}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
-	const theme = useTheme();
 	const p = openClose(frame, fps, at, Infinity, springs.snappy);
 
 	return (
@@ -32,7 +32,7 @@ export const Notification: React.FC<Props> = ({app, title, body, at, width = 460
 				border: '1px solid rgba(255,255,255,0.12)',
 				boxShadow: '0 16px 40px rgba(0,0,0,0.35)',
 				backdropFilter: 'blur(30px)',
-				fontFamily: theme.fontFamily,
+				fontFamily: systemFont,
 				color: '#fff',
 				transform: `translateX(${(1 - p) * (width + 40)}px)`,
 				opacity: Math.min(1, p * 2),

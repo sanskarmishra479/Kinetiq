@@ -11,6 +11,8 @@ type Props = {
 	children: React.ReactNode;
 };
 
+// A camera over the scene: pans and zooms between shots, with motion blur on fast moves.
+// Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 export const Camera: React.FC<Props> = ({shots, motionBlur = true, children}) => {
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();

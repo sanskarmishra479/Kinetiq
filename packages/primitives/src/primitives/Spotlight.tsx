@@ -21,6 +21,8 @@ type Props = {
 
 // Dims the whole scene except one element, which gets a glowing accent ring.
 // Place it after the UI it highlights, inside the same Camera if there is one.
+// Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
+// Its ring and label use only the theme accent.
 export const Spotlight: React.FC<Props> = ({
 	rect,
 	at = 0,

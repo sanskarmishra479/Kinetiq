@@ -12,6 +12,7 @@ type Props = {
 };
 
 // Big stacked words that slide up from behind a mask, one line after another.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const KineticStack: React.FC<Props> = ({lines, fontSize = 150, indent = 90, exitAt}) => {
 	const frame = useCurrentFrame();
 	const theme = useTheme();

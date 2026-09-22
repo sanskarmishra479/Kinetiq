@@ -23,6 +23,22 @@ Rules every primitive follows (from [TEST_PLAN § 2](TEST_PLAN.md#2-testability-
 - Legal: no Apple logo, no real macOS wallpapers, no SF Pro font (Inter only), no real app icons or brand logos, no real people's names.
 - We copy techniques from references, never their content.
 
+## Four kinds of primitives
+
+Not every primitive should follow the brand. Each one is one of four kinds. The kind is written in its source comment, so it also appears in the generated `packages/primitives/API.md` that the Scene Coder reads.
+
+| Kind | What it is | What the theme may change | Examples |
+|---|---|---|---|
+| **Brand-styled** | The designer's own graphics | Everything: colors, fonts, palette, surface, borders, shadows | BlurInText, CardGrid, KineticStack, Captions, LogoReveal, Background |
+| **Product UI** | Stand-ins for the customer's own interface | Styled like the product (usually the same theme) | Chip, Dropdown, the page inside a Browser or Window |
+| **Real-world replica** | Copies of things everyone knows (OS and browser chrome) | Only light/dark mode (picked from the theme background), plus the accent on small focus details. Always the system font (Inter) | Browser, Window, Desktop (Wallpaper, MenuBar, Dock), Notification, Cursor |
+| **Motion-only** | Moves, blurs or frames what's inside; no look of its own | Nothing visual (Spotlight uses only the accent) | Camera, FocusPull, ZoomFocus, Spotlight, Lens |
+
+**Rules:**
+- Never restyle a real-world replica with brand fonts, colors, corners or shadows. Their job is to look real, and restyling breaks that.
+- What's shown *inside* a replica is the product. It follows the product's real look, not the video's style.
+- Planned: a theme **energy** setting (calm / normal / playful) that picks the spring and easing presets, so motion-only primitives also move in the brand's personality.
+
 ---
 
 ## 1. Foundations
@@ -30,6 +46,7 @@ Rules every primitive follows (from [TEST_PLAN § 2](TEST_PLAN.md#2-testability-
 | Module | File | What it gives |
 |---|---|---|
 | Motion presets | `src/motion.ts` | `ease.out/inOut/in`, `springs.snappy/bouncy/gentle`, `dur`, `tween()`, `keyframes()`, `openClose()` |
+| System font | `src/fonts.ts` | `systemFont` (Inter): the font every real-world replica uses, whatever the brand font is. Internal, not exported to scenes |
 | Theme | `src/theme.tsx` | `Theme` (the code form of DESIGN.md), `darkCinematic`, `minimalLight`, `ThemeProvider`/`useTheme`, Inter font. Optional brand personality: `headingFont`, `palette` (2–4 colors) and `style` (`surface` solid/outline/tint/brand, `border` none/hairline/bold, `shadow` none/soft/hard, heading weight and tracking). `resolveStyle()`/`useThemeStyle()` fill in defaults |
 | Color helpers | `src/color.ts` | `luminance()`, `isDark()`: pick light or dark chrome from a theme |
 
@@ -37,28 +54,28 @@ Rules every primitive follows (from [TEST_PLAN § 2](TEST_PLAN.md#2-testability-
 
 All files are in `packages/primitives/src/primitives/`. Demos render with `npx remotion render src/entry.ts <Id> out/<file>.mp4`.
 
-| Primitive | Status | What it does | Key props | Demo |
-|---|---|---|---|---|
-| `Background` | ✅ | Theme background with a slowly drifting accent glow | `glow` | Showcase |
-| `Camera` | ✅ | Keyframed pan/zoom with motion blur on fast moves | `shots`, `motionBlur` | Showcase, RefIntro |
-| `Cursor` | ✅ | Curved cursor path, click ripple, press squish. `cursorAt()` lets UI react to hover | `path`, `clicks`, `arc`, `hideBefore` | Showcase, RefIntro |
-| `Window` | ✅ | Simple macOS app or browser window for a rebuilt UI | `variant`, `title`, `url` | Showcase |
-| `Browser` | ✅ | Realistic macOS-style browser: light/dark from the theme, URL types in, load bar, page reveal, scroll with overlay scrollbar, screenshot or rebuilt page, compact chrome in 9:16 | `url`, `typeAt`, `scroll`, `src`, `appearance` | BrowserDemo → `out/browser.mp4`, `out/browser-vertical.mp4` |
-| `BlurInText` | ✅ | Text comes into focus by char, word or line (soft, faint and offset, then sharp). `grow` widens the line and keeps it centered. Optional blur-out | `text`, `by`, `grow`, `at`, `exitAt` | BlurInDemo → `out/blur-in.mp4`, `out/blur-in-vertical.mp4` |
-| `FocusPull` | ✅ | Whole-scene lens focus in/out, for soft scene changes | `inAt`, `outAt`, `blur` | BlurInDemo |
-| `Spotlight` | ✅ | Dims everything except one element, with a glowing accent ring and optional label. Can glide between elements (keyframed rect) | `rect`, `at`, `until`, `label`, `dim` | ProductFocusDemo → `out/product-focus.mp4` |
-| `ZoomFocus` | ✅ | Depth of field: camera zooms onto one element, which stays sharp and lifts, while the rest blurs (12px on screen, whatever the zoom) and darkens a little | `rect`, `at`, `until`, `blur`, `padding` | ProductFocusDemo |
-| `CardGrid` | ✅ | Feature cards styled by the brand, not one template. Layouts: `grid` (equal cards, diagonal waves), `bento` (one big hero card in a brand color), `list` (typographic rows, dividers draw in), `steps` (numbered, only for real sequences). Fill, border, shadow, fonts and colors come from the theme style. 12 built-in icons | `cards`, `variant`, `at`, `stagger`, `columns` | BrandStylesDemo → `out/brand-styles.mp4`, `out/brand-styles-vertical.mp4`; ProductFocusDemo; CardGridVertical |
-| `KineticStack` | ✅ | Stacked bold lines ("LAUNCH / VIDEOS / IN MINUTES") | `lines`, `exitAt` | Showcase |
-| `Typewriter` | ✅ | Types text with a caret | `text`, `startAt`, `charsPerSecond` | Showcase |
-| `ChatBubble` + `TypingDots` | ✅ | Message bubbles that pop in with a spring. Typing indicator | `text`, `from`, `delay` | Showcase, RefIntro |
-| `Captions` | ✅ | Word-by-word captions synced to timings | `words` | Showcase |
-| `CaptionPills` | ✅ | Small caption pills for short lines | `lines` | RefIntro |
-| `LogoReveal` | ✅ | Logo and tagline end card | `name`, `tagline` | Showcase |
-| `Notification` | ✅ | macOS-style banner sliding in from the right | `app`, `title`, `body`, `at` | RefIntro |
-| `Menu` (`Chip`, `Dropdown`) | ✅ | Chips and dropdowns that highlight automatically under the cursor | `items`, cursor path | RefIntro |
-| `Desktop` (`Wallpaper`, `MenuBar`, `Dock`) | ⏸ | Basic macOS desktop. The "real Mac" upgrade is paused (see backlog) | `clock` | RefIntro |
-| `Lens` | ✅ | Barrel distortion and vignette for a curved-glass look | `strength`, `vignette` | RefIntro |
+| Primitive | Status | Kind | What it does | Key props | Demo |
+|---|---|---|---|---|---|
+| `Background` | ✅ | Brand | Theme background with a slowly drifting accent glow | `glow` | Showcase |
+| `Camera` | ✅ | Motion | Keyframed pan/zoom with motion blur on fast moves | `shots`, `motionBlur` | Showcase, RefIntro |
+| `Cursor` | ✅ | Replica | Curved cursor path, click ripple, press squish. `cursorAt()` lets UI react to hover | `path`, `clicks`, `arc`, `hideBefore` | Showcase, RefIntro |
+| `Window` | ✅ | Replica | Simple macOS app or browser window for a rebuilt UI | `variant`, `title`, `url` | Showcase |
+| `Browser` | ✅ | Replica | Realistic macOS-style browser: light/dark from the theme, URL types in, load bar, page reveal, scroll with overlay scrollbar, screenshot or rebuilt page, compact chrome in 9:16 | `url`, `typeAt`, `scroll`, `src`, `appearance` | BrowserDemo → `out/browser.mp4`, `out/browser-vertical.mp4` |
+| `BlurInText` | ✅ | Brand | Text comes into focus by char, word or line (soft, faint and offset, then sharp). `grow` widens the line and keeps it centered. Optional blur-out | `text`, `by`, `grow`, `at`, `exitAt` | BlurInDemo → `out/blur-in.mp4`, `out/blur-in-vertical.mp4` |
+| `FocusPull` | ✅ | Motion | Whole-scene lens focus in/out, for soft scene changes | `inAt`, `outAt`, `blur` | BlurInDemo |
+| `Spotlight` | ✅ | Motion | Dims everything except one element, with a glowing accent ring and optional label. Can glide between elements (keyframed rect) | `rect`, `at`, `until`, `label`, `dim` | ProductFocusDemo → `out/product-focus.mp4` |
+| `ZoomFocus` | ✅ | Motion | Depth of field: camera zooms onto one element, which stays sharp and lifts, while the rest blurs (12px on screen, whatever the zoom) and darkens a little | `rect`, `at`, `until`, `blur`, `padding` | ProductFocusDemo |
+| `CardGrid` | ✅ | Brand | Feature cards styled by the brand, not one template. Layouts: `grid` (equal cards, diagonal waves), `bento` (one big hero card in a brand color), `list` (typographic rows, dividers draw in), `steps` (numbered, only for real sequences). Fill, border, shadow, fonts and colors come from the theme style. 12 built-in icons | `cards`, `variant`, `at`, `stagger`, `columns` | BrandStylesDemo → `out/brand-styles.mp4`, `out/brand-styles-vertical.mp4`; ProductFocusDemo; CardGridVertical |
+| `KineticStack` | ✅ | Brand | Stacked bold lines ("LAUNCH / VIDEOS / IN MINUTES") | `lines`, `exitAt` | Showcase |
+| `Typewriter` | ✅ | Brand | Types text with a caret | `text`, `startAt`, `charsPerSecond` | Showcase |
+| `ChatBubble` + `TypingDots` | ✅ | Brand | Message bubbles that pop in with a spring. Typing indicator | `text`, `from`, `delay` | Showcase, RefIntro |
+| `Captions` | ✅ | Brand | Word-by-word captions synced to timings | `words` | Showcase |
+| `CaptionPills` | ✅ | Brand | Small caption pills for short lines | `lines` | RefIntro |
+| `LogoReveal` | ✅ | Brand | Logo and tagline end card | `name`, `tagline` | Showcase |
+| `Notification` | ✅ | Replica | macOS-style banner sliding in from the right | `app`, `title`, `body`, `at` | RefIntro |
+| `Menu` (`Chip`, `Dropdown`) | ✅ | Product UI | Chips and dropdowns that highlight automatically under the cursor | `items`, cursor path | RefIntro |
+| `Desktop` (`Wallpaper`, `MenuBar`, `Dock`) | ⏸ | Replica | Basic macOS desktop. The "real Mac" upgrade is paused (see backlog) | `clock` | RefIntro |
+| `Lens` | ✅ | Motion | Barrel distortion and vignette for a curved-glass look | `strength`, `vignette` | RefIntro |
 
 ---
 

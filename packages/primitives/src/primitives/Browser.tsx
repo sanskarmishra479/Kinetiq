@@ -1,5 +1,6 @@
 import {Img, useCurrentFrame, useVideoConfig} from 'remotion';
 import {isDark} from '../color';
+import {systemFont} from '../fonts';
 import {ease, keyframes, tween} from '../motion';
 import {useTheme} from '../theme';
 import {
@@ -74,6 +75,8 @@ const LIGHTS: [fill: string, ring: string][] = [
 
 // A macOS-style browser window with a real address bar. Put a rebuilt page
 // (children) or a screenshot (src) inside; it can type its URL, load, and scroll.
+// Kind: real-world replica. The chrome is never brand-styled (only light/dark,
+// picked from the theme); the page inside shows the product as it really looks.
 export const Browser: React.FC<Props> = ({
 	url = 'website.com',
 	width,
@@ -130,7 +133,7 @@ export const Browser: React.FC<Props> = ({
 				borderRadius: L.radius,
 				overflow: 'hidden',
 				background: c.page,
-				fontFamily: theme.fontFamily,
+				fontFamily: systemFont,
 				boxShadow: [
 					c.outline,
 					'0 2px 6px rgba(0,0,0,0.12)',

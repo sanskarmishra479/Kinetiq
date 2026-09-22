@@ -1,4 +1,7 @@
+import {isDark} from '../color';
+import {systemFont} from '../fonts';
 import {useTheme} from '../theme';
+import {browserChrome} from './Browser';
 
 type Props = {
 	variant?: 'mac' | 'browser';
@@ -12,22 +15,24 @@ type Props = {
 
 const BAR_HEIGHT = 44;
 
-// A macOS app window or a browser window to put a rebuilt product UI inside.
+// A macOS app window or a simple browser window to put a rebuilt product UI inside.
+// Kind: real-world replica. The chrome is fixed macOS (light/dark from the theme);
+// only the content area uses the theme, because it shows the product.
 export const Window: React.FC<Props> = ({variant = 'browser', title, url, width, height, style, children}) => {
 	const theme = useTheme();
+	const c = browserChrome[isDark(theme.bg) ? 'dark' : 'light'];
 	return (
 		<div
 			style={{
 				width,
 				height,
-				borderRadius: theme.radius,
+				borderRadius: 10,
 				background: theme.surface,
-				border: `1px solid ${theme.border}`,
 				boxShadow: '0 40px 80px -20px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.2)',
 				overflow: 'hidden',
 				display: 'flex',
 				flexDirection: 'column',
-				fontFamily: theme.fontFamily,
+				fontFamily: systemFont,
 				...style,
 			}}
 		>
@@ -39,8 +44,8 @@ export const Window: React.FC<Props> = ({variant = 'browser', title, url, width,
 					alignItems: 'center',
 					padding: '0 16px',
 					gap: 8,
-					background: theme.surfaceAlt,
-					borderBottom: `1px solid ${theme.border}`,
+					background: c.toolbar,
+					borderBottom: `1px solid ${c.divider}`,
 					position: 'relative',
 				}}
 			>
@@ -52,15 +57,15 @@ export const Window: React.FC<Props> = ({variant = 'browser', title, url, width,
 						position: 'absolute',
 						left: '50%',
 						transform: 'translateX(-50%)',
-						color: theme.muted,
+						color: c.icon,
 						fontSize: 14,
 						fontWeight: 500,
 						display: 'flex',
 						alignItems: 'center',
 						gap: 8,
 						...(variant === 'browser' && {
-							background: theme.surface,
-							border: `1px solid ${theme.border}`,
+							background: c.field,
+							border: `1px solid ${c.fieldBorder}`,
 							borderRadius: 8,
 							padding: '5px 60px',
 						}),
@@ -68,7 +73,7 @@ export const Window: React.FC<Props> = ({variant = 'browser', title, url, width,
 				>
 					{variant === 'browser' ? (
 						<>
-							<svg width={12} height={12} viewBox="0 0 24 24" fill={theme.muted}>
+							<svg width={12} height={12} viewBox="0 0 24 24" fill={c.icon}>
 								<path d="M6 10V8a6 6 0 1 1 12 0v2h1v12H5V10h1zm2 0h8V8a4 4 0 1 0-8 0v2z" />
 							</svg>
 							{url}

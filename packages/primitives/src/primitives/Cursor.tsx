@@ -19,6 +19,8 @@ const RIPPLE_FRAMES = 18;
 // buttons react to hover without hand-timing every highlight.
 export const cursorAt = (frame: number, path: CursorPoint[]) => keyframes(frame, path, ['x', 'y']);
 
+// An arrow cursor that moves along curved paths and clicks with a ripple.
+// Kind: real-world replica (fixed system look; not brand-styled).
 export const Cursor: React.FC<Props> = ({path, clicks = [], arc = 0.12, hideBefore = -Infinity}) => {
 	const frame = useCurrentFrame();
 	const {x, y, t, segment} = keyframes(frame, path, ['x', 'y']);

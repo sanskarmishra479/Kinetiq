@@ -10,6 +10,7 @@ type Props = {
 };
 
 // End card: logo mark springs in, then the name wipes in beside it.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const LogoReveal: React.FC<Props> = ({name, tagline, mark}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();

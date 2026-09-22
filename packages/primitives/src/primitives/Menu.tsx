@@ -5,6 +5,7 @@ import {useTheme} from '../theme';
 type Point = {x: number; y: number};
 
 // Rounded pill button, e.g. "Aspect ▾". Turns accent-colored when active.
+// Kind: product UI (styled by the theme, because it stands for the product's own interface).
 export const Chip: React.FC<{
 	x: number;
 	y: number;
@@ -58,6 +59,7 @@ export const MENU_PAD = 8;
 export const menuRowY = (top: number, index: number) => top + MENU_PAD + index * MENU_ROW + MENU_ROW / 2;
 
 // Dropdown menu. Rows highlight on their own when the cursor is over them.
+// Kind: product UI (styled by the theme, because it stands for the product's own interface).
 export const Dropdown: React.FC<{
 	left: number;
 	top: number;

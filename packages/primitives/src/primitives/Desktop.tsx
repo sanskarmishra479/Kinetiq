@@ -1,7 +1,8 @@
 import {AbsoluteFill} from 'remotion';
-import {useTheme} from '../theme';
+import {systemFont} from '../fonts';
 
 // Colorful wave wallpaper in the style of recent macOS versions.
+// Kind: real-world replica (fixed; not brand-styled).
 export const Wallpaper: React.FC = () => (
 	<AbsoluteFill
 		style={{
@@ -30,35 +31,33 @@ const BatteryIcon = () => (
 );
 
 // macOS menu bar: translucent strip with status icons and the clock.
-export const MenuBar: React.FC<{clock: string}> = ({clock}) => {
-	const theme = useTheme();
-	return (
-		<div
-			style={{
-				position: 'absolute',
-				top: 0,
-				left: 0,
-				right: 0,
-				height: 34,
-				background: 'rgba(20,20,40,0.28)',
-				backdropFilter: 'blur(20px)',
-				display: 'flex',
-				alignItems: 'center',
-				justifyContent: 'flex-end',
-				gap: 22,
-				padding: '0 22px',
-				color: '#fff',
-				fontFamily: theme.fontFamily,
-				fontSize: 17,
-				fontWeight: 500,
-			}}
-		>
-			<WifiIcon />
-			<BatteryIcon />
-			<span>{clock}</span>
-		</div>
-	);
-};
+// Kind: real-world replica (fixed system look; not brand-styled).
+export const MenuBar: React.FC<{clock: string}> = ({clock}) => (
+	<div
+		style={{
+			position: 'absolute',
+			top: 0,
+			left: 0,
+			right: 0,
+			height: 34,
+			background: 'rgba(20,20,40,0.28)',
+			backdropFilter: 'blur(20px)',
+			display: 'flex',
+			alignItems: 'center',
+			justifyContent: 'flex-end',
+			gap: 22,
+			padding: '0 22px',
+			color: '#fff',
+			fontFamily: systemFont,
+			fontSize: 17,
+			fontWeight: 500,
+		}}
+	>
+		<WifiIcon />
+		<BatteryIcon />
+		<span>{clock}</span>
+	</div>
+);
 
 const DOCK_COLORS = [
 	['#5ac8fa', '#007aff'],
@@ -78,6 +77,7 @@ const DOCK_COLORS = [
 ];
 
 // Dock with generic app icons (no real brand logos).
+// Kind: real-world replica (fixed; not brand-styled).
 export const Dock: React.FC = () => (
 	<div
 		style={{

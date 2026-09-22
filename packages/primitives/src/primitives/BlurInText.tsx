@@ -26,6 +26,7 @@ type Props = {
 
 // Text that comes into focus: each piece starts soft, faint and slightly to
 // the right, then sharpens into place. The main text style of cinematic videos.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const BlurInText: React.FC<Props> = ({
 	text,
 	at = 0,

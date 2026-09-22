@@ -10,6 +10,7 @@ type Props = {
 };
 
 // A message bubble that pops in from its tail corner with a small bounce.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const ChatBubble: React.FC<Props> = ({text, from, delay = 0, fontSize = 34}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();

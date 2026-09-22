@@ -19,6 +19,7 @@ type Props = {
 
 // Depth of field: the camera zooms onto one element, which stays sharp and
 // lifts off the page, while everything around it blurs and darkens.
+// Kind: motion-only (no look of its own; only moves, blurs or frames what's inside).
 export const ZoomFocus: React.FC<Props> = ({
 	rect,
 	at = 0,

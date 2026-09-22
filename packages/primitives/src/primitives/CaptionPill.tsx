@@ -5,6 +5,7 @@ import {useTheme} from '../theme';
 export type CaptionLine = {text: string; from: number; to: number};
 
 // Creator-style captions: a short phrase in a white pill near the bottom.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const CaptionPills: React.FC<{lines: CaptionLine[]; bottom?: number}> = ({lines, bottom = 90}) => (
 	<>
 		{lines.map((l) => (

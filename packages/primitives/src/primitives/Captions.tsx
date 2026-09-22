@@ -12,6 +12,7 @@ type Props = {
 };
 
 // Word-by-word captions: shows a few words at a time and highlights the one being spoken.
+// Kind: brand-styled (colors, fonts and style come from the theme).
 export const Captions: React.FC<Props> = ({words, wordsPerPage = 4, fontSize = 56}) => {
 	const frame = useCurrentFrame();
 	const {fps} = useVideoConfig();
