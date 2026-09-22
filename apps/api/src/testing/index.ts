@@ -4,9 +4,9 @@ import {createIdGenerator, type Db} from '@kinetiq/db';
 import {loadConfig} from '@kinetiq/shared';
 import {pino} from 'pino';
 import {fakeCaptcha, memoryEmail, memoryLocks} from '../adapters/misc.js';
-import {memoryRateLimiter} from '../adapters/rate-limit.js';
-import {memoryStorage} from '../adapters/storage.js';
-import {buildApp} from '../app.js';
+import {memoryConnectionLimiter, memoryRateLimiter} from '../adapters/rate-limit.js';
+import {memoryEventBus, memoryQueues, memoryStorage} from '@kinetiq/platform';
+import {buildApp, type AppOptions} from '../app.js';
 import {assemble} from '../container.js';
 import type {HealthPort} from '../ports.js';
 
@@ -58,10 +58,20 @@ export const DEPLOYED_ENV: Record<string, string> = {
 	RENDER_WEBHOOK_SECRET: 'x',
 };
 
-export function testApi(options: {db: Db; env?: Record<string, string>; health?: HealthPort}) {
+export function testApi(options: {
+	db: Db;
+	env?: Record<string, string>;
+	health?: HealthPort;
+	app?: AppOptions;
+	/** Share these with a test worker to run API → queue → worker → SSE in one test. */
+	queues?: ReturnType<typeof memoryQueues>;
+	events?: ReturnType<typeof memoryEventBus>;
+}) {
 	const config = loadConfig({...TEST_ENV, ...options.env});
 	const email = memoryEmail();
 	const storage = memoryStorage();
+	const queues = options.queues ?? memoryQueues();
+	const events = options.events ?? memoryEventBus();
 	const container = assemble({
 		config,
 		logger: pino({level: 'silent'}),
@@ -73,9 +83,12 @@ export function testApi(options: {db: Db; env?: Record<string, string>; health?:
 		rateLimiter: memoryRateLimiter(),
 		locks: memoryLocks(),
 		storage,
+		queues,
+		events,
+		connections: memoryConnectionLimiter(),
 		health: options.health ?? {check: async () => []},
 	});
-	return {app: buildApp(container), container, email, storage};
+	return {app: buildApp(container, options.app), container, email, storage, queues, events};
 }
 
 /** Logs a user in through the real magic-link flow; returns a cookie-carrying agent. */
@@ -91,7 +104,10 @@ export async function loginAs(api: ReturnType<typeof testApi>, email: string) {
 	if (sent?.template !== 'magicLink') throw new Error('no login email');
 	const link = new URL(sent.url);
 	const agent = request.agent(api.app);
-	await agent.get(link.pathname + link.search);
+	const verified = await agent.get(link.pathname + link.search);
 	const me = await agent.get('/v1/me');
-	return {agent, userId: me.body.user.id as string};
+	// The session cookie as a Cookie header, for clients other than supertest (e.g. fetch for SSE).
+	const setCookie = ([] as string[]).concat(verified.headers['set-cookie'] ?? []);
+	const cookie = setCookie.map((c) => c.split(';')[0]).join('; ');
+	return {agent, userId: me.body.user.id as string, cookie};
 }

@@ -11,11 +11,19 @@ import {
 	resendEmail,
 	turnstileCaptcha,
 } from './adapters/misc.js';
-import {redisRateLimiter} from './adapters/rate-limit.js';
-import {s3Storage} from './adapters/storage.js';
+import {redisConnectionLimiter, redisRateLimiter} from './adapters/rate-limit.js';
+import {bullQueues, redisEventBus, s3Storage, type EventBusPort, type QueuePort} from '@kinetiq/platform';
 import {createAuth, type Auth} from './auth.js';
 import {createLogger} from './middleware/logging.js';
-import type {CaptchaPort, EmailPort, HealthPort, LockPort, RateLimitPort, StoragePort} from './ports.js';
+import type {
+	CaptchaPort,
+	ConnectionLimitPort,
+	EmailPort,
+	HealthPort,
+	LockPort,
+	RateLimitPort,
+	StoragePort,
+} from './ports.js';
 
 // Composition root: the only place that picks real implementations
 // (docs/TEST_PLAN.md rule T4). Tests build the same shape with fakes.
@@ -33,6 +41,9 @@ export type Container = {
 	rateLimiter: RateLimitPort;
 	locks: LockPort;
 	storage: StoragePort;
+	queues: QueuePort;
+	events: EventBusPort;
+	connections: ConnectionLimitPort;
 	health: HealthPort;
 	close(): Promise<void>;
 };
@@ -51,7 +62,12 @@ export function buildContainer(config: Config): Container {
 	const clock: ClockPort = {now: () => Date.now()};
 	const db = createDb(config.DATABASE_URL);
 	const redis = new Redis(config.REDIS_URL, {maxRetriesPerRequest: 2, enableOfflineQueue: false});
-	redis.on('error', (err) => logger.error({err}, 'redis error'));
+	// Separate connections: pub/sub puts a connection in subscriber mode, and
+	// BullMQ needs its own settings.
+	const subscriber = new Redis(config.REDIS_URL, {maxRetriesPerRequest: null});
+	const bull = new Redis(config.REDIS_URL, {maxRetriesPerRequest: 1});
+	for (const conn of [redis, subscriber, bull]) conn.on('error', (err) => logger.error({err}, 'redis error'));
+	const queues = bullQueues(bull);
 
 	return assemble({
 		config,
@@ -71,9 +87,13 @@ export function buildContainer(config: Config): Container {
 			secretAccessKey: config.S3_SECRET_ACCESS_KEY,
 			bucket: config.S3_BUCKET_CONTENT,
 		}),
+		queues,
+		events: redisEventBus(redis, subscriber),
+		connections: redisConnectionLimiter(redis),
 		health: dependencyHealth({database: () => db.$queryRaw`SELECT 1`, redis: () => redis.ping()}),
 		close: async () => {
-			await Promise.allSettled([db.$disconnect(), redis.quit()]);
+			await queues.close();
+			await Promise.allSettled([db.$disconnect(), redis.quit(), subscriber.quit(), bull.quit()]);
 		},
 	});
 }

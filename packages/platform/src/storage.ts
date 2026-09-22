@@ -1,14 +1,16 @@
 import {
 	DeleteObjectCommand,
+	DeleteObjectsCommand,
 	GetObjectCommand,
 	HeadObjectCommand,
+	ListObjectsV2Command,
 	NotFound,
 	PutObjectCommand,
 	S3Client,
 	S3ServiceException,
 } from '@aws-sdk/client-s3';
 import {getSignedUrl} from '@aws-sdk/s3-request-presigner';
-import type {PresignedPut, StoragePort} from '../ports.js';
+import type {PresignedPut, StoragePort} from './ports.js';
 
 // S3-compatible storage: MinIO locally, Cloudflare R2 in production.
 // Signed URLs point at the storage host (a different site than kinetiq.so),
@@ -70,6 +72,24 @@ export function s3Storage(opts: S3Options): StoragePort {
 			await client.send(new DeleteObjectCommand({Bucket, Key: key}));
 		},
 
+		async deletePrefix(prefix) {
+			assertSafePrefix(prefix);
+			let deleted = 0;
+			let ContinuationToken: string | undefined;
+			do {
+				const page = await client.send(
+					new ListObjectsV2Command({Bucket, Prefix: prefix, MaxKeys: 1000, ContinuationToken}),
+				);
+				const keys = (page.Contents ?? []).flatMap((o) => (o.Key ? [{Key: o.Key}] : []));
+				if (keys.length > 0) {
+					await client.send(new DeleteObjectsCommand({Bucket, Delete: {Objects: keys, Quiet: true}}));
+					deleted += keys.length;
+				}
+				ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+			} while (ContinuationToken);
+			return deleted;
+		},
+
 		async presignGet(key, {expiresSec, downloadName}) {
 			return getSignedUrl(
 				client,
@@ -113,9 +133,20 @@ export function memoryStorage(baseUrl = 'https://storage.test') {
 		async delete(key) {
 			objects.delete(key);
 		},
+		async deletePrefix(prefix) {
+			assertSafePrefix(prefix);
+			const keys = [...objects.keys()].filter((k) => k.startsWith(prefix));
+			for (const k of keys) objects.delete(k);
+			return keys.length;
+		},
 		async presignGet(key, {downloadName}) {
 			return `${baseUrl}/${key}?signature=test${downloadName ? `&download=${encodeURIComponent(downloadName)}` : ''}`;
 		},
 	};
 	return storage;
+}
+
+/** Guards against deleting the whole bucket: a prefix must be a full folder like "u/usr_123/". */
+export function assertSafePrefix(prefix: string): void {
+	if (!/^[a-z]+\/[A-Za-z0-9_-]+\/$/.test(prefix)) throw new Error(`Refusing to delete unsafe prefix "${prefix}"`);
 }

@@ -19,7 +19,15 @@ import {
 } from './catalog.js';
 import {ApiError, ERROR_STATUS, ErrorCode} from './errors.js';
 import {ProjectEvent, projectChannel} from './events.js';
-import {EditPayload, EmailPayload, GeneratePayload, MediaPollPayload, QUEUES, RenderPayload} from './queues.js';
+import {
+	EditPayload,
+	EmailPayload,
+	GeneratePayload,
+	MaintenancePayload,
+	MediaPollPayload,
+	QUEUES,
+	RenderPayload,
+} from './queues.js';
 import {accepts, ids, now, rejects} from './test-helpers.js';
 
 describe('errors', () => {
@@ -175,9 +183,12 @@ describe('queue payloads', () => {
 		rejects(RenderPayload, {jobId: ids.job, kind: 'gif', versionId: ids.version, inputPropsKey: 'k'});
 		rejects(EmailPayload, {to: 'not-an-email', template: 'receipt', data: {}});
 		rejects(EmailPayload, {to: 'a@b.com', template: 'receipt', data: {nested: {x: 1}}});
+		accepts(MaintenancePayload, {kind: 'probe-asset', userId: ids.user, assetId: ids.asset});
+		accepts(MaintenancePayload, {kind: 'purge-user-files', userId: ids.user});
+		rejects(MaintenancePayload, {kind: 'purge-user-files', userId: ids.user, prefix: '/'});
 	});
 
 	it('names every queue', () => {
-		expect(Object.values(QUEUES)).toEqual(['generate', 'edit', 'render', 'media-poll', 'email', 'cron']);
+		expect(Object.values(QUEUES)).toEqual(['generate', 'edit', 'render', 'media-poll', 'email', 'maintenance', 'cron']);
 	});
 });

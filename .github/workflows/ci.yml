@@ -47,6 +47,8 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
+      # ffmpeg/ffprobe for the worker's uploaded-video checks.
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq --no-install-recommends ffmpeg
       - run: pnpm infra:up
       # All tests (unit + integration) with the coverage gates from docs/TEST_PLAN.md §5.
       - run: pnpm test:coverage

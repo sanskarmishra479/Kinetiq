@@ -8,6 +8,8 @@ import {corsFor, originCheck, securityHeaders} from './middleware/security.js';
 import {loadSession} from './middleware/session.js';
 import {accountRoutes, billingRoutes, healthRoutes} from './routes/account.js';
 import {catalogRoutes} from './routes/catalog.js';
+import type {SSE} from './routes/jobs.js';
+import {jobRoutes} from './routes/jobs.js';
 import {projectRoutes} from './routes/projects.js';
 import {uploadRoutes} from './routes/uploads.js';
 
@@ -17,7 +19,9 @@ import {uploadRoutes} from './routes/uploads.js';
 //  3. BetterAuth, which reads the raw body itself, so it goes before express.json()
 //  4. JSON body parsing (1 MB max), Origin check, session, rate limits
 //  5. routes, 404, error handler
-export function buildApp(container: Container): Express {
+export type AppOptions = {sse?: typeof SSE};
+
+export function buildApp(container: Container, options: AppOptions = {}): Express {
 	const {config, logger, auth, rateLimiter} = container;
 	const app = express();
 	app.set('trust proxy', config.TRUST_PROXY);
@@ -47,6 +51,7 @@ export function buildApp(container: Container): Express {
 		billingRoutes(container),
 		uploadRoutes(container),
 		projectRoutes(container),
+		jobRoutes(container, options.sse),
 	);
 
 	app.use(notFoundHandler);

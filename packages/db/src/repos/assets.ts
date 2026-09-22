@@ -75,6 +75,43 @@ export function assetsRepo({db, ids, clock}: RepoDeps) {
 			return count > 0;
 		},
 
+		/** SYSTEM (worker): the file to probe, only while it's waiting for the probe. */
+		systemGetForProbe(assetId: string) {
+			return db.asset.findFirst({
+				where: {id: assetId, status: 'processing'},
+				select: {id: true, userId: true, storageKey: true, mime: true},
+			});
+		},
+
+		/**
+		 * SYSTEM (cron): files nobody can use any more.
+		 * - never uploaded (still pending after a day)
+		 * - rejected
+		 * - uploaded but not attached to a project after a week (includes files of deleted projects)
+		 */
+		systemFindUnused(limit = 500) {
+			const now = clock.now();
+			const day = 24 * 60 * 60 * 1000;
+			return db.asset.findMany({
+				where: {
+					OR: [
+						{status: 'pending', createdAt: {lt: new Date(now - day)}},
+						{status: 'rejected'},
+						{status: 'ready', projectId: null, createdAt: {lt: new Date(now - 7 * day)}},
+					],
+				},
+				orderBy: {id: 'asc'},
+				take: limit,
+				select: {id: true, storageKey: true},
+			});
+		},
+
+		/** SYSTEM (cron): removes rows once their storage objects are deleted. */
+		async systemDelete(assetIds: readonly string[]): Promise<number> {
+			const {count} = await db.asset.deleteMany({where: {id: {in: [...assetIds]}}});
+			return count;
+		},
+
 		/**
 		 * True only if every id exists, belongs to this user, is ready and isn't
 		 * already attached to another project. Used before creating a project.

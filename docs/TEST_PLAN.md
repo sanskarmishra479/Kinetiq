@@ -82,7 +82,7 @@ GitHub Actions runs on every pull request. **Merging is blocked** unless every g
 | Typecheck | `pnpm typecheck` (strict TypeScript) | 0 errors |
 | Lint | `pnpm lint` (ESLint incl. the no-`Date`/`Math.random` rule in the domain package, plus Prettier) | 0 errors |
 | Unit + component + contract | `pnpm test` | 100% pass |
-| Coverage | `pnpm test:coverage` (unit **and** integration tests, CI integration job) | **100% branches** for `domain/credits`, `domain/validator`, webhook handlers (NFR-MNT-04); **≥ 85%** for `packages/domain` overall; **≥ 70%** for API and worker |
+| Coverage | `pnpm test:coverage` (unit **and** integration tests, CI integration job) | **100% branches** for `domain/credits`, `domain/validator`, webhook handlers (NFR-MNT-04); **≥ 85%** for `packages/domain` overall; **≥ 90%** for `packages/shared`; **≥ 80%** for `packages/platform`; **≥ 70%** for API and worker |
 | Integration | `pnpm test:int` (Compose Postgres + Redis) | 100% pass |
 | Visual | `pnpm test:visual` (when primitives or renderer change) | Pixel diff ≤ 0.1% per baseline |
 | E2E smoke | `pnpm e2e:smoke` | 100% pass |

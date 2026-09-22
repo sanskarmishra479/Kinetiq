@@ -28,21 +28,21 @@ export interface LockPort {
 	acquire(key: string, ttlMs: number): Promise<(() => Promise<void>) | null>;
 }
 
+/**
+ * Counts open long-lived connections (SSE) per user across every API replica.
+ * Each connection has a lease that the heartbeat renews, so connections of a
+ * crashed replica stop counting once their lease runs out.
+ */
+export interface ConnectionLimitPort {
+	/** Registers the connection if the user has fewer than `max` open. */
+	open(userId: string, connectionId: string, max: number, leaseMs: number): Promise<boolean>;
+	renew(userId: string, connectionId: string, leaseMs: number): Promise<void>;
+	close(userId: string, connectionId: string): Promise<void>;
+}
+
 export interface HealthPort {
 	/** Names of dependencies that are down (empty = ready). */
 	check(): Promise<string[]>;
 }
 
-export type PresignedPut = {method: 'PUT'; url: string; headers: Record<string, string>; expiresAt: Date};
-
-/** Object storage (S3-compatible: MinIO locally, Cloudflare R2 in production). */
-export interface StoragePort {
-	/** A short-lived URL the browser uses to upload exactly one object. */
-	presignPut(key: string, opts: {contentType: string; expiresSec: number}): Promise<PresignedPut>;
-	head(key: string): Promise<{size: number; contentType: string | undefined} | null>;
-	/** The first `length` bytes (for file-type sniffing). */
-	readStart(key: string, length: number): Promise<Uint8Array>;
-	delete(key: string): Promise<void>;
-	/** A short-lived download URL; `downloadName` forces "save as" (Content-Disposition: attachment). */
-	presignGet(key: string, opts: {expiresSec: number; downloadName?: string}): Promise<string>;
-}
+export type {EventBusPort, PresignedPut, QueuePort, StoragePort} from '@kinetiq/platform';

@@ -9,10 +9,9 @@
 		"typecheck": "tsc -p tsconfig.json"
 	},
 	"dependencies": {
-		"@aws-sdk/client-s3": "3.1137.0",
-		"@aws-sdk/s3-request-presigner": "3.1137.0",
 		"@kinetiq/db": "workspace:*",
 		"@kinetiq/domain": "workspace:*",
+		"@kinetiq/platform": "workspace:*",
 		"@kinetiq/shared": "workspace:*",
 		"better-auth": "1.7.5",
 		"cors": "2.8.6",
@@ -31,5 +30,8 @@
 		"supertest": "7.2.2",
 		"tsx": "4.23.15",
 		"vitest": "5.0.1"
+	},
+	"exports": {
+		"./testing": "./src/testing/index.ts"
 	}
 }

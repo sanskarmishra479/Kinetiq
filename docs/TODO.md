@@ -176,7 +176,7 @@
 
 - [x] `StoragePort` + adapters: `MinioStorage` (dev), `R2Storage` (prod), `MemoryStorage` (tests)
 - [x] 🔒 `POST /v1/uploads` (presigned PUT with a signed content type; **the server generates the key**) + `POST /v1/uploads/:id/complete` (HEAD + magic-byte sniff). Allowed: png/jpg/webp ≤ 10 MB, mp4/webm ≤ 100 MB. **SVG and HTML are never accepted** [FR-PRJ-04, 05]
-- [ ] 🔒 Worker `ffprobe` check on uploaded videos (codec, duration ≤ 2 min, dimensions) before use [FR-PRJ-04]. ⏭ Moved to Phase 6 (needs the worker). Until then videos stay in `processing` and can't be attached
+- [x] 🔒 Worker `ffprobe` check on uploaded videos (codec, duration ≤ 2 min, dimensions) before use [FR-PRJ-04]. ✅ Done in Phase 6
 - [x] 🔒 Serve all user files and renders from the **separate domain `kinetiqcontent.com`** with `nosniff` + `Content-Disposition: attachment` on downloads [NFR-SEC-10]
 - [x] Projects CRUD: `POST /v1/projects`, `GET /v1/projects` (cursor), `GET /v1/projects/:id`, `DELETE` [FR-PRJ-01…03]
 - [x] Messages: `GET /v1/projects/:id/messages`, `POST` (idempotent) [FR-CHAT-03, 04]
@@ -187,8 +187,8 @@
 **Notes from the build:**
 - Uploads use a **presigned PUT** (R2 has no presigned POST). The content type is signed; size and file bytes are verified on `complete`, and mismatches are deleted.
 - New asset status `processing` for videos waiting for the worker's probe.
-- Deleting a project with a running job returns 409 until cancel/refund exists (Phase 6).
-- ⏭ Phase 6 cron: delete storage objects of deleted projects/assets and of uploads never completed.
+- Deleting a project with a running job returns 409: cancel it first (`POST /v1/jobs/:id/cancel`, Phase 6).
+- ✅ Phase 6 cron deletes files of uploads never completed, rejected, or left unattached for a week (incl. deleted projects).
 - ⏭ Phase 13: CORS rules on the MinIO/R2 bucket so the browser can PUT directly.
 
 **Tests:**
@@ -240,26 +240,37 @@
 ## Phase 6: Queue, jobs, realtime events
 > Goal: slow work runs in the background, and the browser sees live progress.
 
-- [ ] `QueuePort` (BullMQ adapter + in-memory fake); queues `generate`, `edit`, `render`, `media-poll`, `email`, `cron`
-- [ ] `EventBusPort` (Redis pub/sub adapter + in-memory fake); channel `project:{id}`; the last 100 events are stored for replay
-- [ ] `POST /v1/projects/:id/generate`: validate → reserve credits → create Job → enqueue → `202` [FR-GEN-02]
-  - `409` if a job is already running; `429 CONCURRENCY_LIMIT` per plan [FR-GEN-10]; `503` if the `pause_new_jobs` flag is on
-- [ ] `GET /v1/jobs/:id`, `POST /v1/jobs/:id/cancel` (refunds unused credits) [FR-GEN-09]
-- [ ] `GET /v1/projects/:id/events` (SSE): auth, heartbeat every 15 s, `Last-Event-ID` replay, at most 5 connections per user
-- [ ] Worker app skeleton: `container.ts`, processors, graceful shutdown, `WORKER_CONCURRENCY` env var
-- [ ] Queue position calculation + `job.queued` events
-- [ ] Job deadline (default 20 min) + BullMQ stalled-job detection → fail and refund [FR-GEN-11]
-- [ ] Redis `maxmemory-policy noeviction`; a TTL on every rate-limit, replay and cache key; a startup check that refuses to boot if the policy is wrong [NFR-SCALE-06]
-- [ ] Cron jobs: stale reservations older than 2 h → refund [FR-CRD-08]; expire subscription buckets; clean orphaned uploads
+- [x] `QueuePort` (BullMQ adapter + in-memory fake) in the new `packages/platform`; queues `generate`, `edit`, `render`, `media-poll`, `email`, `maintenance`, `cron`. Payloads are validated going in and coming out
+- [x] `EventBusPort` (Redis pub/sub adapter + in-memory fake); channel `project:{id}`; per-project event ids (`INCR`); the last 100 events are stored for replay (24 h TTL)
+- [x] `POST /v1/projects/:id/generate`: validate → price check (`expectedCredits`) → per-user lock → plan limits → create Job → reserve credits → enqueue → `202` [FR-GEN-02]
+  - `409` if a job is already queued/running (plus a **partial unique index**, so racing requests can't both win); `429 CONCURRENCY_LIMIT` per plan and `429` daily cap [FR-GEN-10]; `503` if `pause_new_jobs` is on or the queue is down (refunded at once)
+- [x] `GET /v1/jobs/:id`, `POST /v1/jobs/:id/cancel` (refunds every reserved credit, exactly once) [FR-GEN-09]
+- [x] `GET /v1/projects/:id/events` (SSE): auth, heartbeat every 15 s, `Last-Event-ID` replay, at most 5 connections per user across replicas (Redis leases)
+- [x] Worker app: `container.ts`, processors, graceful shutdown, `WORKER_CONCURRENCY` env var
+- [x] Queue position calculation + `job.queued` events
+- [x] Job deadline (default 20 min): a watcher aborts the running pipeline and a 1-minute sweep fails and refunds overdue jobs; a job found `running` after a crash/stall is failed and refunded [FR-GEN-11]
+- [x] Redis `maxmemory-policy noeviction`; a TTL on every rate-limit, replay, SSE-lease and cache key; the worker refuses to boot if the policy is wrong [NFR-SCALE-06]
+- [x] Cron jobs (BullMQ job schedulers): deadline sweep; stale reservations older than 2 h → refund [FR-CRD-08]; expire subscription buckets; clean unused uploads; purge expired idempotency keys
+- [x] 🔒 Worker `ffprobe` check on uploaded videos (moved from Phase 4): codec, ≤ 2 min, size. ffprobe only gets `http(s)` and the demuxer we verified, so a crafted file can't make it read local files [FR-PRJ-04]
+- [x] 🔒 Account deletion also deletes the user's files (`u/{userId}/`) in the background [NFR-LEG-02]
+
+**Notes from the build:**
+- New package **`packages/platform`**: storage (moved from the API), queues, event bus and the Redis check, each with a fake. API and worker share them.
+- Generate asks for **`{ expectedCredits }`**: the price the user saw. If it changed, `409` returns the new price instead of charging something unexpected.
+- Ending a job always goes through one function (`closeJob`): the final status flips first and only once, then credits are settled. A cancel racing with the worker, or the deadline sweep, can never refund twice.
+- Until the real pipeline exists (Phase 8), the worker runs a **placeholder** that shows the first step, then fails politely with a full refund.
+- ⏭ Phase 8: resume from LangGraph checkpoints instead of failing interrupted jobs.
+- ⏭ Phase 13: the worker image needs `ffmpeg`; every render/version file must also live under `u/{userId}/` so account deletion removes it.
 
 **Tests:**
-- generate → job queued → a fake processor emits events → SSE client receives them in order
-- reconnect replay works
-- cancel refunds
-- the concurrency limit applies
-- the cron refunds stale reservations (using `FixedClock`)
+- generate → job queued → worker → SSE client receives every event in order (**end-to-end test**, `apps/worker/src/e2e.int.test.ts`)
+- reconnect replay works; heartbeats; 5-connection limit and lease expiry (Redis + memory)
+- cancel refunds exactly once; a running job stops when cancelled
+- concurrency and daily limits; price mismatch; 402 leaves nothing behind; paused jobs; queue down
+- the cron refunds stale reservations, fails overdue jobs, expires credits, cleans uploads (using `FixedClock`)
+- real BullMQ worker + schedulers, real Redis pub/sub, real ffprobe on a video in MinIO
 
-**✅ Exit criteria:** a dummy job flows API → queue → worker → SSE end to end locally.
+**✅ Exit criteria:** a dummy job flows API → queue → worker → SSE end to end locally. **Done: 396 tests green; coverage gate added for `packages/platform` (80%).**
 
 ---
 

@@ -1,5 +1,5 @@
 import {z} from 'zod';
-import {ClipId, JobId, MessageId, ProjectId, UserId, VersionId} from './common.js';
+import {AssetId, ClipId, JobId, MessageId, ProjectId, UserId, VersionId} from './common.js';
 
 // BullMQ queue names and payloads (docs/API.md §16). Producers and consumers
 // both parse with these schemas, so a payload change breaks the build on both sides.
@@ -10,6 +10,7 @@ export const QUEUES = {
 	render: 'render',
 	mediaPoll: 'media-poll',
 	email: 'email',
+	maintenance: 'maintenance',
 	cron: 'cron',
 } as const;
 export type QueueName = (typeof QUEUES)[keyof typeof QUEUES];
@@ -35,6 +36,13 @@ export const MediaPollPayload = z.strictObject({
 	providerJobId: z.string().min(1).max(200),
 });
 export type MediaPollPayload = z.infer<typeof MediaPollPayload>;
+
+/** Background housekeeping: checking uploaded videos, deleting a deleted account's files. */
+export const MaintenancePayload = z.discriminatedUnion('kind', [
+	z.strictObject({kind: z.literal('probe-asset'), userId: UserId, assetId: AssetId}),
+	z.strictObject({kind: z.literal('purge-user-files'), userId: UserId}),
+]);
+export type MaintenancePayload = z.infer<typeof MaintenancePayload>;
 
 export const EMAIL_TEMPLATES = ['magicLink', 'receipt', 'creditsAdded', 'lowBalance'] as const;
 

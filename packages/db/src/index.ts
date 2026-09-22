@@ -11,6 +11,7 @@ import {creditsService} from './credits.js';
 export {createDb, type Db} from './client.js';
 export {AlreadySettled, creditsService, type CreditsService} from './credits.js';
 export {createIdGenerator} from './ids.js';
+export {closeJob, type JobOutcome} from './lifecycle.js';
 export {DEFAULT_FLAGS, seed} from './seed.js';
 export {storageKeyFor} from './repos/assets.js';
 export {isUniqueViolation, type RepoDeps} from './repos/shared.js';

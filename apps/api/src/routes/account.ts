@@ -10,7 +10,7 @@ import {requireAuth} from '../middleware/session.js';
 
 const DeleteAccountRequest = z.strictObject({confirm: z.literal(true)});
 
-export function accountRoutes({repos, auth}: Container): Router {
+export function accountRoutes({repos, auth, queues}: Container): Router {
 	const router = Router();
 
 	router.get('/me', requireAuth, async (req, res) => {
@@ -38,7 +38,10 @@ export function accountRoutes({repos, auth}: Container): Router {
 	router.delete('/me', requireAuth, async (req, res) => {
 		DeleteAccountRequest.parse(req.body);
 		const signOut = await auth.api.signOut({headers: fromNodeHeaders(req.headers), asResponse: true});
-		await repos.accounts.deleteUser(req.auth!.userId);
+		const userId = req.auth!.userId;
+		await repos.accounts.deleteUser(userId);
+		// The user's files are deleted in the background (every user file lives under u/{userId}/).
+		await queues.enqueue('maintenance', {kind: 'purge-user-files', userId}, {jobId: `purge-${userId}`, attempts: 5});
 		// Expire the session cookies in the browser too.
 		for (const cookie of signOut.headers.getSetCookie()) res.append('Set-Cookie', cookie);
 		res.status(204).end();

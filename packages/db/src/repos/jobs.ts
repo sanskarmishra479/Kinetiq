@@ -79,7 +79,9 @@ export function jobsRepo({db, ids, clock}: RepoDeps) {
 				where: {id: jobId, userId},
 				include: {steps: true, version: {select: {id: true}}},
 			});
-			return row ? toJob(row) : null;
+			if (!row) return null;
+			const position = row.status === 'queued' ? await this.queuePosition(row.id) : null;
+			return toJob(row, position);
 		},
 
 		/** Jobs still queued or running, for per-plan concurrency limits (FR-GEN-10). */
@@ -100,6 +102,85 @@ export function jobsRepo({db, ids, clock}: RepoDeps) {
 		/** Whether this project already has a queued or running job (409 CONFLICT). */
 		async hasActiveForProject(userId: string, projectId: string): Promise<boolean> {
 			return (await db.job.count({where: {userId, projectId, status: {in: [...ACTIVE]}}})) > 0;
+		},
+
+		/** Jobs started in the last 24 hours, for the per-plan daily cap. */
+		countSince(userId: string, sinceMs: number): Promise<number> {
+			return db.job.count({where: {userId, createdAt: {gte: new Date(sinceMs)}}});
+		},
+
+		/** 1-based position among queued jobs (ids are time-sortable), or null if not queued. */
+		async queuePosition(jobId: string): Promise<number | null> {
+			const job = await db.job.findUnique({where: {id: jobId}, select: {status: true}});
+			if (job?.status !== 'queued') return null;
+			return db.job.count({where: {status: 'queued', id: {lte: jobId}}});
+		},
+
+		/** Removes a job that never started (its credit reservation failed). */
+		async discard(userId: string, jobId: string): Promise<void> {
+			await db.job.deleteMany({where: {id: jobId, userId, status: 'queued', reservedCredits: 0}});
+		},
+
+		/** SYSTEM (worker): internal view, not scoped by user. */
+		systemGet(jobId: string) {
+			return db.job.findUnique({
+				where: {id: jobId},
+				select: {
+					id: true,
+					userId: true,
+					projectId: true,
+					type: true,
+					status: true,
+					reservedCredits: true,
+					deadlineAt: true,
+				},
+			});
+		},
+
+		/** SYSTEM (worker): queued → running. False if the job was cancelled or already taken. */
+		async systemStart(jobId: string): Promise<boolean> {
+			const {count} = await db.job.updateMany({
+				where: {id: jobId, status: 'queued'},
+				data: {status: 'running', startedAt: new Date(clock.now())},
+			});
+			return count > 0;
+		},
+
+		/**
+		 * queued/running → a final status. Returns false if the job had already
+		 * finished, so only one caller (worker, cancel, deadline sweep) wins.
+		 */
+		async systemFinish(
+			jobId: string,
+			status: 'succeeded' | 'failed' | 'cancelled',
+			error: {code: ErrorCode; message: string} | null = null,
+		): Promise<boolean> {
+			const {count} = await db.job.updateMany({
+				where: {id: jobId, status: {in: [...ACTIVE]}},
+				data: {status, finishedAt: new Date(clock.now()), ...(error ? {error} : {})},
+			});
+			return count > 0;
+		},
+
+		/** SYSTEM (worker): records a pipeline step's state for GET /v1/jobs/:id. */
+		async systemRecordStep(
+			jobId: string,
+			node: PipelineNode,
+			status: 'running' | 'done' | 'failed' | 'skipped',
+			progress?: {done: number; total: number},
+		): Promise<void> {
+			const now = new Date(clock.now());
+			const times = status === 'running' ? {startedAt: now} : {endedAt: now};
+			await db.jobStep.upsert({
+				where: {jobId_node: {jobId, node}},
+				create: {id: ids.next('stp'), jobId, node, status, ...times, ...(progress ? {progress} : {})},
+				update: {
+					status,
+					...times,
+					...(progress ? {progress} : {}),
+					...(status === 'running' ? {attempt: {increment: 1}} : {}),
+				},
+			});
 		},
 
 		/** SYSTEM (cron): unfinished jobs past their deadline (FR-GEN-11). */

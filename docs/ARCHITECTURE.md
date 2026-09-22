@@ -56,6 +56,7 @@ These come from [SRS.md § 5](SRS.md#5-non-functional-requirements):
 | **Primitives** (`packages/primitives`) | React + Remotion | Hand-tuned motion building blocks (Cursor, Camera, Lens…) | n/a (a library) |
 | **Shared** (`packages/shared`) | TypeScript + zod | Request/response/event schemas, plan and credit tables, model registry | n/a |
 | **DB** (`packages/db`) | Prisma + Postgres (Neon) | Schema, migrations, client | Neon compute size, pooled connections |
+| **Platform** (`packages/platform`) | BullMQ, ioredis, AWS S3 SDK | Adapters shared by API and worker: object storage, queues, realtime event bus (Redis pub/sub + 100-event replay), Redis eviction check. Each has an in-memory fake | Stateless |
 | **Redis** | Railway Redis | Queues, rate limits, pub/sub | Instance size |
 | **Storage** | Cloudflare R2 (MinIO locally) | **Two domains:** `cdn.kinetiq.so` only for *our own* public files (example videos, posters); a **separate domain** `kinetiqcontent.com` for all user uploads and renders (private, signed URLs). See NFR-SEC-10 | Automatic, no egress fees |
 

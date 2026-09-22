@@ -1,0 +1,24 @@
+{
+	"name": "@kinetiq/platform",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Infrastructure adapters shared by the API and the worker: storage, events, queues, media probing",
+	"exports": {
+		".": "./src/index.ts"
+	},
+	"scripts": {
+		"typecheck": "tsc -p tsconfig.json"
+	},
+	"dependencies": {
+		"@aws-sdk/client-s3": "3.1137.0",
+		"@aws-sdk/s3-request-presigner": "3.1137.0",
+		"@kinetiq/shared": "workspace:*",
+		"bullmq": "6.3.8",
+		"ioredis": "6.0.0",
+		"zod": "4.5.4"
+	},
+	"devDependencies": {
+		"vitest": "5.0.1"
+	}
+}

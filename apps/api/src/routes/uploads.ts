@@ -14,7 +14,7 @@ import {requireAuth} from '../middleware/session.js';
 
 const PUT_EXPIRES_SEC = 10 * 60;
 
-export function uploadRoutes({repos, storage, rateLimiter}: Container): Router {
+export function uploadRoutes({repos, storage, rateLimiter, queues}: Container): Router {
 	const router = Router();
 
 	router.post(
@@ -66,8 +66,16 @@ export function uploadRoutes({repos, storage, rateLimiter}: Container): Router {
 		}
 
 		// Videos wait for the worker's ffprobe check before they can be used (FR-PRJ-04).
-		if (rule.kind === 'video') await repos.assets.markProcessing(userId, row.id);
-		else await repos.assets.markReady(userId, row.id);
+		if (rule.kind === 'video') {
+			await repos.assets.markProcessing(userId, row.id);
+			await queues.enqueue(
+				'maintenance',
+				{kind: 'probe-asset', userId, assetId: row.id},
+				{jobId: `probe-${row.id}`, attempts: 3},
+			);
+		} else {
+			await repos.assets.markReady(userId, row.id);
+		}
 		res.json({asset: await repos.assets.get(userId, row.id)});
 	});
 

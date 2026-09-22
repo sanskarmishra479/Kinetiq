@@ -1,4 +1,5 @@
 {
 	"extends": "../../tsconfig.base.json",
-	"include": ["src"]
+	// The end-to-end test imports the API's test helpers, which rely on its Express type additions.
+	"include": ["src", "../api/src/types.d.ts"]
 }

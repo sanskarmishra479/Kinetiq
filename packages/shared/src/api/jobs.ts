@@ -34,6 +34,10 @@ export const EstimateResponse = z.object({
 });
 export type EstimateResponse = z.infer<typeof EstimateResponse>;
 
+/** POST /v1/projects/:id/generate: the user confirms the price they saw (FR-GEN-01). */
+export const GenerateRequest = z.strictObject({expectedCredits: z.int().min(1)});
+export type GenerateRequest = z.infer<typeof GenerateRequest>;
+
 export const JobStatus = z.enum(['queued', 'running', 'succeeded', 'failed', 'cancelled']);
 export type JobStatus = z.infer<typeof JobStatus>;
 

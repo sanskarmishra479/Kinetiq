@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {describe, expect, it} from 'vitest';
-import {memoryStorage, s3Storage} from './storage.js';
+import {assertSafePrefix, memoryStorage, s3Storage} from './storage.js';
 
 // The real S3 adapter against MinIO from docker compose (same API as Cloudflare R2).
 const storage = s3Storage({
@@ -49,12 +49,46 @@ describe('s3Storage (MinIO)', () => {
 		const put = await storage.presignPut(key, {contentType: 'image/png', expiresSec: 1});
 		const tampered = put.url.replace(key, `${key}-other`);
 		expect((await fetch(tampered, {method: 'PUT', headers: put.headers, body: PNG})).status).toBe(403);
-		await new Promise((r) => setTimeout(r, 2100));
+		await new Promise((r) => setTimeout(r, 3100));
 		expect((await fetch(put.url, {method: 'PUT', headers: put.headers, body: PNG})).status).toBe(403);
 	});
 });
 
+describe('deletePrefix (account deletion, NFR-LEG-02)', () => {
+	it('deletes every object in the folder and nothing outside it, across pages', async () => {
+		const user = `usr_${randomUUID().replaceAll('-', '')}`;
+		const other = `usr_${randomUUID().replaceAll('-', '')}`;
+		const put = async (key: string) => {
+			const p = await storage.presignPut(key, {contentType: 'image/png', expiresSec: 60});
+			expect((await fetch(p.url, {method: 'PUT', headers: p.headers, body: PNG})).status).toBe(200);
+		};
+		await Promise.all([...Array.from({length: 3}, (_, i) => put(`u/${user}/a${i}`)), put(`u/${other}/keep`)]);
+
+		expect(await storage.deletePrefix(`u/${user}/`)).toBe(3);
+		expect(await storage.head(`u/${user}/a0`)).toBeNull();
+		expect(await storage.head(`u/${other}/keep`)).not.toBeNull();
+		await storage.deletePrefix(`u/${other}/`);
+	});
+
+	it('refuses prefixes that could match more than one folder', async () => {
+		for (const bad of ['', 'u/', 'u/usr_1', '../u/x/', 'u/a/b/', 'u/*/']) {
+			expect(() => assertSafePrefix(bad)).toThrow(/unsafe prefix/);
+		}
+		await expect(storage.deletePrefix('u/')).rejects.toThrow(/unsafe prefix/);
+		expect(() => assertSafePrefix('u/usr_01ABC/')).not.toThrow();
+	});
+});
+
 describe('memoryStorage', () => {
+	it('deletes a folder', async () => {
+		const mem = memoryStorage();
+		mem.put('u/usr_1/a', PNG, 'image/png');
+		mem.put('u/usr_2/a', PNG, 'image/png');
+		expect(await mem.deletePrefix('u/usr_1/')).toBe(1);
+		expect(mem.has('u/usr_2/a')).toBe(true);
+		await expect(mem.deletePrefix('u/')).rejects.toThrow();
+	});
+
 	it('behaves like a tiny bucket', async () => {
 		const mem = memoryStorage();
 		mem.put('k', PNG, 'image/png');

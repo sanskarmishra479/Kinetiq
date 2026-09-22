@@ -2,7 +2,7 @@ import {randomUUID} from 'node:crypto';
 import {Redis} from 'ioredis';
 import {afterAll, describe, expect, it} from 'vitest';
 import {redisLocks} from './misc.js';
-import {redisRateLimiter} from './rate-limit.js';
+import {memoryConnectionLimiter, redisConnectionLimiter, redisRateLimiter} from './rate-limit.js';
 
 // The production Redis adapters against the real Redis from docker compose.
 const redis = new Redis(process.env.REDIS_URL ?? 'redis://localhost:6379', {maxRetriesPerRequest: 1});
@@ -53,5 +53,39 @@ describe('redisLocks', () => {
 		await again?.();
 		expect(await locks.acquire(key, 5_000)).toBeNull();
 		await third?.();
+	});
+});
+
+describe('connection limiter (SSE, 5 per user across replicas)', () => {
+	for (const [name, make] of [
+		['redis', (now: () => number) => redisConnectionLimiter(redis, now)],
+		['memory', (now: () => number) => memoryConnectionLimiter(now)],
+	] as const) {
+		it(`${name}: caps open connections, frees closed ones and forgets expired leases`, async () => {
+			let t = 1_000_000;
+			const limiter = make(() => t);
+			const user = `usr_${randomUUID().replaceAll('-', '')}`;
+			expect(await limiter.open(user, 'a', 2, 1000)).toBe(true);
+			expect(await limiter.open(user, 'b', 2, 1000)).toBe(true);
+			expect(await limiter.open(user, 'c', 2, 1000)).toBe(false);
+			expect(await limiter.open('usr_other', 'c', 2, 1000)).toBe(true);
+
+			await limiter.close(user, 'a');
+			expect(await limiter.open(user, 'c', 2, 1000)).toBe(true);
+
+			// "b" keeps renewing; "c" belongs to a crashed replica and expires.
+			t += 800;
+			await limiter.renew(user, 'b', 1000);
+			await limiter.renew(user, 'ghost', 1000); // renewing an unknown connection doesn't add it
+			t += 500;
+			expect(await limiter.open(user, 'd', 2, 1000)).toBe(true);
+			expect(await limiter.open(user, 'e', 2, 1000)).toBe(false);
+		});
+	}
+
+	it('redis: the counter key has an expiry', async () => {
+		const user = `usr_${randomUUID().replaceAll('-', '')}`;
+		await redisConnectionLimiter(redis).open(user, 'a', 5, 45_000);
+		expect(await redis.pttl(`sse:${user}`)).toBeGreaterThan(0);
 	});
 });

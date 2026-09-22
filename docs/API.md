@@ -148,10 +148,18 @@ Uses the same pure function (`domain/credits/estimate`) as the server-side reser
 
 ### `POST /v1/projects/:id/generate` (requires `Idempotency-Key`)
 ```json
+// request: the price the user saw in the estimate
+{ "expectedCredits": 23 }
 // 202
 { "job": { "id": "job_1", "type": "generate", "status": "queued", "reservedCredits": 23, "queuePosition": 2 } }
 ```
-Errors: `402 INSUFFICIENT_CREDITS`, `409 CONFLICT` (a job is already running for this project), `429 CONCURRENCY_LIMIT`, `503 DEGRADED`.
+Order: check the project and price → per-user lock → plan limits → create the job → reserve credits → enqueue → publish `job.queued`.
+
+Errors:
+- `402 INSUFFICIENT_CREDITS` (`details.needed`): nothing is created.
+- `409 CONFLICT`: setup isn't finished, a job is already queued or running for this project (also enforced by a partial unique index), or the price changed (`details.credits` holds the current price; show it and ask again).
+- `429 CONCURRENCY_LIMIT` (`details.limit`): the plan's parallel-job limit. `429 RATE_LIMITED`: the plan's daily job limit.
+- `503 DEGRADED`: new jobs are paused (`pause_new_jobs` flag), or the queue is unreachable (the reservation is refunded immediately).
 
 ### `GET /v1/jobs/:id`
 ```json
@@ -165,7 +173,7 @@ Errors: `402 INSUFFICIENT_CREDITS`, `409 CONFLICT` (a job is already running for
 Job `status`: `queued | running | succeeded | failed | cancelled`.
 
 ### `POST /v1/jobs/:id/cancel`
-→ `200 { job }` with `status: "cancelled"`. Unused credits are refunded [FR-GEN-09].
+→ `200 { job }` with `status: "cancelled"`. All reserved credits are refunded [FR-GEN-09]. A queued job is removed from the queue; a running job stops at its next step. `409` if the job already finished; a second cancel never refunds twice.
 
 ## 7. Versions [FR-EDIT-03, FR-EDIT-04]
 
@@ -179,8 +187,9 @@ Job `status`: `queued | running | succeeded | failed | cancelled`.
 ## 8. Realtime events (SSE)
 
 ### `GET /v1/projects/:id/events`
-- Content type `text/event-stream`. The server sends a heartbeat comment every 15 s.
-- To resume after a disconnect, the client sends `Last-Event-ID`. The server replays the last 100 events from Redis.
+- Content type `text/event-stream`. The server sends a heartbeat comment (`: ping`) every 15 s and `retry: 3000`.
+- Every event has an `id:` that increases per project. To resume after a disconnect, the browser sends `Last-Event-ID` (EventSource does this itself; `?lastEventId=` also works). The server replays newer events from the last 100 kept in Redis (24 h TTL).
+- At most 5 open streams per user across all API replicas (`429` with `Retry-After: 15`). Each stream holds a 45 s lease renewed by the heartbeat, so streams of a crashed replica stop counting.
 - Every event `data` is a zod-validated JSON `ProjectEvent` from `packages/shared/src/events.ts`.
 
 | `event:` | `data` example | Meaning |
@@ -280,7 +289,10 @@ Payloads are zod schemas in `packages/shared/src/queues.ts`. The API and worker 
 | `render` | `{ jobId, kind: "still" \| "final", versionId, inputPropsKey }` | Worker | 2 | Remotion Lambda |
 | `media-poll` | `{ jobId, clipId, providerJobId }` | Worker | backoff up to 20 min | Fallback when the video callback doesn't arrive |
 | `email` | `{ to, template, data }` | API / Worker | 5 | Resend |
-| `cron` | repeatable | scheduler | n/a | Expire stale reservations (every 2 h), expire subscription buckets (hourly), clean orphaned uploads (daily), reconcile Dodo subscriptions (daily) |
+| `maintenance` | `{ kind: "probe-asset", userId, assetId }` or `{ kind: "purge-user-files", userId }` | API | 3 / 5 | ffprobe check of uploaded videos; delete `u/{userId}/` after account deletion |
+| `cron` | BullMQ job schedulers | worker | n/a | `deadline-sweep` (1 min), `refund-stale` (15 min, reservations > 2 h), `expire-credits` (15 min), `cleanup-uploads` (hourly), `purge-idempotency` (hourly). Later: reconcile Dodo subscriptions (daily) |
+
+Queue job ids are the domain id where one exists (`generate` uses the job id, so enqueueing twice is a no-op). BullMQ forbids `:` in ids, so derived ids use `-` (`probe-ast_…`).
 
 ## 17. Rate limits (defaults; set through config)
 

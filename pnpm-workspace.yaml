@@ -4,6 +4,8 @@ packages:
 allowBuilds:
   '@prisma/engines': true
   esbuild: true
+  # Optional native speed-up for BullMQ's msgpackr; the pure-JS fallback is fine.
+  msgpackr-extract: false
   prisma: true
 # Security overrides for vulnerable transitive dependencies (pulled in by the
 # Prisma CLI). Remove once Prisma ships patched versions itself.
