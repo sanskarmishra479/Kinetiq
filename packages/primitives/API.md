@@ -111,6 +111,22 @@ type CaptionsProps = {
 };
 ```
 
+### <CardGrid>
+
+Feature cards that pop in, in diagonal waves from the top-left.
+
+```ts
+type CardGridProps = {
+	cards: Card[];
+	at?: number;
+	// Frames between waves of cards.
+	stagger?: number;
+	// Defaults: 3 columns in 16:9, 2 in 1:1, 1–2 in 9:16.
+	columns?: number;
+	maxWidth?: number | string;
+};
+```
+
 ### <ChatBubble>
 
 A message bubble that pops in from its tail corner with a small bounce.
@@ -264,6 +280,29 @@ type NotificationProps = {
 };
 ```
 
+### <Spotlight>
+
+Dims the whole scene except one element, which gets a glowing accent ring.
+Place it after the UI it highlights, inside the same Camera if there is one.
+
+```ts
+type SpotlightProps = {
+	// The element to highlight, in the same coordinates as the scene. Pass a
+	// list of keyframes ({frame, x, y, w, h}) to glide between elements.
+	rect: Rect | RectKey[];
+	at?: number;
+	until?: number;
+	// How dark everything else gets (0–1).
+	dim?: number;
+	// Extra space around the element, and corner radius of the hole.
+	padding?: number;
+	radius?: number;
+	// Optional pill label under the highlighted element.
+	label?: string;
+	labelSize?: number;
+};
+```
+
 ### <Typewriter>
 
 Text that types itself out, with a caret that blinks once typing stops.
@@ -310,6 +349,28 @@ type WindowProps = {
 };
 ```
 
+### <ZoomFocus>
+
+Depth of field: the camera zooms onto one element, which stays sharp and
+lifts off the page, while everything around it blurs and darkens.
+
+```ts
+type ZoomFocusProps = {
+	// The element to focus on, in scene coordinates (children fill the frame).
+	rect: Rect;
+	at?: number;
+	until?: number;
+	// Space left around the element when zoomed, as a fraction of the frame.
+	padding?: number;
+	maxScale?: number;
+	// How blurred and darkened the rest of the scene gets.
+	blur?: number;
+	dim?: number;
+	radius?: number;
+	children: React.ReactNode;
+};
+```
+
 ## Helpers
 
 ### blurInEnd
@@ -336,6 +397,14 @@ browserLayout: (width: number, scale?: number) => BrowserLayout
 
 ```ts
 browserTimeline: (url: string, typeAt: number, fps: number) => BrowserTimeline
+```
+
+### cardWave
+
+Cards arrive in diagonal waves (top-left first), which reads as one smooth sweep.
+
+```ts
+cardWave: (i: number, cols: number) => number
 ```
 
 ### chromeScale
@@ -374,12 +443,29 @@ so tuning one curve here changes the feel of the whole video.
 ease: { out: (t: number) => number; inOut: (t: number) => number; in: (t: number) => number; }
 ```
 
+### fitRect
+
+Camera (center + scale) that makes `rect` fill the frame, leaving `padding`
+(a fraction of the frame) around it. Never zooms out below 1 or past maxScale.
+
+```ts
+fitRect: (rect: Rect, frameW: number, frameH: number, padding?: number, maxScale?: number) => { x: number; y: number; scale: number; }
+```
+
 ### focusPull
 
 Whole-block focus pull: blurred and slightly large → sharp; and the reverse when leaving.
 
 ```ts
 focusPull: (frame: number, { inAt, outAt, duration }: { inAt?: number | undefined; outAt?: number | undefined; duration?: number | undefined; }) => { soft: number; opacity: number; scale: number; }
+```
+
+### gridColumns
+
+Columns for a card grid: wide frames get more columns, tall frames fewer.
+
+```ts
+gridColumns: (count: number, frameW: number, frameH: number) => number
 ```
 
 ### isDark
@@ -438,6 +524,14 @@ menuRowY: (top: number, index: number) => number
 
 ```ts
 openClose: (frame: number, fps: number, start: number, end?: number, config?: Partial<SpringConfig>) => number
+```
+
+### rectAt
+
+A rect that is either fixed or keyframed (so a spotlight can glide between elements).
+
+```ts
+rectAt: (frame: number, rect: Rect | RectKey[]) => Rect
 ```
 
 ### splitUnits
@@ -529,6 +623,18 @@ One spoken word. Frames come from the voiceover's word timestamps.
 type CaptionWord = {text: string; start: number; end: number};
 ```
 
+### Card
+
+```ts
+type Card = {title: string; body?: string; icon?: CardIcon};
+```
+
+### CardIcon
+
+```ts
+type CardIcon = 'bolt' | 'sparkle' | 'shield' | 'chart' | 'globe' | 'clock' | 'users' | 'code' | 'lock' | 'layers' | 'video' | 'wand';
+```
+
 ### CursorPoint
 
 ```ts
@@ -547,6 +653,18 @@ type Keyframe = {frame: number} & Record<K, number>;
 
 ```ts
 type MenuItem = {label: string; hint?: string; icon?: React.ReactNode};
+```
+
+### Rect
+
+```ts
+type Rect = {x: number; y: number; w: number; h: number};
+```
+
+### RectKey
+
+```ts
+type RectKey = Rect & {frame: number};
 ```
 
 ### ScrollKey
