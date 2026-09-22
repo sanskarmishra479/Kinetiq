@@ -8,6 +8,9 @@ export type {Theme} from './theme';
 export {isDark, luminance} from './color';
 
 export {Background} from './primitives/Background';
+export {BlurInText} from './primitives/BlurInText';
+export {blurInEnd, focusPull, splitUnits} from './primitives/blurIn';
+export type {BlurInBy} from './primitives/blurIn';
 export {Browser, browserChrome} from './primitives/Browser';
 export type {ScrollKey} from './primitives/Browser';
 export {browserLayout, browserTimeline, chromeScale, splitUrl} from './primitives/browserLayout';
@@ -22,6 +25,7 @@ export {ChatBubble, TypingDots} from './primitives/ChatBubble';
 export {Cursor, cursorAt, isPressed} from './primitives/Cursor';
 export type {CursorPoint} from './primitives/Cursor';
 export {Dock, MenuBar, Wallpaper} from './primitives/Desktop';
+export {FocusPull} from './primitives/FocusPull';
 export {KineticStack} from './primitives/KineticStack';
 export {Lens} from './primitives/Lens';
 export {LogoReveal} from './primitives/LogoReveal';

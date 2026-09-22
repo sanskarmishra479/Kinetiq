@@ -1,3 +1,4 @@
+import {BlurInDemo, BLUR_IN_DEMO_DURATION} from './showcase/BlurInDemo';
 import {Composition, Folder} from 'remotion';
 import {
 	BrowserDemo,
@@ -16,6 +17,15 @@ export const Root: React.FC = () => (
 		<Composition id="Showcase" component={Showcase} durationInFrames={SHOWCASE_DURATION} {...video} />
 		<Composition id="RefIntro" component={RefIntro} durationInFrames={REF_INTRO_DURATION} {...video} />
 		<Folder name="Primitives">
+			<Composition id="BlurInDemo" component={BlurInDemo} durationInFrames={BLUR_IN_DEMO_DURATION} {...video} />
+			<Composition
+				id="BlurInDemoVertical"
+				component={BlurInDemo}
+				durationInFrames={BLUR_IN_DEMO_DURATION}
+				fps={30}
+				width={1080}
+				height={1920}
+			/>
 			<Composition id="BrowserDemo" component={BrowserDemo} durationInFrames={BROWSER_DEMO_DURATION} {...video} />
 			<Composition
 				id="BrowserDemoVertical"
