@@ -148,7 +148,9 @@ LLM TSX ─► validator (AST allowlist) ─► transpile (sucrase/esbuild) ─�
            { React, remotion APIs, @kinetiq/primitives, theme } ─► <Scene/>
 ```
 
-**The validator rejects:**
+**Implementation:** `packages/domain/src/validator` (Babel AST, 100% test coverage) → `compileScene()` (sucrase → CommonJS) → `packages/renderer` evaluates it with `new Function('require', 'exports', 'module', code)` in strict mode, where `require()` returns only the allowlisted modules. The render contract is `RenderInput` in `packages/shared/src/render.ts`.
+
+**The validator is an allowlist.** It accepts only: listed import names, listed globals used in listed ways (never aliased), literal property keys, and listed HTML/SVG elements. In particular it rejects:
 - any import other than `react`, `remotion` or `@kinetiq/primitives`
 - `import()`, `require`, `eval`, `Function`
 - `fetch`, `XMLHttpRequest`, `WebSocket`
@@ -161,7 +163,7 @@ LLM TSX ─► validator (AST allowlist) ─► transpile (sucrase/esbuild) ─�
 - **Production:** only inside the Lambda render sandbox. The API and worker **never** evaluate scene code, because they hold secrets (NFR-SEC-12).
 - **Local development:** it renders on your machine, after the same validation.
 
-**Render page CSP:** `default-src 'none'`; scripts only from the deployed bundle; images, media and fonts only from our content domain and font origin. Even code that slips past the validator can't send data anywhere.
+**Render page CSP** (installed by the bundle's entry before any scene code runs): `default-src 'none'`; scripts only from the deployed bundle plus `'unsafe-eval'` (how scene code is loaded; no inline scripts); images, media and fonts only from the content origins in the render input and Google Fonts; connections only to the page itself and Remotion's local media proxy. Even code that slips past the validator can't send data anywhere.
 
 **Defense in depth:**
 - The render Lambda has **no secrets**, an IAM role that can only write to the renders bucket, and a hard timeout.

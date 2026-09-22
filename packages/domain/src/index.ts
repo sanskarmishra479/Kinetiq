@@ -40,3 +40,15 @@ export {
 	type ReservationLine,
 } from './credits/credits.js';
 export {editCost, estimate, type Estimate, type EstimateInput} from './credits/estimate.js';
+export {
+	ALLOWED_ELEMENTS,
+	ALLOWED_GLOBALS,
+	ALLOWED_IMPORTS,
+	compileScene,
+	MAX_SCENE_BYTES,
+	validateScene,
+	type AllowedModule,
+	type CompileResult,
+	type ValidationError,
+	type ValidationResult,
+} from './validator/index.js';

@@ -7,3 +7,4 @@ docs
 what-i-want.md
 **/generated
 **/migrations
+packages/primitives/API.md

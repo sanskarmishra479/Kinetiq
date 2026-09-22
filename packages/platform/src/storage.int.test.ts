@@ -54,6 +54,19 @@ describe('s3Storage (MinIO)', () => {
 	});
 });
 
+describe('putObject (server-side uploads: renders, stills)', () => {
+	it('stores bytes with their content type', async () => {
+		const key = `test/${randomUUID()}`;
+		await storage.putObject(key, PNG, 'image/png');
+		expect(await storage.head(key)).toEqual({size: PNG.length, contentType: 'image/png'});
+		await storage.delete(key);
+
+		const mem = memoryStorage();
+		await mem.putObject('k', PNG, 'image/png');
+		expect(await mem.head('k')).toEqual({size: PNG.length, contentType: 'image/png'});
+	});
+});
+
 describe('deletePrefix (account deletion, NFR-LEG-02)', () => {
 	it('deletes every object in the folder and nothing outside it, across pages', async () => {
 		const user = `usr_${randomUUID().replaceAll('-', '')}`;

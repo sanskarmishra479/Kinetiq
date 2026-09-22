@@ -102,6 +102,11 @@ function crossChecks(c: Config): Issue[] {
 		);
 	}
 
+	// A production build never renders scene code in-process, even if APP_ENV is misconfigured (NFR-SEC-12).
+	if (c.NODE_ENV === 'production' && c.RENDER_MODE === 'local') {
+		issues.push({path: 'RENDER_MODE', message: 'must be "lambda" when NODE_ENV=production'});
+	}
+
 	const deployed = c.APP_ENV !== 'local';
 	if (deployed) {
 		// Untrusted scene code must never run next to secrets (NFR-SEC-12).

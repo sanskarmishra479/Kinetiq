@@ -12,6 +12,7 @@
 		"@kinetiq/db": "workspace:*",
 		"@kinetiq/domain": "workspace:*",
 		"@kinetiq/platform": "workspace:*",
+		"@kinetiq/renderer": "workspace:*",
 		"@kinetiq/shared": "workspace:*",
 		"bullmq": "6.3.8",
 		"ioredis": "6.0.0",
@@ -20,8 +21,8 @@
 	},
 	"devDependencies": {
 		"@kinetiq/api": "workspace:*",
-		"supertest": "7.2.2",
 		"@types/supertest": "7.2.1",
+		"supertest": "7.2.2",
 		"tsx": "4.23.15",
 		"vitest": "5.0.1"
 	}

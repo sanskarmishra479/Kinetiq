@@ -10,6 +10,8 @@ export interface StoragePort {
 	head(key: string): Promise<{size: number; contentType: string | undefined} | null>;
 	/** The first `length` bytes (for file-type sniffing). */
 	readStart(key: string, length: number): Promise<Uint8Array>;
+	/** Server-side upload (renders, stills). */
+	putObject(key: string, body: Uint8Array, contentType: string): Promise<void>;
 	delete(key: string): Promise<void>;
 	/** Deletes every object under a folder like "u/usr_123/". Returns how many were deleted. */
 	deletePrefix(prefix: string): Promise<number>;

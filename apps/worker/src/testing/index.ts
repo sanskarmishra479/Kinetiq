@@ -6,6 +6,7 @@ import {memoryEventBus, memoryQueues, memoryStorage} from '@kinetiq/platform';
 import {loadConfig} from '@kinetiq/shared';
 import {pino} from 'pino';
 import type {WorkerContainer} from '../container.js';
+import {unavailableRender, type RenderPort} from '@kinetiq/renderer/node';
 import type {MediaProbePort, PipelinePort, ProbeFacts} from '../ports.js';
 
 const ENV = {
@@ -44,6 +45,7 @@ export function testWorker(options: {
 	ids: IdPort;
 	pipeline?: PipelinePort;
 	probe?: MediaProbePort;
+	render?: RenderPort;
 	/** Pass the API's buses to connect the API and the worker in one test. */
 	events?: ReturnType<typeof memoryEventBus>;
 	queues?: ReturnType<typeof memoryQueues>;
@@ -64,6 +66,7 @@ export function testWorker(options: {
 		probe:
 			options.probe ??
 			fakeProbe({durationSec: 10, video: {codec: 'h264', width: 1920, height: 1080}, formats: ['mp4']}),
+		render: options.render ?? unavailableRender('no renderer in this test'),
 		pipeline: options.pipeline ?? {run: async () => ({charge: 0})},
 		watchMs: 10,
 		bullConnection: null,

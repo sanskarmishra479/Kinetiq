@@ -277,30 +277,39 @@
 ## Phase 7: Renderer + scene sandbox (`packages/renderer`)
 > Goal: render LLM-written scene code safely from one deployed bundle.
 
-- [ ] AST allowlist validator in `packages/domain/validator` ([ARCHITECTURE § 6](ARCHITECTURE.md#6-dynamic-scene-runtime-sandbox)) [FR-GEN-06, NFR-SEC-06]:
-  - imports only from `react`, `remotion` and `@kinetiq/primitives`
-  - bans `eval`, `Function`, `import()`, `require`, `fetch`, XHR, WebSocket, `window`, `document`, `globalThis`, timers and storage
+- [x] AST allowlist validator in `packages/domain/validator` ([ARCHITECTURE § 6](ARCHITECTURE.md#6-dynamic-scene-runtime-sandbox)) [FR-GEN-06, NFR-SEC-06]:
+  - imports only allowlisted **names** from `react`, `remotion` and `@kinetiq/primitives`
+  - globals are an allowlist too (`Math.*` except `random`, `Number`, `Array.from`, …), and can't be aliased. So `eval`, `Function`, `import()`, `require`, `fetch`, XHR, WebSocket, `window`, `document`, `globalThis`, timers and storage are all rejected
   - code must be under 30 KB
-- [ ] 🔒 The validator also blocks escape tricks: `constructor`, `__proto__`, `prototype`, computed member access with non-literal keys, tagged templates, string-to-code [NFR-SEC-13]
-- [ ] 🔒 Renderer page CSP: `default-src 'none'`; assets only from our content domain and the font origin [NFR-SEC-12]
-- [ ] 🔒 Production guard: the API and worker containers can't evaluate scene code. `RENDER_MODE=local` is refused when `NODE_ENV=production` [NFR-SEC-12]
-- [ ] Transpile step (sucrase/esbuild) → a JS string
-- [ ] Renderer Remotion root:
-  - `DynamicScene` evaluates code with a whitelisted scope (React, remotion, primitives, theme)
-  - `FinalVideo` = scenes (Series/TransitionSeries) + audio tracks + captions + `Lens`
-  - supports all ratios (16:9, 9:16, 1:1) and 30 fps
-- [ ] `RenderPort`: `renderStill()`, `renderFinal()`. Adapters: `LocalRender` (@remotion/renderer) and `LambdaRender` (@remotion/lambda, in Phase 12)
-- [ ] Render timeout + failure mapping
-- [ ] Primitives docs file (`packages/primitives/API.md`) generated from the code. It goes into the scene-coder prompt (cached)
+- [x] 🔒 The validator also blocks escape tricks: `constructor`, `__proto__`, `prototype`, any `_x`/`$x` internal property, computed member access or object keys with non-literal keys, tagged templates, `this`, classes, async/generators, `with` [NFR-SEC-13]
+- [x] 🔒 JSX allowlist: only safe HTML/SVG elements (no `script`, `iframe`, `img`, `a`, `link`, `style`, `foreignObject`, `use`); no `ref`, event handlers, `dangerouslySetInnerHTML`, `href`
+- [x] 🔒 Renderer page CSP: `default-src 'none'`; scripts only from the bundle; images/media/fonts only from our content origins and Google Fonts; connections only to the page itself [NFR-SEC-12]. Tested: the policy is installed before scene code runs, and injected inline scripts don't execute
+- [x] 🔒 Production guard: `RENDER_MODE=local` is refused when `NODE_ENV=production` (config check + the local renderer itself) [NFR-SEC-12]
+- [x] Transpile step (sucrase) → a CommonJS JS string; `require()` at runtime only answers with the allowlisted modules
+- [x] Renderer Remotion root:
+  - `DynamicScene` evaluates code with a whitelisted scope (React, remotion, primitives, theme); errors name the scene
+  - `FinalVideo` = scenes (Series) + audio tracks + captions + optional `Lens`
+  - supports all ratios (16:9, 9:16, 1:1) and 30 fps; size and length come from the validated input
+- [x] `RenderPort`: `renderStill()`, `renderFinal()`. Adapters: `localRender` (@remotion/renderer; loaded lazily by the worker) and a placeholder for `LambdaRender` (Phase 12)
+- [x] Render timeout + failure mapping: `SCENE_ERROR` (with the scene id), `TIMEOUT`, `INVALID_INPUT`, `RENDERER`
+- [x] Primitives docs file (`packages/primitives/API.md`) generated from the code and the allowlist. It goes into the scene-coder prompt (cached)
+
+**Notes from the build:**
+- The render contract (`RenderInput`) lives in `packages/shared/src/render.ts`, shared by the worker and the renderer. Audio URLs must be https (or localhost in development).
+- **Keeping primitives in sync** (for whoever adds a primitive): add the export to `ALLOWED_IMPORTS` in `packages/domain/src/validator/allowlist.ts`, run `pnpm --filter @kinetiq/renderer docs:primitives`, and `pnpm test:visual:update` (review the new PNGs). Tests fail until all three are done, so the scene coder never sees a primitive the sandbox doesn't provide.
+- Remotion bug worked around: passing our own browser to `renderStill` can leave an unhandled rejection when a render is cancelled, which would crash the worker. Remotion now owns the browser; timeouts use its cancel signal.
+- The page needs `'unsafe-eval'` (that's how scene code loads). The validator is the main fence; the CSP stops anything that slipped through from reaching the network.
+- ⏭ Phase 12: Remotion Lambda adapter; deploy the renderer site; the render Lambda holds no secrets.
+- ⏭ Phase 8: load the user's brand font (the theme's `fontFamily`); today only Inter is loaded.
 
 **Tests:**
-- the malicious corpus is 100% rejected
-- valid samples pass
-- visual baselines for every primitive and for `RefIntro` at chosen frames (pixelmatch ≤ 0.1%)
-- output spec checked with ffprobe: duration ±0.5 s, resolution and fps per ratio [FR-GEN-08]
-- an infinite-loop scene times out cleanly
+- the malicious corpus (110 attacks) is 100% rejected; valid samples pass; **100% coverage** on the validator
+- visual baselines: every primitives composition incl. `RefIntro` at 3 frames each (pixelmatch ≤ 0.1%)
+- output spec checked with ffprobe: duration ±0.5 s, resolution and 30 fps per ratio; audio track present [FR-GEN-08]
+- an endless-loop scene (which passes validation) times out cleanly, with no Chrome left running
+- scene runtime errors come back as `SCENE_ERROR` with the scene id
 
-**✅ Exit criteria:** a hand-written scene JSON renders to MP4 locally through `RenderPort`.
+**✅ Exit criteria:** a hand-written scene JSON renders to MP4 locally through `RenderPort`. **Done: 550 tests green.**
 
 ---
 

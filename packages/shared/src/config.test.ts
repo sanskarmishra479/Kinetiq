@@ -105,6 +105,8 @@ describe('loadConfig', () => {
 	// NFR-SEC-12: scene code must never be rendered by a process holding secrets.
 	it('refuses local rendering outside local', () => {
 		expect(issuesOf({...production, RENDER_MODE: 'local'})).toContain('RENDER_MODE');
+		// NFR-SEC-12: a production build refuses local rendering even when APP_ENV says local.
+		expect(issuesOf({...local, NODE_ENV: 'production', RENDER_MODE: 'local'})).toContain('RENDER_MODE');
 	});
 
 	it('refuses mocked providers outside local', () => {

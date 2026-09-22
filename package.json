@@ -23,7 +23,8 @@
 		"db:generate": "pnpm --filter @kinetiq/db generate",
 		"db:migrate": "pnpm --filter @kinetiq/db migrate:dev",
 		"db:seed": "pnpm --filter @kinetiq/db seed",
-		"credits:grant": "pnpm --filter @kinetiq/db credits:grant"
+		"credits:grant": "pnpm --filter @kinetiq/db credits:grant",
+		"test:visual:update": "UPDATE_BASELINES=1 vitest run --project int packages/renderer/src/node/visual"
 	},
 	"devDependencies": {
 		"@eslint/js": "10.0.1",

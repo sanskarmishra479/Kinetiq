@@ -8,6 +8,7 @@ import {
 	type QueuePort,
 	type StoragePort,
 } from '@kinetiq/platform';
+import {localRender, unavailableRender, type RenderPort} from '@kinetiq/renderer/node';
 import type {Config} from '@kinetiq/shared';
 import {Redis} from 'ioredis';
 import {pino, type Logger} from 'pino';
@@ -29,6 +30,8 @@ export type WorkerContainer = {
 	queues: QueuePort;
 	storage: StoragePort;
 	probe: MediaProbePort;
+	/** Local Chrome in development; Remotion Lambda in production (Phase 12). */
+	render: RenderPort;
 	pipeline: PipelinePort;
 	/** How often a running job checks whether it was cancelled. */
 	watchMs: number;
@@ -48,6 +51,13 @@ export function buildWorkerContainer(config: Config): WorkerContainer {
 	const bull = new Redis(config.REDIS_URL, {maxRetriesPerRequest: null});
 	for (const conn of [redis, subscriber, bull]) conn.on('error', (err) => logger.error({err}, 'redis error'));
 	const queues = bullQueues(bull);
+	const storage = s3Storage({
+		endpoint: config.S3_ENDPOINT,
+		region: config.S3_REGION,
+		accessKeyId: config.S3_ACCESS_KEY_ID,
+		secretAccessKey: config.S3_SECRET_ACCESS_KEY,
+		bucket: config.S3_BUCKET_CONTENT,
+	});
 
 	return {
 		config,
@@ -58,14 +68,12 @@ export function buildWorkerContainer(config: Config): WorkerContainer {
 		repos: createRepos({db, ids, clock}),
 		events: redisEventBus(redis, subscriber),
 		queues,
-		storage: s3Storage({
-			endpoint: config.S3_ENDPOINT,
-			region: config.S3_REGION,
-			accessKeyId: config.S3_ACCESS_KEY_ID,
-			secretAccessKey: config.S3_SECRET_ACCESS_KEY,
-			bucket: config.S3_BUCKET_CONTENT,
-		}),
+		storage,
 		probe: ffprobe(),
+		render:
+			config.RENDER_MODE === 'local'
+				? localRender({storage, env: {NODE_ENV: config.NODE_ENV}})
+				: unavailableRender('Remotion Lambda rendering is not connected yet (TODO Phase 12)'),
 		pipeline: placeholderPipeline(),
 		watchMs: 5000,
 		bullConnection: bull,

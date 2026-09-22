@@ -68,6 +68,10 @@ export function s3Storage(opts: S3Options): StoragePort {
 			return res.Body ? new Uint8Array(await res.Body.transformToByteArray()) : new Uint8Array(0);
 		},
 
+		async putObject(key, body, contentType) {
+			await client.send(new PutObjectCommand({Bucket, Key: key, Body: body, ContentType: contentType}));
+		},
+
 		async delete(key) {
 			await client.send(new DeleteObjectCommand({Bucket, Key: key}));
 		},
@@ -129,6 +133,9 @@ export function memoryStorage(baseUrl = 'https://storage.test') {
 		},
 		async readStart(key, length) {
 			return objects.get(key)?.bytes.subarray(0, length) ?? new Uint8Array(0);
+		},
+		async putObject(key, body, contentType) {
+			objects.set(key, {bytes: body, contentType});
 		},
 		async delete(key) {
 			objects.delete(key);
