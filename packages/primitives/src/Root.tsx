@@ -1,3 +1,9 @@
+import {
+	CardGridBeat,
+	CARD_GRID_VERTICAL_DURATION,
+	ProductFocusDemo,
+	PRODUCT_FOCUS_DURATION,
+} from './showcase/ProductFocusDemo';
 import {BlurInDemo, BLUR_IN_DEMO_DURATION} from './showcase/BlurInDemo';
 import {Composition, Folder} from 'remotion';
 import {
@@ -17,6 +23,20 @@ export const Root: React.FC = () => (
 		<Composition id="Showcase" component={Showcase} durationInFrames={SHOWCASE_DURATION} {...video} />
 		<Composition id="RefIntro" component={RefIntro} durationInFrames={REF_INTRO_DURATION} {...video} />
 		<Folder name="Primitives">
+			<Composition
+				id="ProductFocusDemo"
+				component={ProductFocusDemo}
+				durationInFrames={PRODUCT_FOCUS_DURATION}
+				{...video}
+			/>
+			<Composition
+				id="CardGridVertical"
+				component={CardGridBeat}
+				durationInFrames={CARD_GRID_VERTICAL_DURATION}
+				fps={30}
+				width={1080}
+				height={1920}
+			/>
 			<Composition id="BlurInDemo" component={BlurInDemo} durationInFrames={BLUR_IN_DEMO_DURATION} {...video} />
 			<Composition
 				id="BlurInDemoVertical"

@@ -143,7 +143,7 @@ const Entering: React.FC<{children: React.ReactNode}> = ({children}) => {
 };
 
 // A rebuilt landing page: the kind of page the scene coder recreates from a customer's site.
-const SiteMock: React.FC<{width: number}> = ({width}) => {
+export const SiteMock: React.FC<{width: number}> = ({width}) => {
 	const theme = useTheme();
 	const narrow = width < 1200;
 	const k = narrow ? width / 900 : width / 1640;

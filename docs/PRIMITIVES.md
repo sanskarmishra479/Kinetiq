@@ -46,6 +46,9 @@ All files are in `packages/primitives/src/primitives/`. Demos render with `npx r
 | `Browser` | ✅ | Realistic macOS-style browser: light/dark from the theme, URL types in, load bar, page reveal, scroll with overlay scrollbar, screenshot or rebuilt page, compact chrome in 9:16 | `url`, `typeAt`, `scroll`, `src`, `appearance` | BrowserDemo → `out/browser.mp4`, `out/browser-vertical.mp4` |
 | `BlurInText` | ✅ | Text comes into focus by char, word or line (soft, faint and offset, then sharp). `grow` widens the line and keeps it centered. Optional blur-out | `text`, `by`, `grow`, `at`, `exitAt` | BlurInDemo → `out/blur-in.mp4`, `out/blur-in-vertical.mp4` |
 | `FocusPull` | ✅ | Whole-scene lens focus in/out, for soft scene changes | `inAt`, `outAt`, `blur` | BlurInDemo |
+| `Spotlight` | ✅ | Dims everything except one element, with a glowing accent ring and optional label. Can glide between elements (keyframed rect) | `rect`, `at`, `until`, `label`, `dim` | ProductFocusDemo → `out/product-focus.mp4` |
+| `ZoomFocus` | ✅ | Depth of field: camera zooms onto one element, which stays sharp and lifts, while the rest blurs and darkens | `rect`, `at`, `until`, `blur`, `padding` | ProductFocusDemo |
+| `CardGrid` | ✅ | Feature cards (icon, title, body) pop in diagonal waves. 3 columns in 16:9, 2 in 1:1 and 9:16. 12 built-in icons | `cards`, `at`, `stagger`, `columns` | ProductFocusDemo, CardGridVertical → `out/card-grid-vertical.mp4` |
 | `KineticStack` | ✅ | Stacked bold lines ("LAUNCH / VIDEOS / IN MINUTES") | `lines`, `exitAt` | Showcase |
 | `Typewriter` | ✅ | Types text with a caret | `text`, `startAt`, `charsPerSecond` | Showcase |
 | `ChatBubble` + `TypingDots` | ✅ | Message bubbles that pop in with a spring. Typing indicator | `text`, `from`, `delay` | Showcase, RefIntro |
@@ -155,11 +158,8 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | SidebarList | 🆕 | App sidebar list with status dots and notification badges | refOne | P2 |
 | PromptBar | 🔶 | Prompt or "Ask AI" input that types and submits (extends Typewriter) | refOne, ref-motion | P2 |
 | Skeleton | 🔶 | Placeholder bars that grow in, standing in for text | refOne | P3 |
-| Spotlight | 🆕 | Dim everything except one UI element | idea | P2 |
-| ZoomFocus | 🆕 | Zoom into part of a UI while the rest blurs | idea | P2 |
 | Mac realism upgrade | ⏸ | Real-resolution desktop, detailed window chrome, original dock icons and wallpaper | ref-motion | P2 |
 | Device frames | 🆕 | Code-drawn laptop and phone with 3D tilt | ref-motion | P2 |
-| CardGrid | 🆕 | Feature cards popping in one after another | idea | P2 |
 | Testimonial | 🆕 | Quote card with an initials avatar and rating | idea | P3 |
 
 ### Transitions
