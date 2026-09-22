@@ -2,8 +2,8 @@
 // scene code may use (docs/ARCHITECTURE.md §6).
 export {dur, ease, keyframes, openClose, springs, tween} from './motion';
 export type {Keyframe} from './motion';
-export {darkCinematic, minimalLight, ThemeProvider, useTheme} from './theme';
-export type {Theme} from './theme';
+export {darkCinematic, minimalLight, resolveStyle, ThemeProvider, useTheme, useThemeStyle} from './theme';
+export type {ResolvedStyle, Theme, ThemeStyle} from './theme';
 
 export {isDark, luminance} from './color';
 
@@ -17,6 +17,7 @@ export {browserLayout, browserTimeline, chromeScale, splitUrl} from './primitive
 export type {BrowserLayout, BrowserTimeline} from './primitives/browserLayout';
 export {CardGrid} from './primitives/CardGrid';
 export type {Card, CardIcon} from './primitives/CardGrid';
+export type {CardVariant} from './primitives/cardStyle';
 export {cardWave, fitRect, gridColumns, rectAt} from './primitives/focus';
 export type {Rect, RectKey} from './primitives/focus';
 export {Camera} from './primitives/Camera';

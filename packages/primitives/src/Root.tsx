@@ -1,3 +1,4 @@
+import {BrandStylesDemo, BRAND_STYLES_DURATION} from './showcase/BrandStylesDemo';
 import {
 	CardGridBeat,
 	CARD_GRID_VERTICAL_DURATION,
@@ -23,6 +24,20 @@ export const Root: React.FC = () => (
 		<Composition id="Showcase" component={Showcase} durationInFrames={SHOWCASE_DURATION} {...video} />
 		<Composition id="RefIntro" component={RefIntro} durationInFrames={REF_INTRO_DURATION} {...video} />
 		<Folder name="Primitives">
+			<Composition
+				id="BrandStylesDemo"
+				component={BrandStylesDemo}
+				durationInFrames={BRAND_STYLES_DURATION}
+				{...video}
+			/>
+			<Composition
+				id="BrandStylesVertical"
+				component={BrandStylesDemo}
+				durationInFrames={BRAND_STYLES_DURATION}
+				fps={30}
+				width={1080}
+				height={1920}
+			/>
 			<Composition
 				id="ProductFocusDemo"
 				component={ProductFocusDemo}

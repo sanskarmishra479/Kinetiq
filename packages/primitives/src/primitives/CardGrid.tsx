@@ -1,7 +1,8 @@
 import {spring, useCurrentFrame, useVideoConfig} from 'remotion';
-import {springs} from '../motion';
-import {useTheme} from '../theme';
-import {cardWave, gridColumns} from './focus';
+import {dur, ease, springs, tween} from '../motion';
+import {resolveStyle, type ResolvedStyle, type Theme, useTheme} from '../theme';
+import {bentoSpan, cardColorIndex, cardStart, cardSurface, type CardVariant} from './cardStyle';
+import {gridColumns} from './focus';
 
 export type CardIcon =
 	'bolt' | 'sparkle' | 'shield' | 'chart' | 'globe' | 'clock' | 'users' | 'code' | 'lock' | 'layers' | 'video' | 'wand';
@@ -10,72 +11,262 @@ export type Card = {title: string; body?: string; icon?: CardIcon};
 
 type Props = {
 	cards: Card[];
+	// grid: equal cards · bento: one big hero card + smaller ones · list: typographic
+	// rows with drawn dividers · steps: a numbered sequence (only for real processes).
+	variant?: CardVariant;
 	at?: number;
-	// Frames between waves of cards.
+	// Frames between cards appearing.
 	stagger?: number;
-	// Defaults: 3 columns in 16:9, 2 in 1:1, 1–2 in 9:16.
+	// Grid/bento only. Defaults depend on the frame shape (3 wide, 2 square, 1–2 tall).
 	columns?: number;
 	maxWidth?: number | string;
 };
 
-// Feature cards that pop in, in diagonal waves from the top-left.
-export const CardGrid: React.FC<Props> = ({cards, at = 0, stagger = 6, columns, maxWidth}) => {
-	const frame = useCurrentFrame();
-	const {fps, width, height} = useVideoConfig();
+// Feature cards styled by the theme (fill, border, shadow, heading font, palette),
+// so each brand gets its own look instead of the same template recolored.
+export const CardGrid: React.FC<Props> = ({cards, variant = 'grid', at = 0, stagger = 6, columns, maxWidth}) => {
+	const {width, height} = useVideoConfig();
 	const theme = useTheme();
+	const s = resolveStyle(theme);
 	const k = Math.min(width, height) / 1080;
-	const cols = columns ?? gridColumns(cards.length, width, height);
+	const wide = width > height;
+	const box: React.CSSProperties = {
+		width: maxWidth ?? (wide ? '84%' : '88%'),
+		margin: '0 auto',
+		fontFamily: theme.fontFamily,
+	};
+	const ctx = {cards, at, stagger, theme, s, k, wide};
+	if (variant === 'list') return <List {...ctx} style={box} />;
+	if (variant === 'steps') return <Steps {...ctx} style={box} />;
+	const cols = columns ?? (variant === 'bento' ? (wide ? 3 : 2) : gridColumns(cards.length, width, height));
+	return <Grid {...ctx} style={box} cols={cols} bento={variant === 'bento'} />;
+};
 
+type Ctx = {
+	cards: Card[];
+	at: number;
+	stagger: number;
+	theme: Theme;
+	s: ResolvedStyle;
+	k: number;
+	wide: boolean;
+	style: React.CSSProperties;
+};
+
+const heading = (s: ResolvedStyle, size: number): React.CSSProperties => ({
+	fontFamily: s.headingFont,
+	fontWeight: s.headingWeight,
+	letterSpacing: `${s.headingTracking}em`,
+	fontSize: size,
+	lineHeight: 1.1,
+});
+
+const Grid: React.FC<Ctx & {cols: number; bento: boolean}> = ({
+	cards,
+	at,
+	stagger,
+	theme,
+	s,
+	k,
+	style,
+	cols,
+	bento,
+}) => {
+	const frame = useCurrentFrame();
+	const {fps} = useVideoConfig();
 	return (
 		<div
 			style={{
+				...style,
 				display: 'grid',
 				gridTemplateColumns: `repeat(${cols}, 1fr)`,
-				gap: 24 * k,
-				width: maxWidth ?? (width > height ? '84%' : '88%'),
-				margin: '0 auto',
-				fontFamily: theme.fontFamily,
+				gridAutoRows: bento ? `minmax(${190 * k}px, auto)` : undefined,
+				gap: 20 * k,
 			}}
 		>
 			{cards.map((card, i) => {
-				const p = spring({frame, fps, delay: at + cardWave(i, cols) * stagger, config: springs.snappy});
+				const hero = bento && i === 0;
+				const start = cardStart(i, bento ? 'bento' : 'grid', cols, at, stagger);
+				const p = spring({frame, fps, delay: start, config: hero ? springs.gentle : springs.snappy});
+				const span = bento ? bentoSpan(i, cols) : {col: 1, row: 1};
+				const surf = cardSurface(theme, s, cardColorIndex(i, bento, s.palette.length), k, hero);
 				return (
 					<div
 						key={i}
 						style={{
-							padding: 34 * k,
-							borderRadius: theme.radius * 1.4 * k,
-							background: theme.surface,
-							border: `1px solid ${theme.border}`,
-							boxShadow: `0 ${20 * k}px ${50 * k}px -${20 * k}px rgba(0,0,0,0.35)`,
-							opacity: Math.min(1, p * 1.4),
-							transform: `translateY(${(1 - p) * 44 * k}px) scale(${0.94 + p * 0.06})`,
-							filter: p < 0.98 ? `blur(${(1 - Math.min(p, 1)) * 8 * k}px)` : undefined,
+							gridColumn: `span ${span.col}`,
+							gridRow: `span ${span.row}`,
+							padding: (hero ? 44 : 30) * k,
+							borderRadius: theme.radius * k,
+							background: surf.background,
+							border: surf.border,
+							boxShadow: surf.boxShadow,
+							color: surf.color,
+							display: 'flex',
+							flexDirection: 'column',
+							justifyContent: bento ? 'space-between' : 'flex-start',
+							gap: 18 * k,
+							opacity: Math.min(1, p * 1.5),
+							transform: `translateY(${(1 - p) * 28 * k}px) scale(${hero ? 0.94 + 0.06 * p : 1})`,
 						}}
 					>
 						{card.icon && (
+							<Glyph
+								name={card.icon}
+								size={(hero ? 46 : 34) * k}
+								color={surf.color === theme.fg ? theme.accent : surf.color}
+							/>
+						)}
+						<div>
+							<div style={heading(s, (hero ? 58 : 30) * k)}>{card.title}</div>
+							{card.body && (
+								<div
+									style={{
+										color: surf.muted,
+										fontSize: (hero ? 26 : 21) * k,
+										lineHeight: 1.45,
+										marginTop: 10 * k,
+										maxWidth: hero ? '85%' : undefined,
+									}}
+								>
+									{card.body}
+								</div>
+							)}
+						</div>
+					</div>
+				);
+			})}
+		</div>
+	);
+};
+
+// Typographic rows: a divider draws across, then the row's text settles in.
+const List: React.FC<Ctx> = ({cards, at, stagger, theme, s, k, wide, style}) => {
+	const frame = useCurrentFrame();
+	const rule = s.border === 'bold' ? `${3 * k}px` : `${Math.max(1, 1.5 * k)}px`;
+	const ruleColor = s.border === 'bold' ? theme.fg : `color-mix(in srgb, ${theme.fg} 28%, transparent)`;
+	const line = (start: number) => (
+		<div
+			style={{
+				height: rule,
+				background: ruleColor,
+				transformOrigin: 'left',
+				transform: `scaleX(${tween(frame, [start, start + dur.slow], [0, 1], ease.inOut)})`,
+			}}
+		/>
+	);
+	const last = cardStart(cards.length - 1, 'list', 1, at, stagger);
+	return (
+		<div style={style}>
+			{cards.map((card, i) => {
+				const start = cardStart(i, 'list', 1, at, stagger);
+				const t = tween(frame, [start + 6, start + 6 + dur.base], [0, 1], ease.out);
+				return (
+					<div key={i}>
+						{line(start)}
+						<div
+							style={{
+								display: 'flex',
+								flexDirection: wide ? 'row' : 'column',
+								alignItems: wide ? 'baseline' : 'flex-start',
+								gap: (wide ? 40 : 10) * k,
+								padding: `${(wide ? 26 : 22) * k}px 0`,
+								opacity: t,
+								transform: `translateY(${(1 - t) * 14 * k}px)`,
+							}}
+						>
+							<div style={{...heading(s, 40 * k), color: theme.fg, flex: wide ? '0 0 50%' : undefined}}>
+								{card.title}
+							</div>
+							{card.body && (
+								<div style={{color: theme.muted, fontSize: 23 * k, lineHeight: 1.45, flex: 1}}>{card.body}</div>
+							)}
+						</div>
+					</div>
+				);
+			})}
+			{line(last + dur.fast)}
+		</div>
+	);
+};
+
+// A numbered process: a line runs through the steps and each one lights up as it's reached.
+const Steps: React.FC<Ctx> = ({cards, at, stagger, theme, s, k, wide, style}) => {
+	const frame = useCurrentFrame();
+	const n = cards.length;
+	const span = n * stagger * 1.6;
+	const reach = tween(frame, [at, at + span], [0, 1], (t) => t);
+	const lineW = Math.max(2, 2 * k);
+	const dot = 16 * k;
+	return (
+		<div style={{...style, position: 'relative', display: 'flex', flexDirection: wide ? 'row' : 'column', gap: 0}}>
+			{/* Track and progress line. */}
+			<div
+				style={{
+					position: 'absolute',
+					...(wide
+						? {left: 0, right: 0, top: dot / 2 - lineW / 2, height: lineW}
+						: {top: 0, bottom: 0, left: dot / 2 - lineW / 2, width: lineW}),
+					background: `color-mix(in srgb, ${theme.fg} 16%, transparent)`,
+				}}
+			/>
+			<div
+				style={{
+					position: 'absolute',
+					...(wide
+						? {left: 0, top: dot / 2 - lineW / 2, height: lineW, width: `${reach * 100}%`}
+						: {left: dot / 2 - lineW / 2, top: 0, width: lineW, height: `${reach * 100}%`}),
+					background: theme.accent,
+				}}
+			/>
+			{cards.map((card, i) => {
+				const start = cardStart(i, 'steps', 1, at, stagger);
+				const on = tween(frame, [start, start + dur.fast], [0, 1], ease.out);
+				const t = tween(frame, [start + 4, start + 4 + dur.base], [0, 1], ease.out);
+				const color = s.palette[i % s.palette.length] ?? theme.accent;
+				return (
+					<div
+						key={i}
+						style={{
+							flex: 1,
+							position: 'relative',
+							paddingTop: wide ? dot + 30 * k : 0,
+							paddingLeft: wide ? 0 : dot + 34 * k,
+							paddingRight: wide ? 36 * k : 0,
+							paddingBottom: wide ? 0 : 40 * k,
+						}}
+					>
+						<div
+							style={{
+								position: 'absolute',
+								left: 0,
+								top: 0,
+								width: dot,
+								height: dot,
+								borderRadius: '50%',
+								background: theme.bg,
+								boxShadow: `inset 0 0 0 ${lineW}px ${on > 0 ? color : theme.border}`,
+							}}
+						>
 							<div
 								style={{
-									width: 60 * k,
-									height: 60 * k,
-									borderRadius: 16 * k,
-									background: `${theme.accent}22`,
-									border: `1px solid ${theme.accent}44`,
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-									marginBottom: 26 * k,
+									width: '100%',
+									height: '100%',
+									borderRadius: '50%',
+									background: color,
+									transform: `scale(${on * 0.6})`,
 								}}
-							>
-								<Glyph name={card.icon} size={30 * k} color={theme.accent} />
-							</div>
-						)}
-						<div style={{color: theme.fg, fontSize: 32 * k, fontWeight: 600, letterSpacing: '-0.02em'}}>
-							{card.title}
+							/>
 						</div>
-						{card.body && (
-							<div style={{color: theme.muted, fontSize: 22 * k, lineHeight: 1.45, marginTop: 10 * k}}>{card.body}</div>
-						)}
+						<div style={{opacity: t, transform: `translateY(${(1 - t) * 14 * k}px)`}}>
+							<div style={{...heading(s, 76 * k), color, lineHeight: 1}}>{i + 1}</div>
+							<div style={{...heading(s, 30 * k), color: theme.fg, marginTop: 16 * k}}>{card.title}</div>
+							{card.body && (
+								<div style={{color: theme.muted, fontSize: 21 * k, lineHeight: 1.45, marginTop: 8 * k}}>
+									{card.body}
+								</div>
+							)}
+						</div>
 					</div>
 				);
 			})}

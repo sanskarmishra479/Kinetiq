@@ -19,7 +19,40 @@ export type Theme = {
 	accentFg: string;
 	radius: number;
 	fontFamily: string;
+	// Optional brand personality. Leave out for a neutral look; see resolveStyle().
+	headingFont?: string;
+	// 2–4 extra brand colors, used where a layout needs more than one accent.
+	palette?: string[];
+	style?: ThemeStyle;
 };
+
+// How surfaces are drawn. This is what makes two brands look like two different
+// designers made them, not just the same template recolored.
+export type ThemeStyle = {
+	// Card fill: solid surface, just an outline, a tint of the accent, or full brand color.
+	surface?: 'solid' | 'outline' | 'tint' | 'brand';
+	border?: 'none' | 'hairline' | 'bold';
+	// 'hard' = offset solid shadow (playful), 'soft' = blurred, 'none' = flat.
+	shadow?: 'none' | 'soft' | 'hard';
+	// Heading weight and letter spacing.
+	headingWeight?: number;
+	headingTracking?: number;
+};
+
+export type ResolvedStyle = Required<ThemeStyle> & {headingFont: string; palette: string[]};
+
+// Fill in defaults, so primitives can read every style token without checks.
+export function resolveStyle(theme: Theme): ResolvedStyle {
+	return {
+		surface: theme.style?.surface ?? 'solid',
+		border: theme.style?.border ?? 'hairline',
+		shadow: theme.style?.shadow ?? 'soft',
+		headingWeight: theme.style?.headingWeight ?? 600,
+		headingTracking: theme.style?.headingTracking ?? -0.02,
+		headingFont: theme.headingFont ?? theme.fontFamily,
+		palette: theme.palette?.length ? theme.palette : [theme.accent],
+	};
+}
 
 export const darkCinematic: Theme = {
 	bg: '#0a0a0c',
@@ -50,3 +83,4 @@ export const minimalLight: Theme = {
 const ThemeContext = createContext<Theme>(darkCinematic);
 export const ThemeProvider = ThemeContext.Provider;
 export const useTheme = () => useContext(ThemeContext);
+export const useThemeStyle = () => resolveStyle(useContext(ThemeContext));

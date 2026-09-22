@@ -113,15 +113,19 @@ type CaptionsProps = {
 
 ### <CardGrid>
 
-Feature cards that pop in, in diagonal waves from the top-left.
+Feature cards styled by the theme (fill, border, shadow, heading font, palette),
+so each brand gets its own look instead of the same template recolored.
 
 ```ts
 type CardGridProps = {
 	cards: Card[];
+	// grid: equal cards · bento: one big hero card + smaller ones · list: typographic
+	// rows with drawn dividers · steps: a numbered sequence (only for real processes).
+	variant?: CardVariant;
 	at?: number;
-	// Frames between waves of cards.
+	// Frames between cards appearing.
 	stagger?: number;
-	// Defaults: 3 columns in 16:9, 2 in 1:1, 1–2 in 9:16.
+	// Grid/bento only. Defaults depend on the frame shape (3 wide, 2 square, 1–2 tall).
 	columns?: number;
 	maxWidth?: number | string;
 };
@@ -363,7 +367,7 @@ type ZoomFocusProps = {
 	// Space left around the element when zoomed, as a fraction of the frame.
 	padding?: number;
 	maxScale?: number;
-	// How blurred and darkened the rest of the scene gets.
+	// How blurred (in on-screen px, whatever the zoom) and darkened the rest of the scene gets.
 	blur?: number;
 	dim?: number;
 	radius?: number;
@@ -534,6 +538,14 @@ A rect that is either fixed or keyframed (so a spotlight can glide between eleme
 rectAt: (frame: number, rect: Rect | RectKey[]) => Rect
 ```
 
+### resolveStyle
+
+Fill in defaults, so primitives can read every style token without checks.
+
+```ts
+resolveStyle: (theme: Theme) => ResolvedStyle
+```
+
 ### splitUnits
 
 ```ts
@@ -569,6 +581,12 @@ tween: (frame: number, [start, end]: [number, number], [from, to]: [number, numb
 
 ```ts
 useTheme: () => Theme
+```
+
+### useThemeStyle
+
+```ts
+useThemeStyle: () => ResolvedStyle
 ```
 
 ## Types
@@ -635,6 +653,12 @@ type Card = {title: string; body?: string; icon?: CardIcon};
 type CardIcon = 'bolt' | 'sparkle' | 'shield' | 'chart' | 'globe' | 'clock' | 'users' | 'code' | 'lock' | 'layers' | 'video' | 'wand';
 ```
 
+### CardVariant
+
+```ts
+type CardVariant = 'grid' | 'bento' | 'list' | 'steps';
+```
+
 ### CursorPoint
 
 ```ts
@@ -665,6 +689,12 @@ type Rect = {x: number; y: number; w: number; h: number};
 
 ```ts
 type RectKey = Rect & {frame: number};
+```
+
+### ResolvedStyle
+
+```ts
+type ResolvedStyle = Required<ThemeStyle> & {headingFont: string; palette: string[]};
 ```
 
 ### ScrollKey
@@ -698,5 +728,28 @@ type Theme = {
 	accentFg: string;
 	radius: number;
 	fontFamily: string;
+	// Optional brand personality. Leave out for a neutral look; see resolveStyle().
+	headingFont?: string;
+	// 2–4 extra brand colors, used where a layout needs more than one accent.
+	palette?: string[];
+	style?: ThemeStyle;
+};
+```
+
+### ThemeStyle
+
+How surfaces are drawn. This is what makes two brands look like two different
+designers made them, not just the same template recolored.
+
+```ts
+type ThemeStyle = {
+	// Card fill: solid surface, just an outline, a tint of the accent, or full brand color.
+	surface?: 'solid' | 'outline' | 'tint' | 'brand';
+	border?: 'none' | 'hairline' | 'bold';
+	// 'hard' = offset solid shadow (playful), 'soft' = blurred, 'none' = flat.
+	shadow?: 'none' | 'soft' | 'hard';
+	// Heading weight and letter spacing.
+	headingWeight?: number;
+	headingTracking?: number;
 };
 ```

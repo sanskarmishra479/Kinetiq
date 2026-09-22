@@ -29,6 +29,8 @@ export const ALLOWED_IMPORTS = {
 		'springs',
 		'tween',
 		'useTheme',
+		'useThemeStyle',
+		'resolveStyle',
 		'isDark',
 		'luminance',
 		'Background',

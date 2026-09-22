@@ -10,7 +10,7 @@ type Props = {
 	// Space left around the element when zoomed, as a fraction of the frame.
 	padding?: number;
 	maxScale?: number;
-	// How blurred and darkened the rest of the scene gets.
+	// How blurred (in on-screen px, whatever the zoom) and darkened the rest of the scene gets.
 	blur?: number;
 	dim?: number;
 	radius?: number;
@@ -25,8 +25,8 @@ export const ZoomFocus: React.FC<Props> = ({
 	until,
 	padding = 0.25,
 	maxScale = 3,
-	blur = 10,
-	dim = 0.25,
+	blur = 12,
+	dim = 0.15,
 	radius = 14,
 	children,
 }) => {
@@ -51,7 +51,8 @@ export const ZoomFocus: React.FC<Props> = ({
 			<AbsoluteFill
 				style={{
 					...layer,
-					filter: t > 0.01 ? `blur(${blur * t}px) brightness(${1 - dim * t})` : undefined,
+					// The layer is scaled after the filter, so divide to keep the blur the same on screen.
+					filter: t > 0.01 ? `blur(${(blur * t) / cam.scale}px) brightness(${1 - dim * t})` : undefined,
 				}}
 			>
 				{children}

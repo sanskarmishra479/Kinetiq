@@ -30,7 +30,7 @@ Rules every primitive follows (from [TEST_PLAN § 2](TEST_PLAN.md#2-testability-
 | Module | File | What it gives |
 |---|---|---|
 | Motion presets | `src/motion.ts` | `ease.out/inOut/in`, `springs.snappy/bouncy/gentle`, `dur`, `tween()`, `keyframes()`, `openClose()` |
-| Theme | `src/theme.tsx` | `Theme` (the code form of DESIGN.md), `darkCinematic`, `minimalLight`, `ThemeProvider`/`useTheme`, Inter font |
+| Theme | `src/theme.tsx` | `Theme` (the code form of DESIGN.md), `darkCinematic`, `minimalLight`, `ThemeProvider`/`useTheme`, Inter font. Optional brand personality: `headingFont`, `palette` (2–4 colors) and `style` (`surface` solid/outline/tint/brand, `border` none/hairline/bold, `shadow` none/soft/hard, heading weight and tracking). `resolveStyle()`/`useThemeStyle()` fill in defaults |
 | Color helpers | `src/color.ts` | `luminance()`, `isDark()`: pick light or dark chrome from a theme |
 
 ## 2. Built primitives
@@ -47,8 +47,8 @@ All files are in `packages/primitives/src/primitives/`. Demos render with `npx r
 | `BlurInText` | ✅ | Text comes into focus by char, word or line (soft, faint and offset, then sharp). `grow` widens the line and keeps it centered. Optional blur-out | `text`, `by`, `grow`, `at`, `exitAt` | BlurInDemo → `out/blur-in.mp4`, `out/blur-in-vertical.mp4` |
 | `FocusPull` | ✅ | Whole-scene lens focus in/out, for soft scene changes | `inAt`, `outAt`, `blur` | BlurInDemo |
 | `Spotlight` | ✅ | Dims everything except one element, with a glowing accent ring and optional label. Can glide between elements (keyframed rect) | `rect`, `at`, `until`, `label`, `dim` | ProductFocusDemo → `out/product-focus.mp4` |
-| `ZoomFocus` | ✅ | Depth of field: camera zooms onto one element, which stays sharp and lifts, while the rest blurs and darkens | `rect`, `at`, `until`, `blur`, `padding` | ProductFocusDemo |
-| `CardGrid` | ✅ | Feature cards (icon, title, body) pop in diagonal waves. 3 columns in 16:9, 2 in 1:1 and 9:16. 12 built-in icons | `cards`, `at`, `stagger`, `columns` | ProductFocusDemo, CardGridVertical → `out/card-grid-vertical.mp4` |
+| `ZoomFocus` | ✅ | Depth of field: camera zooms onto one element, which stays sharp and lifts, while the rest blurs (12px on screen, whatever the zoom) and darkens a little | `rect`, `at`, `until`, `blur`, `padding` | ProductFocusDemo |
+| `CardGrid` | ✅ | Feature cards styled by the brand, not one template. Layouts: `grid` (equal cards, diagonal waves), `bento` (one big hero card in a brand color), `list` (typographic rows, dividers draw in), `steps` (numbered, only for real sequences). Fill, border, shadow, fonts and colors come from the theme style. 12 built-in icons | `cards`, `variant`, `at`, `stagger`, `columns` | BrandStylesDemo → `out/brand-styles.mp4`, `out/brand-styles-vertical.mp4`; ProductFocusDemo; CardGridVertical |
 | `KineticStack` | ✅ | Stacked bold lines ("LAUNCH / VIDEOS / IN MINUTES") | `lines`, `exitAt` | Showcase |
 | `Typewriter` | ✅ | Types text with a caret | `text`, `startAt`, `charsPerSecond` | Showcase |
 | `ChatBubble` + `TypingDots` | ✅ | Message bubbles that pop in with a spring. Typing indicator | `text`, `from`, `delay` | Showcase, RefIntro |
