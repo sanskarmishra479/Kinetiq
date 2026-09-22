@@ -203,7 +203,7 @@ describe('idempotency (FR-CHAT-04, NFR-SEC-16)', () => {
 		return {app, calls: () => calls};
 	}
 
-	const KEY = 'key_0123456789abcdef';
+	const KEY = 'key_0123456789abcdef'; // gitleaks:allow (test idempotency key)
 
 	it('requires a well-formed key', async () => {
 		const {app} = counted(memoryStore());

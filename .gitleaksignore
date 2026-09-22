@@ -1,0 +1,5 @@
+# Reviewed false positives (test-only fake values, not real secrets).
+# New findings are never added here without review. Prefer an inline
+# `gitleaks:allow` comment on the line for new test fixtures.
+a8bfd355d436598ca8489088373d688336cd7a75:apps/api/src/testing/index.ts:generic-api-key:26
+a8bfd355d436598ca8489088373d688336cd7a75:apps/api/src/middleware/middleware.test.ts:generic-api-key:206

@@ -23,7 +23,7 @@ export const TEST_ENV: Record<string, string> = {
 	S3_SECRET_ACCESS_KEY: 'test',
 	S3_BUCKET_CONTENT: 'content',
 	S3_BUCKET_PUBLIC: 'public',
-	BETTER_AUTH_SECRET: 'test-secret-that-is-at-least-32-characters-long',
+	BETTER_AUTH_SECRET: 'test-secret-that-is-at-least-32-characters-long', // gitleaks:allow (test-only fake)
 	MOCK_PROVIDERS: 'true',
 	LOG_LEVEL: 'silent',
 };
