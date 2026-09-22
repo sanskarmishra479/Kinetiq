@@ -11,8 +11,10 @@ const flag = z.stringbool().default(false);
 const schema = z.object({
 	NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 	APP_ENV: z.enum(['local', 'staging', 'production']).default('local'),
-	LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+	LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
 
+	/** Port the API listens on (hosts like Railway set PORT). */
+	PORT: z.coerce.number().int().min(1).max(65535).default(4000),
 	WEB_ORIGIN: z.url(),
 	API_ORIGIN: z.url(),
 	CONTENT_ORIGIN: z.url(),
@@ -30,6 +32,13 @@ const schema = z.object({
 	S3_BUCKET_PUBLIC: z.string().min(1),
 
 	BETTER_AUTH_SECRET: z.string().min(32, 'must be at least 32 characters'),
+	/** Cookie domain shared by the app and API, e.g. ".kinetiq.so". Unset locally. */
+	COOKIE_DOMAIN: z
+		.string()
+		.regex(/^\.[a-z0-9.-]+$/, 'must look like ".example.com"')
+		.optional(),
+	/** Number of trusted proxy hops in front of the API (Cloudflare + Railway = 2). */
+	TRUST_PROXY: z.coerce.number().int().min(0).max(5).default(0),
 	GOOGLE_CLIENT_ID: optionalString,
 	GOOGLE_CLIENT_SECRET: optionalString,
 	TURNSTILE_SECRET_KEY: optionalString,
@@ -101,6 +110,7 @@ function crossChecks(c: Config): Issue[] {
 		if (c.NODE_ENV !== 'production') issues.push({path: 'NODE_ENV', message: 'must be "production" outside local'});
 		need(
 			[
+				'COOKIE_DOMAIN',
 				'GOOGLE_CLIENT_ID',
 				'GOOGLE_CLIENT_SECRET',
 				'TURNSTILE_SECRET_KEY',

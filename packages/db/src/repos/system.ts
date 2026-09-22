@@ -39,6 +39,15 @@ export function accountsRepo({db, clock}: RepoDeps) {
 			}));
 		},
 
+		/** Credits held by this user's queued or running jobs. */
+		async reservedCredits(userId: string): Promise<number> {
+			const {_sum} = await db.job.aggregate({
+				where: {userId, status: {in: ['queued', 'running']}},
+				_sum: {reservedCredits: true},
+			});
+			return _sum.reservedCredits ?? 0;
+		},
+
 		/** Balance = sum of the append-only ledger (FR-CRD-07). */
 		async ledgerBalance(userId: string): Promise<number> {
 			const {_sum} = await db.creditLedger.aggregate({where: {userId}, _sum: {amount: true}});

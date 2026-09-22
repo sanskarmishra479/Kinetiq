@@ -29,15 +29,15 @@ enum UserRole {
 }
 
 model User {
-  id               String    @id
+  id               String   @id
   name             String?
-  email            String    @unique
-  emailVerified    Boolean   @default(false)
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
   image            String?
-  role             UserRole  @default(user)
-  twoFactorEnabled Boolean   @default(false)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  role             UserRole @default(user)
+  twoFactorEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   sessions      Session[]
   accounts      Account[]
@@ -106,10 +106,14 @@ model Verification {
 }
 
 model TwoFactor {
-  id          String @id
-  userId      String
-  secret      String
-  backupCodes String
+  id                      String    @id
+  userId                  String
+  secret                  String
+  backupCodes             String
+  verified                Boolean   @default(true)
+  /// Brute-force protection: wrong codes counted, account locked for a while.
+  failedVerificationCount Int       @default(0)
+  lockedUntil             DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -256,8 +260,8 @@ model Job {
   finishedAt      DateTime?
   createdAt       DateTime  @default(now())
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
   steps   JobStep[]
   version Version?
   costs   ProviderCost[]
@@ -306,9 +310,9 @@ model Version {
   freeEditsUsed   Int      @default(0)
   createdAt       DateTime @default(now())
 
-  project Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  job     Job?     @relation(fields: [jobId], references: [id], onDelete: SetNull)
-  parent  Version? @relation("VersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  project Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  job     Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  parent  Version?  @relation("VersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
   childs  Version[] @relation("VersionParent")
   scenes  Scene[]
 

@@ -171,6 +171,8 @@ describe('jobs and versions', () => {
 		expect(await t.repos.jobs.get(bob.id, job?.id ?? '')).toBeNull();
 		expect(await t.repos.jobs.countActive(alice.id)).toBe(1);
 		expect(await t.repos.jobs.countActive(bob.id)).toBe(0);
+		expect(await t.repos.accounts.reservedCredits(alice.id)).toBe(20);
+		expect(await t.repos.accounts.reservedCredits(bob.id)).toBe(0);
 		expect(await t.repos.jobs.hasActiveForProject(alice.id, project.id)).toBe(true);
 	});
 

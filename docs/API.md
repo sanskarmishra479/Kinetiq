@@ -81,7 +81,7 @@ BetterAuth handles these. Main routes the web app uses:
 ```
 
 ### `DELETE /v1/me` [NFR-LEG-02]
-Deletes the account and all its data (projects, assets, renders) after confirmation. Returns `204`.
+Deletes the account and all its data (projects, assets, renders). The body must be exactly `{"confirm": true}`, otherwise `400`. Returns `204` and expires the session cookies.
 
 ## 4. Projects [FR-PRJ-01…05]
 

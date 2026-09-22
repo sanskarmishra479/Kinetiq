@@ -26,7 +26,7 @@
 | 0 | Repo, tooling, CI | ✅ |
 | 1 | Shared contracts (zod) | ✅ |
 | 2 | Database (Prisma) | ✅ |
-| 3 | API skeleton + auth | ⬜ |
+| 3 | API skeleton + auth | ✅ |
 | 4 | Projects, chat, uploads | ⬜ |
 | 5 | Credits domain + ledger | ⬜ |
 | 6 | Queue, jobs, realtime events | ⬜ |
@@ -130,8 +130,8 @@
 ## Phase 3: API skeleton + auth (`apps/api`)
 > Goal: a secure, testable Express app with login working.
 
-- [ ] `container.ts` composition root. `buildApp(container)` returns an Express app, so tests use fakes (rule T4)
-- [ ] Middleware:
+- [x] `container.ts` composition root. `buildApp(container)` returns an Express app, so tests use fakes (rule T4)
+- [x] Middleware:
   - request id
   - JSON logger (pino) with `requestId` / `userId`
   - helmet (strict CSP, HSTS)
@@ -139,18 +139,18 @@
   - body size limit (1 MB)
   - zod validation helper
   - error handler mapping domain errors to [API error codes](API.md#error-format)
-- [ ] BetterAuth: email magic link (via `EmailPort`, fake in tests) + Google OAuth. Cookie `.kinetiq.so`, httpOnly, Secure, SameSite=Lax [FR-AUTH-01, 02, 05]
-- [ ] Turnstile check on sign-up/magic-link (`CaptchaPort`, fake in tests) [FR-AUTH-03]
-- [ ] `requireAuth` middleware; `requireAdmin`
-- [ ] Rate limiter middleware (Redis sliding window, `rate-limiter-flexible`) with limits from config ([API § 17](API.md#17-rate-limits-defaults-set-through-config)) [NFR-SEC-03]
-- [ ] Idempotency middleware (`Idempotency-Key` → stored response for 24 h; different body → `409 IDEMPOTENCY_MISMATCH`)
-- [ ] 🔒 `Origin` check middleware on every state-changing `/v1` request (webhooks exempt) [NFR-SEC-11]
-- [ ] 🔒 Magic-link limit per email (3/hour) + per IP; identical responses for known and unknown emails [FR-AUTH-06]
-- [ ] 🔒 Admin 2FA (BetterAuth two-factor plugin); link accounts only for verified emails [FR-AUTH-07]
-- [ ] 🔒 Log redaction (pino `redact`): emails, tokens, cookies, signed URLs, keys; the same in Sentry `beforeSend` [NFR-SEC-15]
-- [ ] 🔒 Idempotency keys stored as `(userId, key)` [NFR-SEC-16]
-- [ ] `GET /healthz`, `GET /readyz`
-- [ ] `GET /v1/me`, `DELETE /v1/me` [NFR-LEG-02]
+- [x] BetterAuth: email magic link (via `EmailPort`, fake in tests) + Google OAuth. Cookie `.kinetiq.so`, httpOnly, Secure, SameSite=Lax [FR-AUTH-01, 02, 05]
+- [x] Turnstile check on sign-up/magic-link (`CaptchaPort`, fake in tests) [FR-AUTH-03]
+- [x] `requireAuth` middleware; `requireAdmin`
+- [x] Rate limiter middleware (Redis sliding window, `rate-limiter-flexible`) with limits from config ([API § 17](API.md#17-rate-limits-defaults-set-through-config)) [NFR-SEC-03]
+- [x] Idempotency middleware (`Idempotency-Key` → stored response for 24 h; different body → `409 IDEMPOTENCY_MISMATCH`)
+- [x] 🔒 `Origin` check middleware on every state-changing `/v1` request (webhooks exempt) [NFR-SEC-11]
+- [x] 🔒 Magic-link limit per email (3/hour) + per IP; identical responses for known and unknown emails [FR-AUTH-06]
+- [x] 🔒 Admin 2FA (BetterAuth two-factor plugin, with brute-force lockout); link accounts only for verified emails [FR-AUTH-07]. `requireAdmin` needs role=admin **and** 2FA enabled. ⏭ Per-request TOTP step-up for the admin HTTP API moves to Phase 12 (the MVP has no admin HTTP API)
+- [x] 🔒 Log redaction [NFR-SEC-15]: requests are logged as method + path only (no query strings, headers or bodies), and known secret fields are redacted. ⏭ Sentry `beforeSend` scrubbing moves to Phase 12, when Sentry is added
+- [x] 🔒 Idempotency keys stored as `(userId, key)` [NFR-SEC-16]
+- [x] `GET /healthz`, `GET /readyz`
+- [x] `GET /v1/me`, `DELETE /v1/me` [NFR-LEG-02]
 
 **Tests:**
 - 401 without a session
@@ -160,7 +160,14 @@
 - security headers present
 - account deletion removes the user's data
 
-**✅ Exit criteria:** you can log in locally with a magic link (the email is printed to the console in dev) and `GET /v1/me` works.
+**✅ Exit criteria:** you can log in locally with a magic link (the email is printed to the console in dev) and `GET /v1/me` works. **Done: verified by a local server run and the integration tests.**
+
+**Notes from the build:**
+- BetterAuth **turns off its origin and callback-URL checks when `NODE_ENV=test`**. We set `disableOriginCheck: false` and `disableCSRFCheck: false` explicitly, so the tests exercise the real protections and no environment variable can ever switch them off.
+- BetterAuth telemetry is disabled; its in-process rate limiter is replaced by our Redis limiter (shared by all replicas).
+- Magic-link tokens are stored hashed and are single-use; links expire after 10 minutes.
+- Prisma 7 no longer regenerates the client after `migrate dev`; `pnpm db:migrate` now does it.
+- Coverage is measured on unit + integration tests together (CI integration job).
 
 ---
 

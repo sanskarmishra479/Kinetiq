@@ -27,6 +27,8 @@ const production = {
 	PUBLIC_CDN_ORIGIN: 'https://cdn.kinetiq.so',
 	MOCK_PROVIDERS: 'false',
 	RENDER_MODE: 'lambda',
+	COOKIE_DOMAIN: '.kinetiq.so',
+	TRUST_PROXY: '2',
 	OPENROUTER_API_KEY: 'or-key',
 	ELEVENLABS_API_KEY: 'el-key',
 	FIRECRAWL_API_KEY: 'fc-key',
@@ -116,6 +118,12 @@ describe('loadConfig', () => {
 	it('requires auth, payment and email secrets outside local', () => {
 		const {DODO_WEBHOOK_SECRET: _omit, ...env} = production;
 		expect(issuesOf(env)).toEqual(['DODO_WEBHOOK_SECRET']);
+	});
+
+	it('validates the cookie domain and proxy hops', () => {
+		expect(issuesOf({...local, COOKIE_DOMAIN: 'kinetiq.so'})).toContain('COOKIE_DOMAIN');
+		expect(issuesOf({...local, TRUST_PROXY: '9'})).toContain('TRUST_PROXY');
+		expect(loadConfig(production).TRUST_PROXY).toBe(2);
 	});
 
 	it('requires https origins outside local', () => {

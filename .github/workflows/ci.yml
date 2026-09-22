@@ -16,7 +16,7 @@ concurrency:
 
 jobs:
   checks:
-    name: Lint, types, unit tests, coverage
+    name: Lint, types, unit tests
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -31,11 +31,11 @@ jobs:
       - run: pnpm lint
       - run: pnpm format:check
       - run: pnpm typecheck
-      - run: pnpm test:coverage
+      - run: pnpm test
       - run: pnpm build
 
   integration:
-    name: Integration tests (Postgres, Redis, MinIO)
+    name: All tests + coverage (Postgres, Redis, MinIO)
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -48,7 +48,8 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:generate
       - run: pnpm infra:up
-      - run: pnpm test:int
+      # All tests (unit + integration) with the coverage gates from docs/TEST_PLAN.md §5.
+      - run: pnpm test:coverage
 
   security:
     name: Secrets scan + dependency audit
