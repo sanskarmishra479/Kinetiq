@@ -46,6 +46,15 @@ export function templatesRepo({db}: RepoDeps) {
 			};
 		},
 
+		/** The credit discount of a published template (0 when unknown). */
+		async discountPct(templateId: string): Promise<number> {
+			const row = await db.template.findFirst({
+				where: {id: templateId, published: true},
+				select: {creditDiscountPct: true},
+			});
+			return row?.creditDiscountPct ?? 0;
+		},
+
 		async isPublished(templateId: string): Promise<boolean> {
 			return (await db.template.count({where: {id: templateId, published: true}})) > 0;
 		},

@@ -19,3 +19,24 @@ export {
 	type Settings,
 } from './setup/setup.js';
 export {luminance, parseDesignMd, type ParsedDesign} from './design/parse-design-md.js';
+export {
+	available,
+	clawback,
+	debtOf,
+	expire,
+	grant,
+	InsufficientCredits,
+	InvalidCreditAmount,
+	outstandingReservation,
+	reserve,
+	settle,
+	spendOrder,
+	type Bucket,
+	type BucketChange,
+	type BucketSource,
+	type CreditOp,
+	type LedgerLine,
+	type LedgerType,
+	type ReservationLine,
+} from './credits/credits.js';
+export {editCost, estimate, type Estimate, type EstimateInput} from './credits/estimate.js';

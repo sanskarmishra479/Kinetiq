@@ -1,4 +1,4 @@
-import {PAYG_LIMITS, PLANS, type MeResponse} from '@kinetiq/shared';
+import {PageQuery, PAYG_LIMITS, PLANS, type MeResponse} from '@kinetiq/shared';
 import {fromNodeHeaders} from 'better-auth/node';
 import {Router} from 'express';
 import {z} from 'zod';
@@ -17,11 +17,13 @@ export function accountRoutes({repos, auth}: Container): Router {
 		const userId = req.auth!.userId;
 		const profile = await repos.accounts.getProfile(userId);
 		if (!profile) throw new AppError('UNAUTHENTICATED', 'Account no longer exists');
-		const [buckets, total, reserved] = await Promise.all([
+		const [buckets, balance, reserved] = await Promise.all([
 			repos.accounts.usableBuckets(userId),
-			repos.accounts.ledgerBalance(userId),
+			repos.credits.balance(userId),
 			repos.accounts.reservedCredits(userId),
 		]);
+		// Spendable credits, or a negative number while the user owes credits (FR-CRD-09).
+		const total = balance.debt > 0 ? -balance.debt : balance.available;
 		const plan = profile.plan ? PLANS.find((p) => p.code === profile.plan?.code) : undefined;
 		const body: MeResponse = {
 			user: {id: profile.user.id, email: profile.user.email, name: profile.user.name, image: profile.user.image},
@@ -42,6 +44,15 @@ export function accountRoutes({repos, auth}: Container): Router {
 		res.status(204).end();
 	});
 
+	return router;
+}
+
+export function billingRoutes({repos}: Container): Router {
+	const router = Router();
+	/** The user's credit history, newest first (FR-BILL-03). */
+	router.get('/billing/ledger', requireAuth, async (req, res) => {
+		res.json(await repos.credits.ledger(req.auth!.userId, PageQuery.parse(req.query)));
+	});
 	return router;
 }
 

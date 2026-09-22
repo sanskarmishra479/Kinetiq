@@ -28,7 +28,7 @@
 | 2 | Database (Prisma) | ✅ |
 | 3 | API skeleton + auth | ✅ |
 | 4 | Projects, chat, uploads | ✅ |
-| 5 | Credits domain + ledger | ⬜ |
+| 5 | Credits domain + ledger | ✅ |
 | 6 | Queue, jobs, realtime events | ⬜ |
 | 7 | Renderer + scene sandbox | ⬜ |
 | 8 | Pipeline on fakes (LangGraph) | ⬜ |
@@ -206,18 +206,18 @@
 ## Phase 5: Credits domain + ledger (highest risk: money)
 > Goal: correct, race-safe credit accounting. **100% branch coverage** [NFR-MNT-04].
 
-- [ ] `packages/domain/credits`, all pure functions:
+- [x] `packages/domain/credits`, all pure functions:
   - `estimate(projectSettings, table)` → `{ credits, breakdown }` [FR-GEN-01]
   - `planReservation(buckets, amount, now)` → which buckets to debit, subscription buckets first, earliest expiry first [FR-CRD-02, 03]
   - `settle(reserved, actualCost)` → charge ≤ reserved, refund the rest [FR-CRD-05]
   - `refundAll(reservation)` [FR-CRD-06]
   - `expireBuckets(buckets, now)`
   - `editCost(editIndex)`: first 3 edits free [FR-EDIT-05]
-- [ ] `CreditsService` (in `apps/api` + worker) applies the plans to the DB in **SERIALIZABLE** transactions with retry on serialization failure. Every change is a ledger row with an idempotency key [FR-CRD-04, 07]
-- [ ] `POST /v1/projects/:id/estimate` (the same `estimate()` the reservation uses)
-- [ ] `GET /v1/billing/ledger`
-- [ ] Admin/dev-only script to grant test credits (never exposed publicly)
-- [ ] 🔒 `clawback(amount)` for refunds and chargebacks; a negative balance blocks `generate` with `402` [FR-CRD-09]
+- [x] `CreditsService` (in `apps/api` + worker) applies the plans to the DB in **SERIALIZABLE** transactions with retry on serialization failure. Every change is a ledger row with an idempotency key [FR-CRD-04, 07]
+- [x] `POST /v1/projects/:id/estimate` (the same `estimate()` the reservation uses)
+- [x] `GET /v1/billing/ledger`
+- [x] Admin/dev-only script to grant test credits (never exposed publicly)
+- [x] 🔒 `clawback(amount)` for refunds and chargebacks; a negative balance blocks `generate` with `402` [FR-CRD-09]
 
 **Tests:**
 - unit tests for every branch
@@ -225,7 +225,15 @@
 - **race test:** 2 parallel reserves with enough credits for one → exactly one succeeds
 - 402 without credits, and no ledger rows are written
 
-**✅ Exit criteria:** coverage gate at 100% branches on `domain/credits`. The race test is stable across 50 runs.
+**✅ Exit criteria:** coverage gate at 100% branches on `domain/credits`. The race test is stable across 50 runs. **Done: 100% statements/branches/functions/lines; the race test runs 50 rounds per CI run.**
+
+**Notes from the build (two real bugs caught before they shipped):**
+- **Double refund:** a fully charged job leaves no closing ledger line, so settling it again (a retry or the stale-reservation cron) would have refunded spent credits. Settling is now exactly-once per job: `job.chargedCredits` is set in the same serializable transaction, and a second settle throws `AlreadySettled` (tested).
+- **Vanishing debt:** if a chargeback happened while a job was running, the job's refund would refill buckets while the user still owed credits. Refunds now pay off debt first.
+- Invariant enforced everywhere (and by 1,000 random sequences in the domain plus 25 against the real database): **credits in buckets = max(0, ledger balance)**; buckets stay within 0…granted.
+- Every credit write runs in a SERIALIZABLE transaction with retry; ledger idempotency keys are `<operation>#<line>`.
+- `/v1/me` `credits.total` is the spendable balance, or a negative number while the user owes credits.
+- Dev-only `pnpm credits:grant --email … --amount …` refuses to run unless `APP_ENV=local`.
 
 ---
 

@@ -1,6 +1,7 @@
 import {
 	applyAnswer,
 	describeAnswer,
+	estimate,
 	EMPTY_SETTINGS,
 	followUp,
 	introMessages,
@@ -15,6 +16,7 @@ import {
 	SendMessageRequest,
 	VIDEO_MODELS,
 	type BrandKitResponse,
+	type EstimateResponse,
 	type ProjectDetailResponse,
 } from '@kinetiq/shared';
 import {Router} from 'express';
@@ -66,6 +68,27 @@ export function projectRoutes({repos, locks, storage}: Container): Router {
 			repos.jobs.getActiveForProject(userId, project.id),
 		]);
 		const body: ProjectDetailResponse = {project, latestVersion: versions.items[0] ?? null, activeJob};
+		res.json(body);
+	});
+
+	/** What generating this project will cost, and whether the user can afford it (FR-GEN-01). */
+	router.post('/projects/:projectId/estimate', async (req, res) => {
+		const userId = req.auth!.userId;
+		const project = await repos.projects.get(userId, String(req.params.projectId));
+		if (!project) throw notFound('Project not found');
+		const {credits, breakdown} = estimate({
+			durationSec: project.durationSec,
+			voiceover: project.settings.voiceover?.enabled ?? false,
+			aiClips: 0,
+			templateDiscountPct: project.templateId ? await repos.templates.discountPct(project.templateId) : 0,
+		});
+		const balance = await repos.credits.balance(userId);
+		const body: EstimateResponse = {
+			credits,
+			breakdown,
+			balance: balance.available,
+			canAfford: balance.debt === 0 && balance.available >= credits,
+		};
 		res.json(body);
 	});
 

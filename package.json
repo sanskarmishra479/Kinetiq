@@ -22,7 +22,8 @@
 		"infra:down": "docker compose -f infra/docker-compose.yml down",
 		"db:generate": "pnpm --filter @kinetiq/db generate",
 		"db:migrate": "pnpm --filter @kinetiq/db migrate:dev",
-		"db:seed": "pnpm --filter @kinetiq/db seed"
+		"db:seed": "pnpm --filter @kinetiq/db seed",
+		"credits:grant": "pnpm --filter @kinetiq/db credits:grant"
 	},
 	"devDependencies": {
 		"@eslint/js": "10.0.1",

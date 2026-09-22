@@ -5,6 +5,7 @@ import {describe, expect, it} from 'vitest';
 import {z} from 'zod';
 import {memoryLocks} from '../adapters/misc.js';
 import {memoryRateLimiter} from '../adapters/rate-limit.js';
+import {InsufficientCredits} from '@kinetiq/domain';
 import {AppError, errorHandler, notFoundHandler} from '../errors.js';
 import {idempotent, type IdempotencyStore} from './idempotency.js';
 import {createLogger, httpLogger, pathOnly} from './logging.js';
@@ -40,6 +41,9 @@ describe('error handler', () => {
 	app.get('/zod', () => {
 		z.object({url: z.string()}).parse({});
 	});
+	app.get('/credits', () => {
+		throw new InsufficientCredits(23, 10);
+	});
 	app.get('/boom', () => {
 		throw new Error('database password is hunter2');
 	});
@@ -52,6 +56,12 @@ describe('error handler', () => {
 		expect(res.status).toBe(402);
 		expect(res.headers['retry-after']).toBe('5');
 		expect(res.body.error).toMatchObject({code: 'INSUFFICIENT_CREDITS', message: 'Need more', details: {required: 23}});
+	});
+
+	it('turns "not enough credits" into 402 with the numbers (FR-CRD-04)', async () => {
+		const res = await request(app).get('/credits');
+		expect(res.status).toBe(402);
+		expect(res.body.error).toMatchObject({code: 'INSUFFICIENT_CREDITS', details: {required: 23, available: 10}});
 	});
 
 	it('turns validation errors into 400 with field messages', async () => {

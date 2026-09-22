@@ -1,3 +1,4 @@
+import {InsufficientCredits} from '@kinetiq/domain';
 import {ERROR_STATUS, type ErrorCode} from '@kinetiq/shared';
 import type {ErrorRequestHandler, RequestHandler} from 'express';
 import {ZodError} from 'zod';
@@ -40,6 +41,11 @@ export const errorHandler: ErrorRequestHandler = (err: unknown, req, res, _next)
 	let error: AppError;
 	if (err instanceof AppError) {
 		error = err;
+	} else if (err instanceof InsufficientCredits) {
+		error = new AppError('INSUFFICIENT_CREDITS', `You need ${err.required} credits but have ${err.available}.`, {
+			required: err.required,
+			available: err.available,
+		});
 	} else if (err instanceof ZodError) {
 		error = new AppError('VALIDATION_ERROR', 'Invalid request', {fields: fieldErrors(err)});
 	} else if (isBodyParserError(err)) {

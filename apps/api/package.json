@@ -12,6 +12,7 @@
 		"@aws-sdk/client-s3": "3.1137.0",
 		"@aws-sdk/s3-request-presigner": "3.1137.0",
 		"@kinetiq/db": "workspace:*",
+		"@kinetiq/domain": "workspace:*",
 		"@kinetiq/shared": "workspace:*",
 		"better-auth": "1.7.5",
 		"cors": "2.8.6",
@@ -24,7 +25,6 @@
 		"zod": "4.5.4"
 	},
 	"devDependencies": {
-		"@kinetiq/domain": "workspace:*",
 		"@types/cors": "2.8.19",
 		"@types/express": "5.0.6",
 		"@types/supertest": "7.2.1",
