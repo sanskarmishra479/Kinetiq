@@ -137,7 +137,7 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | Morph | 🆕 | One shape smoothly becomes another (e.g. logo morph) | ref-motion | P3 |
 
 ### Footage and images
-Needs the footage pipeline (stock / AI / uploads → R2 → passed to scenes as URLs). See the discussion notes in [what-i-want.md](../what-i-want.md).
+Needs the footage pipeline (customer uploads, free stock, AI images/video → saved to R2 → passed to scenes as URLs, since the render sandbox has no network). Not yet written into ARCHITECTURE.md.
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
