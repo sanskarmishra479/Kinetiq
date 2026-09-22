@@ -29,8 +29,8 @@
 | 3 | API skeleton + auth | ✅ |
 | 4 | Projects, chat, uploads | ✅ |
 | 5 | Credits domain + ledger | ✅ |
-| 6 | Queue, jobs, realtime events | ⬜ |
-| 7 | Renderer + scene sandbox | ⬜ |
+| 6 | Queue, jobs, realtime events | ✅ |
+| 7 | Renderer + scene sandbox | ✅ |
 | 8 | Pipeline on fakes (LangGraph) | ⬜ |
 | 9 | Real providers | ⬜ |
 | 10 | Audio, edits, versions | ⬜ |
