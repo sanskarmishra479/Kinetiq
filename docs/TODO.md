@@ -355,7 +355,14 @@
 ## Phase 9: Real providers
 > Goal: swap fakes for real adapters with **no domain changes**.
 
-- [ ] Load the `/claude-api` skill before writing LLM code. `OpenRouterLlm`: Claude model ids from config, structured outputs validated with zod, prompt caching of the primitives docs and DESIGN.md, fallback model, per-provider BullMQ rate limiter, circuit breaker [NFR-REL-03]
+- [ ] Load the `/claude-api` skill before writing LLM code. `OpenRouterLlm`: model ids per role from config (see below), structured outputs validated with zod, prompt caching of the primitives docs and DESIGN.md, fallback model, per-provider BullMQ rate limiter, circuit breaker [NFR-REL-03]
+- [ ] **Provider and model selection from the environment** ([ARCHITECTURE § 5.1](ARCHITECTURE.md#51-choosing-providers-and-models-environment-not-code)) [NFR-MNT-05]:
+  - `TTS_PROVIDER=elevenlabs | sarvam | openrouter` (+ `TTS_MODEL` for OpenRouter), with an adapter per provider behind `VoicePort`; free OpenRouter voice models for development
+  - `LLM_MODEL_DEFAULT`, `LLM_MODEL_FALLBACK` and one `LLM_MODEL_<ROLE>` per role (research, design, director, scene coder, visual QA, edit); empty roles use the default
+  - config validation at startup; the visual-QA model must accept images; the keys go into `.env.example` (kept in sync by a test)
+  - 🔒 staging and production refuse `:free` model ids [NFR-SEC-18]
+  - the 5 Kinetiq voices map to each provider's voices; captions fall back to estimated word timings when a provider gives none
+  - a job keeps the provider and models it started with; `ProviderCost` records the model, so the `evals/` benchmark compares models on quality and cost before switching
 - [ ] `FirecrawlScraper`: markdown + screenshots + branding; user URLs only ever go to Firecrawl [NFR-SEC-05]
 - [ ] Prompts in `apps/worker/src/prompts/`, versioned: director, designMd, sceneCoder, visualQA, editClassifier. Scraped text is wrapped as data [NFR-SEC-07]
 - [ ] Contract tests using recorded responses (secrets removed) through MSW

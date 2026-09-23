@@ -139,6 +139,40 @@ research ─► designMd ─► director ─► [voiceover] ─► sceneCoder(1.
 - **Templates:** `director` is replaced by `fillTemplate`, which maps research to the template's slots. `sceneCoder` only generates slot content, such as the rebuilt UI (FR-TPL-02).
 - **Events:** each node publishes `step.started|progress|done|failed` to Redis channel `project:{id}`. The API forwards them over SSE ([API.md § 8](API.md#8-realtime-events-sse)).
 
+### 5.1 Choosing providers and models (environment, not code)
+
+Every AI call goes through a port (§8), and **which provider or model answers is configuration**. Switching from free development models to Claude or DeepSeek in production is a change to `.env` and a restart. *Planned for Phase 9; not built yet.*
+
+```bash
+# Voice: which text-to-speech provider speaks the voiceover
+TTS_PROVIDER=openrouter          # elevenlabs | sarvam | openrouter
+TTS_MODEL=                       # OpenRouter voice model id (only when TTS_PROVIDER=openrouter)
+
+# Language models, all through OpenRouter: one model per role.
+# Any role left empty uses LLM_MODEL_DEFAULT; LLM_MODEL_FALLBACK answers when the chosen one fails.
+LLM_MODEL_DEFAULT=               # e.g. an anthropic/claude-… id
+LLM_MODEL_FALLBACK=              # e.g. a deepseek/… id
+LLM_MODEL_RESEARCH=
+LLM_MODEL_DESIGN=
+LLM_MODEL_DIRECTOR=              # needs the best judgment: the strongest model pays off here
+LLM_MODEL_SCENE_CODER=
+LLM_MODEL_VISUAL_QA=             # must accept images (it looks at rendered stills)
+LLM_MODEL_EDIT=
+```
+
+- **Typical setups:**
+  - Development: `TTS_PROVIDER=openrouter` with a free voice model, and free LLM models.
+  - Production: ElevenLabs for voice, Claude for the director, and a cheaper model where quality allows.
+- **Checked at startup** (the service refuses to start on a bad value, like the rest of `config.ts`):
+  - the chosen voice provider has its API key
+  - model ids have the right shape
+  - staging and production refuse `:free` models (NFR-SEC-18)
+  - Phase 9 also checks each id against OpenRouter's model list, and that the visual-QA model accepts images.
+- **Voices:** Kinetiq's 5 voices (sam, kira, leo, maya, arjun) map to a voice of each provider in the catalog, so users see the same 5 names whatever speaks them.
+- **Word timings:** if a voice provider gives no word timestamps, captions fall back to estimated timings (`estimateWordTimings`, already built), which are slightly less precise.
+- **Consistency within a job:** a job records which provider and models it started with in its checkpoint, so a restart with new settings never mixes models inside one video.
+- **Cost tracking:** every call's `ProviderCost` row names the provider and model, so models can be compared on real cost per video before switching (with the `evals/` benchmark, Phase 9).
+
 ## 6. Dynamic scene runtime (sandbox)
 
 **Problem:** the LLM writes new animation code for every job. Bundling and deploying a Remotion site per job would be slow and expensive, and running untrusted code is dangerous.
@@ -305,9 +339,9 @@ Cinelaunch/
 
 | Environment | Web | API / Worker | DB | Providers | Render |
 |---|---|---|---|---|---|
-| **local** | `next dev` | `tsx watch` | Docker Postgres | `MOCK_PROVIDERS=true` (fakes) | `RENDER_MODE=local` |
+| **local** | `next dev` | `tsx watch` | Docker Postgres | `MOCK_PROVIDERS=true` (fakes), or real providers with free OpenRouter models (§5.1) | `RENDER_MODE=local` |
 | **CI** | build only | tests | Docker Compose Postgres + Redis (throwaway test DB) | fakes + MSW | local stills (visual tests) |
-| **staging** | Vercel preview | Railway staging | Neon branch | real, with low limits | Lambda (staging) |
+| **staging** | Vercel preview | Railway staging | Neon branch | real, with low limits; no `:free` models | Lambda (staging) |
 | **production** | Vercel | Railway | Neon main | real | Lambda |
 
 ## 13. Observability
