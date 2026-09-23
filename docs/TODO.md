@@ -324,7 +324,7 @@
 - [x] Screenshot fallback when the rebuilt product UI fails QA [FR-GEN-07]
 - [x] `ProviderCost` recorded for every provider call [NFR-COST-01]
 - [x] Research cache per normalized URL (24 h, in Redis) [FR-GEN-12]
-- [x] Checkpoints hold keys, not blobs; stills/audio/video live in object storage and the working files are deleted when the job ends [NFR-SCALE-07]
+- [x] Checkpoints hold keys, not blobs; stills/audio/video live in object storage and the working files are deleted when the job succeeds [NFR-SCALE-07]. ⏭ Failed and cancelled jobs are cleaned up by a cron task (Phase 9)
 - [x] QA previews render at half size; the fix loop is capped at one round for the MVP [NFR-COST-04]
 - [x] `MOCK_PROVIDERS=true` wires every mock in the container [NFR-MNT-02]
 
@@ -363,6 +363,12 @@
   - 🔒 staging and production refuse `:free` model ids [NFR-SEC-18]
   - the 5 Kinetiq voices map to each provider's voices; captions fall back to estimated word timings when a provider gives none
   - a job keeps the provider and models it started with; `ProviderCost` records the model, so the `evals/` benchmark compares models on quality and cost before switching
+- [ ] **Pipeline hardening** (found while building Phase 8, needed once real models are slow and cost money):
+  - **Write scenes in parallel.** `sceneCoder` runs one scene after another today, which is fine for mocks. With a real model, 9 scenes × ~30 s is 4–5 minutes, so run them concurrently with a limit (e.g. 4 at a time), per-scene retries, and the per-provider rate limiter [FR-GEN-03, NFR-PERF-03]
+  - **Clean up after failed and cancelled jobs.** Only successful jobs delete their checkpoint and working files (`u/{userId}/tmp/{jobId}/`) today. Add a cron task that removes both for jobs that ended more than 24 h ago (the retry window), with a test [NFR-SCALE-07]
+  - **One render at a time in local mode.** `WORKER_CONCURRENCY` defaults to 20, which is right for Lambda, but local rendering runs Chrome on the developer's machine: when `RENDER_MODE=local`, the generate queue uses concurrency 1 (config check + test)
+  - **Tune the job deadline from real runs.** Measure p95 time per video length with real models in `evals/`, then set `JOB_DEADLINE_MINUTES` (per duration if needed) so healthy jobs never hit the 20 min default [FR-GEN-11]
+  - **Calibrate the frozen-scene check.** `MIN_MOTION_RATIO` (1%) was tuned on dark themes; measure it on the golden sites, including light themes and sparse scenes, so it neither misses frozen scenes nor sends good ones back (each false alarm costs a model call and a render) [NFR-COST-04]
 - [ ] `FirecrawlScraper`: markdown + screenshots + branding; user URLs only ever go to Firecrawl [NFR-SEC-05]
 - [ ] Prompts in `apps/worker/src/prompts/`, versioned: director, designMd, sceneCoder, visualQA, editClassifier. Scraped text is wrapped as data [NFR-SEC-07]
 - [ ] Contract tests using recorded responses (secrets removed) through MSW
@@ -425,10 +431,11 @@
 - [ ] Admin: MVP = a CLI script for flags (`pnpm flags set pause_new_jobs true`); 🔜 full admin API: flags (`pause_ai_clips`, `pause_new_jobs`, `force_fallback_model`), template publishing, cost report [FR-ADM-01, 02]
 - [ ] Automatic spend threshold → pause AI clips + alert [NFR-COST-03]
 - [ ] 🔒 `LambdaRender`: deploy the renderer site + function (no secrets, IAM role that can only write to the renders bucket), render webhook `/v1/webhooks/render`; **request the AWS concurrency increase early (it can take days)**; set `framesPerLambda` to cap functions per render [NFR-SCALE-05]
+- [ ] **Faster previews:** render the QA stills on Lambda too, and render a scene's sample frames in one call instead of one browser launch per frame (today each still starts a browser: ~2 min per 15 s video locally). Locally, reuse one browser per job once Remotion's cleanup bug is fixed (see Phase 7 notes) [NFR-PERF-03]
 - [ ] Production infrastructure:
   - Railway services (API ×2, worker, Redis) with staging and prod environments
   - Neon main + staging branch, PITR on [NFR-REL-04]
-  - R2 buckets (public examples, private renders/assets), lifecycle rule deleting drafts after 30 days, custom domain `cdn.kinetiq.so`
+  - R2 buckets (public examples, private renders/assets), lifecycle rules: drafts deleted after 30 days, and the shared scraped screenshots (`scrape/`) after 7 days (the research cache lasts 24 h, so older ones are never used), custom domain `cdn.kinetiq.so`
   - Cloudflare: DNS, WAF, rate-limit rules, Turnstile keys
 - [ ] Observability: Sentry (API + worker), LangSmith traces per job, structured logs, alerts on queue depth / wait p95, job failure rate, daily spend, 5xx rate, webhook failures
 - [ ] Run `/security-review` on the backend and fix findings
