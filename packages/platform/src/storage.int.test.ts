@@ -84,11 +84,12 @@ describe('deletePrefix (account deletion, NFR-LEG-02)', () => {
 	});
 
 	it('refuses prefixes that could match more than one folder', async () => {
-		for (const bad of ['', 'u/', 'u/usr_1', '../u/x/', 'u/a/b/', 'u/*/']) {
+		for (const bad of ['', 'u/', 'u/usr_1', '../u/x/', 'u/a/b/c/d/e/', 'u/*/']) {
 			expect(() => assertSafePrefix(bad)).toThrow(/unsafe prefix/);
 		}
 		await expect(storage.deletePrefix('u/')).rejects.toThrow(/unsafe prefix/);
 		expect(() => assertSafePrefix('u/usr_01ABC/')).not.toThrow();
+		expect(() => assertSafePrefix('u/usr_01ABC/tmp/job_7/')).not.toThrow();
 	});
 });
 

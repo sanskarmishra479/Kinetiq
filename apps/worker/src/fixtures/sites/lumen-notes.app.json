@@ -1,0 +1,23 @@
+{
+	"host": "lumen-notes.app",
+	"title": "Lumen \u2014 Notes that write your summary for you",
+	"description": "Lumen keeps your meetings, docs and highlights in one place, then writes the recap you were going to write.",
+	"markdown": "# Lumen\n\nNotes that write your summary for you\n\nLumen keeps your meetings, docs and highlights in one place, then writes the recap you were going to write.\n\n## Features\n\n### Meeting recaps\n\nJoins the call, writes the notes, links the decisions.\n\n### Everything searchable\n\nAsk across every note you ever took.\n\n### Works offline\n\nYour notes open in a second, always.\n\n## Who it is for\n\nBusy managers.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#111014", "#ffb443", "#fffaf2"],
+	"fonts": ["Satoshi"],
+	"audience": "busy managers",
+	"features": [
+		{
+			"title": "Meeting recaps",
+			"description": "Joins the call, writes the notes, links the decisions."
+		},
+		{
+			"title": "Everything searchable",
+			"description": "Ask across every note you ever took."
+		},
+		{
+			"title": "Works offline",
+			"description": "Your notes open in a second, always."
+		}
+	]
+}

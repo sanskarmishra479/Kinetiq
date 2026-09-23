@@ -2,11 +2,14 @@
 // (docs/TEST_PLAN.md rule T4). Nothing here is used in production.
 import {createRepos, type Db} from '@kinetiq/db';
 import type {ClockPort, IdPort} from '@kinetiq/domain';
-import {memoryEventBus, memoryQueues, memoryStorage} from '@kinetiq/platform';
-import {loadConfig} from '@kinetiq/shared';
+import {memoryEventBus, memoryKv, memoryQueues, memoryStorage, type KvPort} from '@kinetiq/platform';
+import {loadConfig, RenderInput} from '@kinetiq/shared';
 import {pino} from 'pino';
 import type {WorkerContainer} from '../container.js';
 import {unavailableRender, type RenderPort} from '@kinetiq/renderer/node';
+import {mockLlm, mockMusic, mockScraper, mockVoice} from '../adapters/mock/index.js';
+import {generationPipeline} from '../pipeline/index.js';
+import type {LlmPort, MusicPort, ScraperPort, VoicePort} from '../ports.js';
 import type {MediaProbePort, PipelinePort, ProbeFacts} from '../ports.js';
 
 const ENV = {
@@ -46,6 +49,7 @@ export function testWorker(options: {
 	pipeline?: PipelinePort;
 	probe?: MediaProbePort;
 	render?: RenderPort;
+	kv?: KvPort;
 	/** Pass the API's buses to connect the API and the worker in one test. */
 	events?: ReturnType<typeof memoryEventBus>;
 	queues?: ReturnType<typeof memoryQueues>;
@@ -66,6 +70,7 @@ export function testWorker(options: {
 		probe:
 			options.probe ??
 			fakeProbe({durationSec: 10, video: {codec: 'h264', width: 1920, height: 1080}, formats: ['mp4']}),
+		kv: options.kv ?? memoryKv(),
 		render: options.render ?? unavailableRender('no renderer in this test'),
 		pipeline: options.pipeline ?? {run: async () => ({charge: 0})},
 		watchMs: 10,
@@ -73,4 +78,59 @@ export function testWorker(options: {
 		close: async () => {},
 	};
 	return {container, storage, events, queues};
+}
+
+/** A renderer that writes plausible files instantly, for tests that aren't about rendering. */
+export function fakeRender(
+	storage: ReturnType<typeof memoryStorage>,
+): RenderPort & {calls: {kind: string; key: string}[]} {
+	const calls: {kind: string; key: string}[] = [];
+	const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+	const MP4 = new Uint8Array([0, 0, 0, 0x20, ...[...'ftypisom'].map((c) => c.charCodeAt(0)), 0, 0, 0, 0]);
+	const write = async (kind: 'still' | 'final', key: string, input: unknown) => {
+		// The fake enforces the render contract too, so a bad input fails here as well.
+		RenderInput.parse(input);
+		calls.push({kind, key});
+		const body = kind === 'still' ? PNG : MP4;
+		await storage.putObject(key, body, kind === 'still' ? 'image/png' : 'video/mp4');
+		return {key, bytes: body.length};
+	};
+	return {
+		calls,
+		renderStill: (input, {outputKey}) => write('still', outputKey, input),
+		renderFinal: async (input, {outputKey, onProgress}) => {
+			onProgress?.(1);
+			return write('final', outputKey, input);
+		},
+	};
+}
+
+export type TestProviders = {llm?: LlmPort; scraper?: ScraperPort; voice?: VoicePort; music?: MusicPort};
+
+/**
+ * The real generation pipeline wired to the mock providers: what the worker
+ * runs with MOCK_PROVIDERS=true, and what the Phase 8 tests exercise.
+ */
+export function testPipeline(
+	container: WorkerContainer,
+	providers: TestProviders = {},
+	options: {maxFixRounds?: number} = {},
+) {
+	return generationPipeline({
+		retryDelayMs: 0,
+		deps: {
+			repos: container.repos,
+			storage: container.storage,
+			events: container.events,
+			render: container.render,
+			kv: container.kv,
+			logger: container.logger,
+			assetOrigins: [container.config.CONTENT_ORIGIN],
+			llm: providers.llm ?? mockLlm(),
+			scraper: providers.scraper ?? mockScraper(container.storage),
+			voice: providers.voice ?? mockVoice(),
+			music: providers.music ?? mockMusic(),
+			...(options.maxFixRounds === undefined ? {} : {maxFixRounds: options.maxFixRounds}),
+		},
+	});
 }

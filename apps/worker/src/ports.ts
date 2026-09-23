@@ -44,3 +44,70 @@ export type ProbeFacts = {
 export interface MediaProbePort {
 	probe(url: string, mime: 'video/mp4' | 'video/webm'): Promise<ProbeFacts>;
 }
+
+// ── AI providers (FR-GEN-03) ────────────────────────────────────────────────
+// Every provider is a port with a mock implementation, so the whole pipeline
+// runs offline and for free with MOCK_PROVIDERS=true (NFR-MNT-02).
+// Each call reports what it cost us, which becomes a ProviderCost row (NFR-COST-01).
+
+export type ProviderCost = {provider: string; units: number; usdMicros: number};
+export type Costed<T> = {result: T; cost: ProviderCost};
+
+/** Reads a public website (Firecrawl in production). */
+export interface ScraperPort {
+	scrape(url: string): Promise<Costed<ScrapedSite>>;
+}
+
+export type ScrapedSite = {
+	title: string;
+	description: string;
+	/** Main page copy as plain text; treated as untrusted data, never as instructions (NFR-SEC-08). */
+	markdown: string;
+	colors: string[];
+	fonts: string[];
+	/** Screenshots of the page, already stored by the scraper adapter. */
+	screenshots: {key: string; section: string}[];
+	logoKey: string | null;
+};
+
+/** The roles we ask a model to play. Each has its own schema and prompt. */
+export type LlmRole = 'research' | 'designMd' | 'director' | 'sceneCoder' | 'sceneFix' | 'visualQA';
+
+export type LlmRequest = {
+	role: LlmRole;
+	/** Untrusted site content is passed here, never inside the instructions. */
+	data: Record<string, unknown>;
+	/** PNG stills for vision roles, as short-lived URLs. */
+	images?: string[];
+};
+
+/** A large language model (OpenRouter in production). Answers are always parsed with a zod schema. */
+export interface LlmPort {
+	complete(request: LlmRequest): Promise<Costed<unknown>>;
+}
+
+export type SpokenLine = {
+	index: number;
+	audio: Uint8Array;
+	durationSec: number;
+	words: {text: string; start: number; end: number}[];
+};
+
+/** Text to speech (ElevenLabs in production). */
+export interface VoicePort {
+	speak(input: {
+		lines: {index: number; text: string}[];
+		voiceId: string;
+		language: string;
+	}): Promise<Costed<SpokenLine[]>>;
+}
+
+/** Background music. Returns null when there is nothing suitable. */
+export interface MusicPort {
+	pick(input: {mood: string; durationSec: number}): Promise<Costed<{audio: Uint8Array; durationSec: number} | null>>;
+}
+
+/** AI video clips (post-MVP; the MVP has no enabled model). */
+export interface VideoGenPort {
+	generate(input: {prompt: string; durationSec: number}): Promise<Costed<{audio?: never; videoKey: string}>>;
+}

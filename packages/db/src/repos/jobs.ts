@@ -1,4 +1,6 @@
 import {ErrorCode, PipelineNode, type Job, type PageQuery, type Version} from '@kinetiq/shared';
+import {createHash} from 'node:crypto';
+import type {Prisma} from '../generated/prisma/client.js';
 import {z} from 'zod';
 import type {Job as JobRow, JobStep as StepRow, Version as VersionRow} from '../generated/prisma/client.js';
 import {iso, isoOrNull, paginate, type RepoDeps} from './shared.js';
@@ -195,8 +197,93 @@ export function jobsRepo({db, ids, clock}: RepoDeps) {
 	};
 }
 
-export function versionsRepo({db}: RepoDeps) {
+/** Pipeline progress, so a retried job resumes where it stopped (FR-GEN-05). */
+export function checkpointsRepo({db, clock}: RepoDeps) {
 	return {
+		async load(jobId: string): Promise<unknown | null> {
+			const row = await db.jobCheckpoint.findUnique({where: {jobId}});
+			return row?.state ?? null;
+		},
+
+		async save(jobId: string, node: string, state: unknown): Promise<void> {
+			const data = {node, state: state as Prisma.InputJsonValue, updatedAt: new Date(clock.now())};
+			await db.jobCheckpoint.upsert({where: {jobId}, create: {jobId, ...data}, update: data});
+		},
+
+		/** Called when a job ends: the state is no longer needed (NFR-SCALE-07). */
+		async clear(jobId: string): Promise<void> {
+			await db.jobCheckpoint.deleteMany({where: {jobId}});
+		},
+	};
+}
+
+/** What each provider call cost us, for margin tracking (NFR-COST-01). */
+export function costsRepo({db, ids, clock}: RepoDeps) {
+	return {
+		async record(jobId: string, cost: {provider: string; units: number; usdMicros: number}): Promise<void> {
+			if (cost.units === 0 && cost.usdMicros === 0) return;
+			await db.providerCost.create({
+				data: {id: ids.next('cst'), jobId, ...cost, createdAt: new Date(clock.now())},
+			});
+		},
+
+		/** Total spend on a job, in millionths of a dollar. */
+		async totalFor(jobId: string): Promise<number> {
+			const {_sum} = await db.providerCost.aggregate({where: {jobId}, _sum: {usdMicros: true}});
+			return _sum.usdMicros ?? 0;
+		},
+	};
+}
+
+export function versionsRepo({db, ids, clock}: RepoDeps) {
+	return {
+		/** Saves the finished video and its scenes as the project's next version (FR-EDIT-03). */
+		async createFromJob(
+			userId: string,
+			input: {
+				projectId: string;
+				jobId: string;
+				videoKey: string;
+				posterKey: string;
+				durationSec: number;
+				parentVersionId?: string | null;
+				scenes: {index: number; code: string; durationFrames: number; qaReport?: unknown}[];
+			},
+		): Promise<{id: string; number: number}> {
+			const last = await db.version.findFirst({
+				where: {projectId: input.projectId},
+				orderBy: {number: 'desc'},
+				select: {number: true},
+			});
+			const id = ids.next('ver');
+			const version = await db.version.create({
+				data: {
+					id,
+					projectId: input.projectId,
+					userId,
+					number: (last?.number ?? 0) + 1,
+					parentVersionId: input.parentVersionId ?? null,
+					jobId: input.jobId,
+					videoKey: input.videoKey,
+					posterKey: input.posterKey,
+					durationSec: input.durationSec,
+					createdAt: new Date(clock.now()),
+					scenes: {
+						create: input.scenes.map((scene) => ({
+							id: ids.next('scn'),
+							index: scene.index,
+							code: scene.code,
+							codeHash: createHash('sha256').update(scene.code).digest('hex'),
+							durationFrames: scene.durationFrames,
+							qaReport: (scene.qaReport ?? null) as Prisma.InputJsonValue,
+						})),
+					},
+				},
+				select: {id: true, number: true},
+			});
+			return version;
+		},
+
 		list(userId: string, projectId: string, page: PageQuery) {
 			return paginate(
 				(args) =>

@@ -1,0 +1,23 @@
+{
+	"host": "fernpay.io",
+	"title": "FernPay \u2014 Payments for marketplaces, without the paperwork",
+	"description": "FernPay handles split payouts, KYC and refunds for marketplaces, so you can pay sellers in 40 countries from one API.",
+	"markdown": "# FernPay\n\nPayments for marketplaces, without the paperwork\n\nFernPay handles split payouts, KYC and refunds for marketplaces, so you can pay sellers in 40 countries from one API.\n\n## Features\n\n### Split payouts\n\nPay many sellers from one charge, automatically.\n\n### KYC built in\n\nOnboard sellers with identity checks that pass audits.\n\n### 40 countries\n\nLocal payout rails where your sellers are.\n\n## Who it is for\n\nMarketplace founders.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#04140f", "#1fbf75", "#eafff5"],
+	"fonts": ["Geist"],
+	"audience": "marketplace founders",
+	"features": [
+		{
+			"title": "Split payouts",
+			"description": "Pay many sellers from one charge, automatically."
+		},
+		{
+			"title": "KYC built in",
+			"description": "Onboard sellers with identity checks that pass audits."
+		},
+		{
+			"title": "40 countries",
+			"description": "Local payout rails where your sellers are."
+		}
+	]
+}

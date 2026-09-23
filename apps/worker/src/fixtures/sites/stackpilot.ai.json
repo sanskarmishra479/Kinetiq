@@ -1,0 +1,23 @@
+{
+	"host": "stackpilot.ai",
+	"title": "StackPilot \u2014 Your infrastructure, explained",
+	"description": "StackPilot maps every service, cost and dependency, then answers questions about your stack in plain English.",
+	"markdown": "# StackPilot\n\nYour infrastructure, explained\n\nStackPilot maps every service, cost and dependency, then answers questions about your stack in plain English.\n\n## Features\n\n### Live service map\n\nGenerated from what is actually running.\n\n### Cost per feature\n\nSee what each product area really costs.\n\n### Ask anything\n\nPlain-English answers about your own stack.\n\n## Who it is for\n\nPlatform engineers.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#080a0f", "#8b5cf6", "#f3f0ff"],
+	"fonts": ["Space Grotesk"],
+	"audience": "platform engineers",
+	"features": [
+		{
+			"title": "Live service map",
+			"description": "Generated from what is actually running."
+		},
+		{
+			"title": "Cost per feature",
+			"description": "See what each product area really costs."
+		},
+		{
+			"title": "Ask anything",
+			"description": "Plain-English answers about your own stack."
+		}
+	]
+}

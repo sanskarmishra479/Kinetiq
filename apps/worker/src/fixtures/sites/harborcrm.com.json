@@ -1,0 +1,23 @@
+{
+	"host": "harborcrm.com",
+	"title": "Harbor \u2014 The CRM your sales team actually updates",
+	"description": "Harbor fills itself from email and calendar, so pipeline reviews stop being a data-entry meeting.",
+	"markdown": "# Harbor\n\nThe CRM your sales team actually updates\n\nHarbor fills itself from email and calendar, so pipeline reviews stop being a data-entry meeting.\n\n## Features\n\n### Self-updating pipeline\n\nDeals move when the emails say they moved.\n\n### Forecast you can defend\n\nEvery number links to the evidence.\n\n### Two-minute setup\n\nConnect a mailbox and you are done.\n\n## Who it is for\n\nSales leaders.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#0f1115", "#ff5d5d", "#f7f7fb"],
+	"fonts": ["Inter"],
+	"audience": "sales leaders",
+	"features": [
+		{
+			"title": "Self-updating pipeline",
+			"description": "Deals move when the emails say they moved."
+		},
+		{
+			"title": "Forecast you can defend",
+			"description": "Every number links to the evidence."
+		},
+		{
+			"title": "Two-minute setup",
+			"description": "Connect a mailbox and you are done."
+		}
+	]
+}

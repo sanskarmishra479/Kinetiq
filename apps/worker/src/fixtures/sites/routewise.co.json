@@ -1,0 +1,23 @@
+{
+	"host": "routewise.co",
+	"title": "Routewise \u2014 Delivery routes that survive real traffic",
+	"description": "Routewise re-plans every driver's day as conditions change, and tells customers a time they can trust.",
+	"markdown": "# Routewise\n\nDelivery routes that survive real traffic\n\nRoutewise re-plans every driver's day as conditions change, and tells customers a time they can trust.\n\n## Features\n\n### Live re-routing\n\nPlans adapt when traffic does.\n\n### Promises you keep\n\nCustomers get a window that holds.\n\n### Driver-friendly app\n\nBig buttons, offline maps, no fuss.\n\n## Who it is for\n\nLogistics operators.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#0d1117", "#ffd23f", "#fffdf3"],
+	"fonts": ["Inter"],
+	"audience": "logistics operators",
+	"features": [
+		{
+			"title": "Live re-routing",
+			"description": "Plans adapt when traffic does."
+		},
+		{
+			"title": "Promises you keep",
+			"description": "Customers get a window that holds."
+		},
+		{
+			"title": "Driver-friendly app",
+			"description": "Big buttons, offline maps, no fuss."
+		}
+	]
+}

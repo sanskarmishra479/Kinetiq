@@ -261,11 +261,12 @@ model Job {
   finishedAt      DateTime?
   createdAt       DateTime  @default(now())
 
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  steps   JobStep[]
-  version Version?
-  costs   ProviderCost[]
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  steps      JobStep[]
+  version    Version?
+  costs      ProviderCost[]
+  checkpoint JobCheckpoint?
 
   @@index([userId, status])
   @@index([projectId, id])
@@ -493,6 +494,21 @@ model WebhookEvent {
 }
 
 /// Cost of every provider call, for margin tracking (NFR-COST-01).
+/// Pipeline progress for one job, so a retry resumes from the last finished
+/// node instead of paying for earlier steps again (FR-GEN-05). Large artifacts
+/// (stills, audio, video) live in object storage; this holds their keys.
+model JobCheckpoint {
+  jobId     String   @id
+  /// The last node that finished.
+  node      String
+  state     Json
+  updatedAt DateTime
+
+  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@map("job_checkpoint")
+}
+
 model ProviderCost {
   id        String   @id
   jobId     String

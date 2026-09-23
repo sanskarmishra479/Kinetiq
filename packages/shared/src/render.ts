@@ -61,6 +61,7 @@ export const RenderInput = z.strictObject({
 	ratio: Ratio,
 	theme: Theme,
 	scenes: z.array(RenderScene).min(1).max(20),
+	/** One track per spoken line, plus music: at most one per scene and a few spare. */
 	audio: z
 		.array(
 			z.strictObject({
@@ -69,7 +70,7 @@ export const RenderInput = z.strictObject({
 				fromFrame: z.int().min(0).default(0),
 			}),
 		)
-		.max(4)
+		.max(24)
 		.default([]),
 	captions: z
 		.array(z.strictObject({text: z.string().min(1).max(60), start: z.int().min(0), end: z.int().min(0)}))

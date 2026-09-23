@@ -1,7 +1,7 @@
 import {Captions, Lens, ThemeProvider} from '@kinetiq/primitives';
 import type {ParsedRenderInput} from '@kinetiq/shared';
 import {Component, useMemo, type ReactNode} from 'react';
-import {AbsoluteFill, Html5Audio, Sequence, Series} from 'remotion';
+import {AbsoluteFill, Html5Audio, Sequence, Series, useVideoConfig} from 'remotion';
 import {evaluateScene, SceneCodeError} from './runtime/evaluate';
 
 // The whole video: scenes back to back, then captions, the optional lens
@@ -29,6 +29,16 @@ class SceneBoundary extends Component<{id: string; children: ReactNode}, {error:
 	}
 }
 
+/** Captions sit in the bottom safe area, on top of the lens finish so they stay flat and readable. */
+const CaptionTrack: React.FC<{words: ParsedRenderInput['captions']}> = ({words}) => {
+	const {width, height} = useVideoConfig();
+	return (
+		<AbsoluteFill style={{justifyContent: 'flex-end', alignItems: 'center', paddingBottom: Math.round(height * 0.08)}}>
+			<Captions words={words} fontSize={Math.round(Math.min(width, height) * 0.052)} />
+		</AbsoluteFill>
+	);
+};
+
 const Frame: React.FC<{lens: boolean; children: ReactNode}> = ({lens, children}) =>
 	lens ? <Lens>{children}</Lens> : <AbsoluteFill>{children}</AbsoluteFill>;
 
@@ -45,8 +55,8 @@ export const FinalVideo: React.FC<ParsedRenderInput> = ({theme, scenes, audio, c
 						</Series.Sequence>
 					))}
 				</Series>
-				{captions.length > 0 ? <Captions words={captions} /> : null}
 			</Frame>
+			{captions.length > 0 ? <CaptionTrack words={captions} /> : null}
 			{audio.map((track, i) => (
 				<Sequence key={i} from={track.fromFrame}>
 					<Html5Audio src={track.src} volume={track.volume} />

@@ -1,0 +1,23 @@
+{
+	"host": "kettle-hq.com",
+	"title": "Kettle \u2014 Customer support that reads the manual for you",
+	"description": "Kettle drafts answers from your own docs and tickets, and hands the hard ones to a human with context.",
+	"markdown": "# Kettle\n\nCustomer support that reads the manual for you\n\nKettle drafts answers from your own docs and tickets, and hands the hard ones to a human with context.\n\n## Features\n\n### Answers from your docs\n\nGrounded in your content, with links.\n\n### Smart handoff\n\nHumans get the history, not a blank box.\n\n### Quality scoring\n\nSee which answers customers actually liked.\n\n## Who it is for\n\nSupport teams.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#100f12", "#7ce38b", "#f4fff6"],
+	"fonts": ["Inter"],
+	"audience": "support teams",
+	"features": [
+		{
+			"title": "Answers from your docs",
+			"description": "Grounded in your content, with links."
+		},
+		{
+			"title": "Smart handoff",
+			"description": "Humans get the history, not a blank box."
+		},
+		{
+			"title": "Quality scoring",
+			"description": "See which answers customers actually liked."
+		}
+	]
+}

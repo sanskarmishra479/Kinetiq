@@ -1,0 +1,23 @@
+{
+	"host": "driftly.dev",
+	"title": "Driftly \u2014 Ship database changes without the 3am rollback",
+	"description": "Driftly reviews every migration, runs it on a copy of production, and tells you what will lock.",
+	"markdown": "# Driftly\n\nShip database changes without the 3am rollback\n\nDriftly reviews every migration, runs it on a copy of production, and tells you what will lock.\n\n## Features\n\n### Shadow runs\n\nSee the real plan on real data before you ship.\n\n### Lock detection\n\nKnow which statements would block writes.\n\n### One-click rollback\n\nEvery change ships with its way back.\n\n## Who it is for\n\nBackend engineers.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#0b0f0e", "#00d3a7", "#eafffb"],
+	"fonts": ["JetBrains Sans"],
+	"audience": "backend engineers",
+	"features": [
+		{
+			"title": "Shadow runs",
+			"description": "See the real plan on real data before you ship."
+		},
+		{
+			"title": "Lock detection",
+			"description": "Know which statements would block writes."
+		},
+		{
+			"title": "One-click rollback",
+			"description": "Every change ships with its way back."
+		}
+	]
+}

@@ -20,8 +20,10 @@ const ENTRY = fileURLToPath(new URL('../entry.ts', import.meta.url));
 
 export type LocalRenderOptions = {
 	storage: StoragePort;
-	/** Hard limit per render. */
+	/** Hard limit for a full video. */
 	timeoutMs?: number;
+	/** Hard limit for one still; stills are small, so a stuck one should fail fast and be retried. */
+	stillTimeoutMs?: number;
 	/** Remotion's per-frame load limit (delayRender). */
 	frameTimeoutMs?: number;
 	concurrency?: number;
@@ -52,9 +54,10 @@ export function localRender(options: LocalRenderOptions): RenderPort {
 		throw new Error('Local rendering is disabled in production; use RENDER_MODE=lambda (NFR-SEC-12)');
 	}
 	const timeoutMs = options.timeoutMs ?? 10 * 60_000;
+	const stillTimeoutMs = options.stillTimeoutMs ?? 2 * 60_000;
 	const frameTimeoutMs = options.frameTimeoutMs ?? 30_000;
 
-	async function withBrowser<T>(input: RenderInput, run: (ctx: Ctx) => Promise<T>): Promise<T> {
+	async function withBrowser<T>(input: RenderInput, limitMs: number, run: (ctx: Ctx) => Promise<T>): Promise<T> {
 		const parsed = RenderInput.safeParse(input);
 		if (!parsed.success) throw new RenderError('INVALID_INPUT', parsed.error.issues[0]?.message ?? 'invalid input');
 		const serveUrl = await bundleRenderer();
@@ -64,7 +67,7 @@ export function localRender(options: LocalRenderOptions): RenderPort {
 		const timer = setTimeout(() => {
 			timedOut = true;
 			cancel();
-		}, timeoutMs);
+		}, limitMs);
 		try {
 			const inputProps = parsed.data as unknown as Record<string, unknown>;
 			const composition = await selectComposition({
@@ -91,8 +94,8 @@ export function localRender(options: LocalRenderOptions): RenderPort {
 	}
 
 	return {
-		renderStill: (input, {frame, outputKey}) =>
-			withBrowser(input, async ({serveUrl, composition, inputProps, dir, cancelSignal}) => {
+		renderStill: (input, {frame, outputKey, scale}) =>
+			withBrowser(input, stillTimeoutMs, async ({serveUrl, composition, inputProps, dir, cancelSignal}) => {
 				const output = join(dir, 'still.png');
 				await renderStill({
 					serveUrl,
@@ -101,6 +104,7 @@ export function localRender(options: LocalRenderOptions): RenderPort {
 					frame,
 					output,
 					imageFormat: 'png',
+					...(scale ? {scale} : {}),
 					timeoutInMilliseconds: frameTimeoutMs,
 					cancelSignal,
 					logLevel: 'error',
@@ -109,7 +113,7 @@ export function localRender(options: LocalRenderOptions): RenderPort {
 			}),
 
 		renderFinal: (input, {outputKey, onProgress}) =>
-			withBrowser(input, async ({serveUrl, composition, inputProps, dir, cancelSignal}) => {
+			withBrowser(input, timeoutMs, async ({serveUrl, composition, inputProps, dir, cancelSignal}) => {
 				const output = join(dir, 'video.mp4');
 				await renderMedia({
 					serveUrl,

@@ -1,0 +1,23 @@
+{
+	"host": "northgate-security.com",
+	"title": "Northgate \u2014 Find the risk before the auditor does",
+	"description": "Northgate scans your cloud accounts continuously and shows the five things that actually matter this week.",
+	"markdown": "# Northgate\n\nFind the risk before the auditor does\n\nNorthgate scans your cloud accounts continuously and shows the five things that actually matter this week.\n\n## Features\n\n### Continuous scanning\n\nEvery account, every region, every hour.\n\n### Ranked by blast radius\n\nFix what would hurt, not what is noisy.\n\n### Evidence exports\n\nOne click to the report your auditor wants.\n\n## Who it is for\n\nSecurity teams.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#0a0d14", "#3f8cff", "#e8eefc"],
+	"fonts": ["IBM Plex Sans"],
+	"audience": "security teams",
+	"features": [
+		{
+			"title": "Continuous scanning",
+			"description": "Every account, every region, every hour."
+		},
+		{
+			"title": "Ranked by blast radius",
+			"description": "Fix what would hurt, not what is noisy."
+		},
+		{
+			"title": "Evidence exports",
+			"description": "One click to the report your auditor wants."
+		}
+	]
+}

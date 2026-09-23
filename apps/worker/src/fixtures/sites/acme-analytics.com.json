@@ -1,0 +1,23 @@
+{
+	"host": "acme-analytics.com",
+	"title": "Acme Analytics \u2014 Product analytics that answer questions, not dashboards",
+	"description": "Acme Analytics turns raw product events into plain-language answers. Ask a question, get a chart and an explanation, and share it with your team in one click.",
+	"markdown": "# Acme Analytics\n\nProduct analytics that answer questions, not dashboards\n\nAcme Analytics turns raw product events into plain-language answers. Ask a question, get a chart and an explanation, and share it with your team in one click.\n\n## Features\n\n### Ask in plain English\n\nType a question about your product and get a chart back in seconds.\n\n### Auto insights\n\nAcme watches your funnels and tells you what changed and why.\n\n### Share anywhere\n\nSend a live chart to Slack or paste it into a doc.\n\n## Who it is for\n\nProduct teams at growing saas companies.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#0b0b10", "#6d5efc", "#f5f5f7"],
+	"fonts": ["Inter"],
+	"audience": "product teams at growing SaaS companies",
+	"features": [
+		{
+			"title": "Ask in plain English",
+			"description": "Type a question about your product and get a chart back in seconds."
+		},
+		{
+			"title": "Auto insights",
+			"description": "Acme watches your funnels and tells you what changed and why."
+		},
+		{
+			"title": "Share anywhere",
+			"description": "Send a live chart to Slack or paste it into a doc."
+		}
+	]
+}

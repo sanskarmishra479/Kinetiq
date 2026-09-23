@@ -153,7 +153,11 @@ export function memoryStorage(baseUrl = 'https://storage.test') {
 	return storage;
 }
 
-/** Guards against deleting the whole bucket: a prefix must be a full folder like "u/usr_123/". */
+/**
+ * Guards against deleting the whole bucket: a prefix must be a full folder,
+ * like "u/usr_123/" or "u/usr_123/tmp/job_9/". Never a partial name or a wildcard.
+ */
 export function assertSafePrefix(prefix: string): void {
-	if (!/^[a-z]+\/[A-Za-z0-9_-]+\/$/.test(prefix)) throw new Error(`Refusing to delete unsafe prefix "${prefix}"`);
+	if (!/^[a-z]+(\/[A-Za-z0-9_-]+){1,3}\/$/.test(prefix))
+		throw new Error(`Refusing to delete unsafe prefix "${prefix}"`);
 }

@@ -7,8 +7,8 @@ import type {RenderInput} from '@kinetiq/shared';
 export type RenderResult = {key: string; bytes: number};
 
 export interface RenderPort {
-	/** One frame as PNG (preview stills for visual QA). */
-	renderStill(input: RenderInput, opts: {frame: number; outputKey: string}): Promise<RenderResult>;
+	/** One frame as PNG (preview stills for visual QA). `scale` renders smaller, which is cheaper. */
+	renderStill(input: RenderInput, opts: {frame: number; outputKey: string; scale?: number}): Promise<RenderResult>;
 	/** The full MP4 (H.264 + AAC). */
 	renderFinal(
 		input: RenderInput,

@@ -180,13 +180,20 @@ describe('processGenerate', () => {
 		expect(await processGenerate(w.container, {...other, userId: 'usr_someone1'})).toBe('skipped');
 	});
 
-	it('the default pipeline fails politely and refunds (until Phase 8)', async () => {
-		const {placeholderPipeline} = await import('../pipeline.js');
-		const w = testWorker({...t, pipeline: placeholderPipeline()});
+	it('a pipeline that cannot start (no providers configured) fails and refunds', async () => {
+		const w = testWorker({
+			...t,
+			pipeline: {
+				run: async () => {
+					throw new PipelineError('DEGRADED', 'Video generation is temporarily unavailable.');
+				},
+			},
+		});
 		const payload = await queuedJob();
 		expect(await processGenerate(w.container, payload)).toBe('failed');
 		expect(await available()).toBe(50);
-		expect(w.events.published.map((e) => e.event.type).slice(0, 2)).toEqual(['step.started', 'step.done']);
+		const job = await db.job.findUniqueOrThrow({where: {id: payload.jobId}});
+		expect(job.error).toMatchObject({code: 'DEGRADED'});
 	});
 });
 

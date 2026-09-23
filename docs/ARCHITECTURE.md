@@ -107,7 +107,7 @@ Dodo ─► POST /webhooks/dodo ─► verify signature (raw body) ─► dedupe
 ```
 The success redirect page **grants nothing**. It only shows the balance (FR-CRD-01).
 
-## 5. Generation pipeline (LangGraph.js)
+## 5. Generation pipeline
 
 ```
 research ─► designMd ─► director ─► [voiceover] ─► sceneCoder(1..N, parallel)
@@ -130,9 +130,12 @@ research ─► designMd ─► director ─► [voiceover] ─► sceneCoder(1.
 | aiClips | shot prompts | MP4 clips (async submit, then callback or poll) | OpenRouter video |
 | audio | VO, music choice, cut list | mixed audio track, SFX cue list | ElevenLabs |
 | finalRender | scenes + audio + captions + Lens | MP4 in R2 | Remotion (renderMedia) |
-| settle | ProviderCost rows | ledger settle/refund | local |
+| settle | the finished video | Version + Scene rows, the final price | local |
+| notify | the new version | a chat message in the project | local |
 
-- **Checkpointing:** a LangGraph Postgres checkpointer saves state after each node. Retries resume from the last successful node (FR-GEN-05).
+- **Runner:** a small in-house runner (`apps/worker/src/pipeline/runner.ts`) behind `PipelinePort`, not LangGraph: the nodes are already pure functions behind ports, and BullMQ handles queueing and retries. See docs/TODO.md Phase 8 for the reasoning.
+- **Checkpointing:** the state is saved to `job_checkpoint` after every node, holding storage keys rather than blobs. A failing node is retried; a retried job resumes from the last finished node, so earlier work is never paid for twice (FR-GEN-05, NFR-SCALE-07).
+- **Mock providers:** with `MOCK_PROVIDERS=true` every provider is replaced by a deterministic mock, so the whole pipeline runs offline and free. Deployed environments refuse that setting (NFR-MNT-02).
 - **Templates:** `director` is replaced by `fillTemplate`, which maps research to the template's slots. `sceneCoder` only generates slot content, such as the rebuilt UI (FR-TPL-02).
 - **Events:** each node publishes `step.started|progress|done|failed` to Redis channel `project:{id}`. The API forwards them over SSE ([API.md § 8](API.md#8-realtime-events-sse)).
 

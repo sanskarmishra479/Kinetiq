@@ -2,6 +2,7 @@
 // (object storage, queues, realtime events, Redis checks). Each port has a
 // real adapter and an in-memory fake for tests (docs/TEST_PLAN.md rule T4).
 export {EventEnvelope, memoryEventBus, redisEventBus, REPLAY_LIMIT, type EventBusPort} from './events.js';
+export {memoryKv, redisKv, type KvPort} from './kv.js';
 export type {PresignedPut, StoragePort} from './ports.js';
 export {
 	bullQueues,

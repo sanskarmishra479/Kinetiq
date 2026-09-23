@@ -31,7 +31,7 @@
 | 5 | Credits domain + ledger | ✅ |
 | 6 | Queue, jobs, realtime events | ✅ |
 | 7 | Renderer + scene sandbox | ✅ |
-| 8 | Pipeline on fakes (LangGraph) | ⬜ |
+| 8 | Pipeline on mock providers | ✅ |
 | 9 | Real providers | ⬜ |
 | 10 | Audio, edits, versions | ⬜ |
 | 11 | Billing (Dodo) | ⬜ |
@@ -258,8 +258,8 @@
 - New package **`packages/platform`**: storage (moved from the API), queues, event bus and the Redis check, each with a fake. API and worker share them.
 - Generate asks for **`{ expectedCredits }`**: the price the user saw. If it changed, `409` returns the new price instead of charging something unexpected.
 - Ending a job always goes through one function (`closeJob`): the final status flips first and only once, then credits are settled. A cancel racing with the worker, or the deadline sweep, can never refund twice.
-- Until the real pipeline exists (Phase 8), the worker runs a **placeholder** that shows the first step, then fails politely with a full refund.
-- ⏭ Phase 8: resume from LangGraph checkpoints instead of failing interrupted jobs.
+- ✅ Phase 8 replaced the placeholder pipeline with the real one (on mock providers).
+- ✅ Phase 8: a retried job now resumes from its last finished node; only a job interrupted mid-node is failed and refunded.
 - ⏭ Phase 13: the worker image needs `ffmpeg`; every render/version file must also live under `u/{userId}/` so account deletion removes it.
 
 **Tests:**
@@ -300,7 +300,7 @@
 - Remotion bug worked around: passing our own browser to `renderStill` can leave an unhandled rejection when a render is cancelled, which would crash the worker. Remotion now owns the browser; timeouts use its cancel signal.
 - The page needs `'unsafe-eval'` (that's how scene code loads). The validator is the main fence; the CSP stops anything that slipped through from reaching the network.
 - ⏭ Phase 12: Remotion Lambda adapter; deploy the renderer site; the render Lambda holds no secrets.
-- ⏭ Phase 8: load the user's brand font (the theme's `fontFamily`); today only Inter is loaded.
+- ⏭ Phase 9: load the user's brand font (the theme's `fontFamily`); today only Inter is loaded.
 
 **Tests:**
 - the malicious corpus (110 attacks) is 100% rejected; valid samples pass; **100% coverage** on the validator
@@ -313,33 +313,40 @@
 
 ---
 
-## Phase 8: Pipeline on fakes (`apps/worker`, LangGraph.js)
-> Goal: the whole generation graph works at zero cost with `MOCK_PROVIDERS=true`.
+## Phase 8: Pipeline on mock providers (`apps/worker`)
+> Goal: the whole generation pipeline works at zero cost with `MOCK_PROVIDERS=true`.
 
-- [ ] Ports: `LlmPort`, `ScraperPort`, `VoicePort`, `VideoGenPort`, `MusicPort`. Fakes: `FakeLlm` (scripted by role), `FakeScraper` (fixture sites), `FakeVoice`, `FakeVideoGen`
-- [ ] Fixture sites in `fixtures/sites/` (10 "golden" startups)
-- [ ] Nodes as pure-ish functions `(state, ports) → patch` (rule T6) [FR-GEN-03]:
-  - `research`, `designMd`, `director`, `voiceover`, `sceneCoder` (parallel)
-  - `validate`, `previewStills`, `visualQA` + `sceneFix` loop (max 2) [FR-GEN-07]
-  - `aiClips`, `audio`, `finalRender`, `settle`, `notify`
-- [ ] LangGraph wiring + Postgres checkpointer; retry at most 3 times from the checkpoint [FR-GEN-05]
-- [ ] Each node emits `step.*` events with thumbnails [FR-GEN-04]
-- [ ] Screenshot fallback path when the UI rebuild fails QA twice [FR-GEN-07]
-- [ ] `ProviderCost` recording in every adapter [NFR-COST-01]
-- [ ] Research cache per normalized URL (24 h, stored in R2 and keyed in Redis) [FR-GEN-12]
-- [ ] Big artifacts go to R2 with references in checkpoints; prune checkpoints when the job ends [NFR-SCALE-07]
-- [ ] QA previews at 540p; visual QA fix loop capped at 1 round for the MVP (config) [NFR-COST-04]
-- [ ] `MOCK_PROVIDERS=true` wires every fake in the container [NFR-MNT-02]
+- [x] Ports: `LlmPort`, `ScraperPort`, `VoicePort`, `MusicPort`, `VideoGenPort`. Mocks: `mockLlm` (scripted by role), `mockScraper` (fixture sites), `mockVoice` (silent audio with real word timings), `mockMusic`
+- [x] Fixture sites in `apps/worker/src/fixtures/sites/` (10 "golden" startups); any other URL gets a believable invented site
+- [x] Nodes as `(state, ports) → patch` (rule T6) [FR-GEN-03]: `research`, `designMd`, `director`, `voiceover`, `sceneCoder`, `validate`, `previewStills`, `visualQA` + `sceneFix` loop, `aiClips` (skipped), `audio`, `finalRender`, `settle`, `notify`
+- [x] Pipeline runner with a Postgres checkpoint after every node; a failing node retries, and a retried job resumes from the last finished node [FR-GEN-05]
+- [x] Each node emits `step.*` events, and preview stills are sent as thumbnails [FR-GEN-04]
+- [x] Screenshot fallback when the rebuilt product UI fails QA [FR-GEN-07]
+- [x] `ProviderCost` recorded for every provider call [NFR-COST-01]
+- [x] Research cache per normalized URL (24 h, in Redis) [FR-GEN-12]
+- [x] Checkpoints hold keys, not blobs; stills/audio/video live in object storage and the working files are deleted when the job ends [NFR-SCALE-07]
+- [x] QA previews render at half size; the fix loop is capped at one round for the MVP [NFR-COST-04]
+- [x] `MOCK_PROVIDERS=true` wires every mock in the container [NFR-MNT-02]
+
+**Notes from the build:**
+- **Not LangGraph.** The pipeline is a ~120-line runner in `apps/worker/src/pipeline/runner.ts`. Our nodes are already pure functions behind ports, BullMQ already handles queueing and retries, and LangGraph's Postgres checkpointer would create its own tables outside our Prisma migrations. The runner keeps checkpoints in `job_checkpoint` and is swappable behind `PipelinePort`.
+- The planners in `packages/domain/src/pipeline` (theme, storyboard, caption timing, QA rules) are pure and shared: the mock model uses them today, and they stay as the fallback when a real model is unavailable or answers with nonsense (Phase 9).
+- Scene text is passed as **props**, not baked into the code, so copy can change without touching sandboxed code.
+- Every artifact lives under `u/{userId}/`, so deleting an account removes the videos too (NFR-LEG-02).
+- Bugs caught by testing it for real: a 30 s video with narration needs one audio track per scene (the contract allowed 4), and a light-colored brand was given a dark background. Both fixed, both now covered by tests.
+- Found by watching a real render (`out/phase8-demo-fernpay.mp4`): captions sat clipped at the top (now in the bottom safe area, outside the lens); a brand font we can't load fell back to a system font (now a stack ending in Inter); long statements overflowed (now centered, word by word); the demo subline repeated the headline and was cut mid-word; preview stills loaded audio and could hang (stills now skip audio and have their own 2-minute limit, so a stuck one is retried quickly).
+- ⏭ Phase 9: real providers behind the same ports; a brand's own font; music.
+- ⏭ Phase 10: `aiClips` (no model is enabled in the MVP).
 
 **Tests:**
-- each node alone
-- a full graph run on a fixture site produces an MP4 and a version
-- a node fails twice then succeeds without re-running earlier nodes (count FakeLlm calls)
-- the QA loop is capped
-- the fallback triggers
-- credits are settled correctly at the end
+- every pure planner (storyboard fills the exact duration, timings, QA rules)
+- a full run on a fixture site produces a version with scenes, charges the quoted credits and cleans up
+- a node fails twice then succeeds; a crashed job resumes without re-running earlier nodes (counted by model calls)
+- the QA fix loop is capped, and the screenshot fallback triggers
+- research is cached per site; provider costs are recorded
+- **end to end with everything real except the AI:** URL → API → queue → worker → renderer → a 1920×1080 MP4 with an audio track, checked with ffprobe, with the steps arriving live over SSE
 
-**✅ Exit criteria:** `pnpm dev` with mocks gives URL → MP4 through the API, visible live over SSE.
+**✅ Exit criteria:** with mocks, a URL becomes an MP4 through the API, visible live over SSE. **Done: `apps/worker/src/pipeline/e2e-pipeline.int.test.ts`; 614 tests green.**
 
 ---
 

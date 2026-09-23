@@ -1,0 +1,23 @@
+{
+	"host": "palette-studio.design",
+	"title": "Palette \u2014 Brand kits your whole team can follow",
+	"description": "Palette keeps colors, type and logos in one living kit, and checks every export against it.",
+	"markdown": "# Palette\n\nBrand kits your whole team can follow\n\nPalette keeps colors, type and logos in one living kit, and checks every export against it.\n\n## Features\n\n### Living brand kit\n\nChange a token, update every file.\n\n### Automatic checks\n\nCatch off-brand colors before they ship.\n\n### Handoff in a link\n\nDesigners and developers read the same kit.\n\n## Who it is for\n\nDesign teams.\n\n## Pricing\n\nStarts free. Team plans from $29 per month.\n",
+	"colors": ["#141317", "#f24ea1", "#fdf3f8"],
+	"fonts": ["General Sans"],
+	"audience": "design teams",
+	"features": [
+		{
+			"title": "Living brand kit",
+			"description": "Change a token, update every file."
+		},
+		{
+			"title": "Automatic checks",
+			"description": "Catch off-brand colors before they ship."
+		},
+		{
+			"title": "Handoff in a link",
+			"description": "Designers and developers read the same kit."
+		}
+	]
+}
