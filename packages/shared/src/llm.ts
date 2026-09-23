@@ -22,6 +22,27 @@ export const ResearchResult = z.strictObject({
 });
 export type ResearchResult = z.infer<typeof ResearchResult>;
 
+/**
+ * What the research model writes from the scraped page. Brand colors, fonts
+ * and screenshot keys come from the scraper, never from the model, so a model
+ * can't invent storage keys or colors that aren't on the site.
+ */
+export const ResearchCopy = ResearchResult.pick({
+	productName: true,
+	tagline: true,
+	description: true,
+	features: true,
+	audience: true,
+});
+export type ResearchCopy = z.infer<typeof ResearchCopy>;
+
+/** A written scene: TSX (validated before any render) and the data it shows. */
+export const SceneCode = z.strictObject({
+	code: z.string().min(1).max(30_000),
+	props: z.record(z.string().max(100), z.unknown()),
+});
+export type SceneCode = z.infer<typeof SceneCode>;
+
 // ── director node: the storyboard ────────────────────────────────────────────
 export const SCENE_PURPOSES = [
 	'hook',

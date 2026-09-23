@@ -64,6 +64,38 @@ export const VOICES: readonly Voice[] = [
 	},
 ];
 
+/**
+ * Our 5 voices mapped to each provider's voices (FR-AUD-01). Users only ever
+ * see our names. Override per deployment with TTS_VOICES (e.g. for an
+ * OpenRouter model whose voices differ, or a better Indian-English voice).
+ * Check these in each provider's dashboard before launch: libraries change.
+ */
+export const PROVIDER_VOICES = {
+	// ElevenLabs default library voices (voice ids).
+	elevenlabs: {
+		sam: 'TX3LPaxmHKxFdv7VOQHJ', // Liam: confident, energetic
+		kira: 'EXAVITQu4vr4xnSDxMaL', // Sarah: confident, clear
+		leo: 'nPczCjzI2devNBz1zQrb', // Brian: warm, calm
+		maya: 'cgSgspJ2msm6clMCkdW9', // Jessica: friendly, upbeat
+		arjun: 'iP95p4xoKVk53GoZ742B', // Chris: clear (swap for an Indian-English voice via TTS_VOICES)
+	},
+	// Sarvam Bulbul speakers (Indian English and Indian languages).
+	sarvam: {sam: 'rahul', kira: 'priya', leo: 'aditya', maya: 'neha', arjun: 'rohan'},
+	// OpenAI-style names, used by several OpenRouter voice models; other models need TTS_VOICES.
+	openrouter: {sam: 'ash', kira: 'nova', leo: 'onyx', maya: 'shimmer', arjun: 'echo'},
+} as const satisfies Record<string, Record<VoiceId, string>>;
+
+export type TtsProvider = keyof typeof PROVIDER_VOICES;
+
+/** The provider's voice for one of our voices, honouring a TTS_VOICES override like "sam=onyx,kira=nova". */
+export function providerVoice(provider: TtsProvider, voice: VoiceId, overrides?: string): string {
+	const custom = overrides
+		?.split(',')
+		.map((pair) => pair.split('='))
+		.find(([id]) => id === voice)?.[1];
+	return custom ?? PROVIDER_VOICES[provider][voice];
+}
+
 // ── Design presets (generic names only, never brand names: NFR-LEG-01) ─────
 export const PRESET_IDS = [
 	'dark-cinematic',

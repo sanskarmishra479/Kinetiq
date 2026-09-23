@@ -35,3 +35,49 @@ export const wordsFromSeconds = (
 		start: Math.min(totalFrames - 1, Math.max(0, Math.round(w.start * RENDER_FPS))),
 		end: Math.min(totalFrames - 1, Math.max(0, Math.round(w.end * RENDER_FPS))),
 	}));
+
+/** A spoken word timed in seconds, as voice providers report it. */
+export type TimedWord = {text: string; start: number; end: number};
+
+/**
+ * Turns per-character timings (ElevenLabs "alignment") into per-word timings:
+ * a word starts at its first character and ends at its last one.
+ */
+export function wordsFromCharacters(
+	characters: readonly string[],
+	starts: readonly number[],
+	ends: readonly number[],
+): TimedWord[] {
+	const words: TimedWord[] = [];
+	let current: TimedWord | null = null;
+	characters.forEach((char, i) => {
+		if (/\s/.test(char)) {
+			if (current) words.push(current);
+			current = null;
+			return;
+		}
+		const start = starts[i] ?? 0;
+		const end = ends[i] ?? start;
+		current = current ? {...current, text: current.text + char, end} : {text: char, start, end};
+	});
+	if (current) words.push(current);
+	return words;
+}
+
+/**
+ * Spreads words over a line's real duration, in proportion to their length.
+ * For voice providers that return audio but no timings (Sarvam, OpenRouter):
+ * better than a fixed speaking pace, because it matches the actual audio.
+ */
+export function spreadWords(text: string, durationSec: number): TimedWord[] {
+	const words = splitWords(text);
+	const weight = (w: string) => w.length + 1;
+	const total = words.reduce((sum, w) => sum + weight(w), 0);
+	let at = 0;
+	return words.map((word) => {
+		const span = (weight(word) / total) * durationSec;
+		const timed = {text: word, start: at, end: at + span * 0.92};
+		at += span;
+		return timed;
+	});
+}

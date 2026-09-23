@@ -71,6 +71,7 @@ async function loadJobInput(
 				: null,
 		design: project.settings.design,
 		templateId: project.templateId,
+		models: deps.models ?? null,
 	};
 }
 

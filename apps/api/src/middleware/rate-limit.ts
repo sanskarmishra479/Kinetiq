@@ -9,6 +9,8 @@ export const RULES = {
 	apiUser: {name: 'api-user', points: 120, durationSec: 60},
 	apiIp: {name: 'api-ip', points: 300, durationSec: 60},
 	uploadsUser: {name: 'uploads-user', points: 30, durationSec: 3600},
+	/** Free-text chat messages per user per day: they call AI models once edits exist (NFR-COST-04). */
+	chatUserDaily: {name: 'chat-user-daily', points: 100, durationSec: 24 * 3600},
 } satisfies Record<string, RateLimitRule>;
 
 export function setRateLimitHeaders(res: Response, result: RateLimitResult) {

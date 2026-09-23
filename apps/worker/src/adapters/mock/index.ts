@@ -1,6 +1,14 @@
 import {estimateWordTimings, planScenes, spokenFrames, themeFromBrand} from '@kinetiq/domain';
 import type {StoragePort} from '@kinetiq/platform';
-import {DirectorPlan, QaReport, RENDER_FPS, ResearchResult, SceneBrief, type DesignTokens} from '@kinetiq/shared';
+import {
+	DirectorPlan,
+	QaReport,
+	RENDER_FPS,
+	ResearchCopy,
+	ResearchResult,
+	SceneBrief,
+	type DesignTokens,
+} from '@kinetiq/shared';
 import {readFileSync} from 'node:fs';
 import {readdirSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
@@ -130,19 +138,16 @@ export function mockLlm(options: MockLlmOptions = {}): LlmPort & {calls: LlmRequ
 				case 'research': {
 					const site = request.data.site as ScrapedSite;
 					const url = request.data.url as string;
-					const host = hostOf(url);
-					const fixture = siteFixtures().get(host) ?? inventedSite(url);
-					const research: ResearchResult = {
-						url,
-						productName: site.title.split('—')[0]!.trim() || host,
+					const fixture = siteFixtures().get(hostOf(url)) ?? inventedSite(url);
+					// The copy only: brand and screenshots come from the scraper.
+					const copy: ResearchCopy = {
+						productName: site.title.split('—')[0]!.trim() || hostOf(url),
 						tagline: site.title.split('—')[1]?.trim() ?? fixture.title,
 						description: site.description,
 						features: fixture.features,
 						audience: fixture.audience,
-						brand: {colors: site.colors, fonts: site.fonts, logoKey: site.logoKey},
-						screenshots: site.screenshots,
 					};
-					return costed(ResearchResult.parse(research));
+					return costed(ResearchCopy.parse(copy));
 				}
 
 				case 'designMd': {
@@ -195,6 +200,7 @@ export function mockVoice(): VoicePort {
 				return {
 					index: line.index,
 					audio: silentWav(durationSec),
+					mime: 'audio/wav',
 					durationSec,
 					words: estimateWordTimings(line.text).map((w) => ({
 						text: w.text,

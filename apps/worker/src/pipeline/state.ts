@@ -51,6 +51,8 @@ export const PipelineState = z.strictObject({
 		voiceover: z.strictObject({enabled: z.boolean(), voiceId: z.string(), language: z.string()}).nullable(),
 		design: z.unknown().nullable(),
 		templateId: z.string().nullable(),
+		/** The model per AI role this job started with (null with mock providers). */
+		models: z.record(z.string(), z.string()).nullable(),
 	}),
 	research: ResearchResult.nullable(),
 	theme: DesignTokens.nullable(),
@@ -76,6 +78,7 @@ export type JobInput = {
 	voiceover: {enabled: boolean; voiceId: string; language: string} | null;
 	design: DesignChoice | null;
 	templateId: string | null;
+	models: Record<string, string> | null;
 };
 
 export const initialState = (input: JobInput): PipelineState => ({
@@ -88,6 +91,7 @@ export const initialState = (input: JobInput): PipelineState => ({
 		voiceover: input.voiceover,
 		design: input.design,
 		templateId: input.templateId,
+		models: input.models,
 	},
 	research: null,
 	theme: null,
@@ -105,7 +109,8 @@ export const keys = {
 	temp: (userId: string, jobId: string) => `u/${userId}/tmp/${jobId}/`,
 	still: (userId: string, jobId: string, index: number, round: number, sample: 'a' | 'b' | 'c') =>
 		`u/${userId}/tmp/${jobId}/still-${index}-${round}${sample}.png`,
-	voice: (userId: string, jobId: string, index: number) => `u/${userId}/tmp/${jobId}/vo-${index}.wav`,
+	voice: (userId: string, jobId: string, index: number, extension: 'wav' | 'mp3') =>
+		`u/${userId}/tmp/${jobId}/vo-${index}.${extension}`,
 	music: (userId: string, jobId: string) => `u/${userId}/tmp/${jobId}/music.mp3`,
 	video: (userId: string, jobId: string) => `u/${userId}/v/${jobId}.mp4`,
 	poster: (userId: string, jobId: string) => `u/${userId}/v/${jobId}.png`,

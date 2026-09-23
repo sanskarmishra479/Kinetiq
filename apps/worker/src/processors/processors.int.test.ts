@@ -198,6 +198,35 @@ describe('processGenerate', () => {
 });
 
 describe('cron tasks', () => {
+	it('removes saved progress and working files of jobs that ended over a day ago', async () => {
+		const w = testWorker({...t});
+		await t.repos.credits.grant(userId, {amount: 100, source: 'purchase', key: 'cleanup'});
+		const make = async (status: 'failed' | 'cancelled' | 'running') => {
+			const payload = await queuedJob();
+			if (status === 'running') await t.repos.jobs.systemStart(payload.jobId);
+			else await t.repos.jobs.systemFinish(payload.jobId, status);
+			await t.repos.checkpoints.save(payload.jobId, 'research', {completed: ['research']});
+			w.storage.put(`u/${userId}/tmp/${payload.jobId}/still-0-0a.png`, new Uint8Array([1]), 'image/png');
+			return payload.jobId;
+		};
+		const failed = await make('failed');
+		const cancelled = await make('cancelled');
+		const running = await make('running');
+
+		// Inside the 24 h retry window nothing is touched.
+		expect(await CRON_TASKS['cleanup-job-leftovers'].run(w.container)).toBe(0);
+		t.clock.advance(25 * 60 * 60_000);
+		expect(await CRON_TASKS['cleanup-job-leftovers'].run(w.container)).toBe(2);
+		for (const jobId of [failed, cancelled]) {
+			expect(await db.jobCheckpoint.findUnique({where: {jobId}})).toBeNull();
+			expect(w.storage.has(`u/${userId}/tmp/${jobId}/still-0-0a.png`)).toBe(false);
+		}
+		// A job still running keeps everything.
+		expect(await db.jobCheckpoint.findUnique({where: {jobId: running}})).not.toBeNull();
+		expect(w.storage.has(`u/${userId}/tmp/${running}/still-0-0a.png`)).toBe(true);
+		expect(await CRON_TASKS['cleanup-job-leftovers'].run(w.container)).toBe(0);
+	});
+
 	it('deadline sweep fails and refunds overdue jobs only', async () => {
 		const w = testWorker({...t});
 		const overdue = await queuedJob();

@@ -69,7 +69,9 @@ export {
 	shade,
 	spokenFrames,
 	splitFrames,
+	spreadWords,
 	splitWords,
+	wordsFromCharacters,
 	themeFromBrand,
 	themeFromPreset,
 	verdictFor,
@@ -81,4 +83,5 @@ export {
 	type SceneQaInput,
 	type SceneVerdict,
 	type SpokenWord,
+	type TimedWord,
 } from './pipeline/index.js';

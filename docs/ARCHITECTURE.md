@@ -141,7 +141,7 @@ research ─► designMd ─► director ─► [voiceover] ─► sceneCoder(1.
 
 ### 5.1 Choosing providers and models (environment, not code)
 
-Every AI call goes through a port (§8), and **which provider or model answers is configuration**. Switching from free development models to Claude or DeepSeek in production is a change to `.env` and a restart. *Planned for Phase 9; not built yet.*
+Every AI call goes through a port (§8), and **which provider or model answers is configuration**. Switching from free development models to Claude or DeepSeek in production is a change to `.env` and a restart. *Built in Phase 9.*
 
 ```bash
 # Voice: which text-to-speech provider speaks the voiceover
@@ -167,7 +167,7 @@ LLM_MODEL_EDIT=
   - the chosen voice provider has its API key
   - model ids have the right shape
   - staging and production refuse `:free` models (NFR-SEC-18)
-  - Phase 9 also checks each id against OpenRouter's model list, and that the visual-QA model accepts images.
+  - the worker checks each id against OpenRouter's model list, that the visual-QA model accepts images, and that each mapped voice is supported by the chosen OpenRouter voice model (voices differ per model).
 - **Voices:** Kinetiq's 5 voices (sam, kira, leo, maya, arjun) map to a voice of each provider in the catalog, so users see the same 5 names whatever speaks them.
 - **Word timings:** if a voice provider gives no word timestamps, captions fall back to estimated timings (`estimateWordTimings`, already built), which are slightly less precise.
 - **Consistency within a job:** a job records which provider and models it started with in its checkpoint, so a restart with new settings never mixes models inside one video.

@@ -185,6 +185,24 @@ export function jobsRepo({db, ids, clock}: RepoDeps) {
 			});
 		},
 
+		/**
+		 * SYSTEM (cron): jobs that ended before `beforeMs` but still have saved
+		 * progress, i.e. failed or cancelled runs whose leftovers were kept for a
+		 * retry that never came (NFR-SCALE-07).
+		 */
+		systemFindLeftovers(beforeMs: number, limit = 200) {
+			return db.job.findMany({
+				where: {
+					status: {notIn: [...ACTIVE]},
+					finishedAt: {lt: new Date(beforeMs)},
+					checkpoint: {isNot: null},
+				},
+				orderBy: {finishedAt: 'asc'},
+				take: limit,
+				select: {id: true, userId: true},
+			});
+		},
+
 		/** SYSTEM (cron): unfinished jobs past their deadline (FR-GEN-11). */
 		systemFindOverdue(limit = 100) {
 			return db.job.findMany({

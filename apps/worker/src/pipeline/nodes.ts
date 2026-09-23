@@ -15,6 +15,7 @@ import {
 	DirectorPlan,
 	QaReport,
 	RENDER_FPS,
+	ResearchCopy,
 	ResearchResult,
 	planFrames,
 	type DesignChoice,
@@ -22,8 +23,9 @@ import {
 	type SceneBrief,
 } from '@kinetiq/shared';
 import {createHash} from 'node:crypto';
-import {PipelineError, type PipelineContext} from '../ports.js';
+import {PipelineError, type LlmRole, type PipelineContext} from '../ports.js';
 import type {PipelineDeps} from './deps.js';
+import {mapLimit} from './pool.js';
 import {keys, type PipelineState, type SceneState} from './state.js';
 import type {PipelineNodeDef} from './runner.js';
 
@@ -34,6 +36,8 @@ import type {PipelineNodeDef} from './runner.js';
 /** Preview stills are rendered small: they are only for the QA model and thumbnails (NFR-COST-04). */
 const STILL_SCALE = 0.5;
 const RESEARCH_CACHE_SEC = 24 * 60 * 60;
+/** Scenes written at the same time. */
+const SCENE_WRITERS = 4;
 const SIGNED_URL_SEC = 60 * 60;
 /**
  * No lens over the whole video: on flat backgrounds it only bends the edges of
@@ -50,6 +54,12 @@ export function normalizeUrl(url: string): string {
 	const path = parsed.pathname.replace(/\/+$/, '');
 	return `${host}${path}`;
 }
+
+/** A job keeps the models it started with, even if the environment changes mid-run (NFR-MNT-05). */
+const pinnedModel = (state: PipelineState, role: LlmRole): {model?: string} => {
+	const model = state.input.models?.[role];
+	return model ? {model} : {};
+};
 
 const errorLines = (errors: ValidationError[]) =>
 	errors
@@ -117,8 +127,10 @@ async function codeScene(
 ): Promise<Pick<SceneState, 'code' | 'compiled' | 'props'>> {
 	let rejected: string | null = null;
 	for (let attempt = 1; attempt <= 2; attempt++) {
+		const role = previous ? 'sceneFix' : 'sceneCoder';
 		const {result, cost} = await deps.llm.complete({
-			role: previous ? 'sceneFix' : 'sceneCoder',
+			role,
+			...pinnedModel(state, role),
 			data: {
 				brief,
 				research: state.research,
@@ -185,12 +197,20 @@ const isStillOnPurpose = (state: PipelineState, scene: SceneState) =>
 	state.plan?.scenes[scene.index]?.motion === 'still';
 
 /** Asks the QA model to look at a still, then adds the motion check's verdict. */
-async function qaScene(deps: PipelineDeps, scene: SceneState, stillKey: string): Promise<QaReport> {
-	const url = await deps.storage.presignGet(stillKey, {expiresSec: SIGNED_URL_SEC});
+async function qaScene(
+	deps: PipelineDeps,
+	state: PipelineState,
+	scene: SceneState,
+	stillKey: string,
+): Promise<QaReport> {
+	// The still is sent inline: the model's provider can't reach private (or local) storage links.
+	const head = await deps.storage.head(stillKey);
+	const bytes = head ? await deps.storage.readStart(stillKey, head.size) : new Uint8Array(0);
 	const {result, cost} = await deps.llm.complete({
 		role: 'visualQA',
+		...pinnedModel(state, 'visualQA'),
 		data: {sceneIndex: scene.index, props: scene.props},
-		images: [url],
+		images: [`data:image/png;base64,${Buffer.from(bytes).toString('base64')}`],
 	});
 	await deps.recordCost(cost);
 	const report = QaReport.parse(result);
@@ -216,10 +236,19 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 				// The site's own words are data, never instructions (NFR-SEC-08).
 				const {result, cost} = await deps.llm.complete({
 					role: 'research',
+					...pinnedModel(state, 'research'),
 					data: {url: state.input.url, site: scraped.result},
 				});
 				await deps.recordCost(cost);
-				const research = ResearchResult.parse(result);
+				// The model writes the copy; brand colors, fonts and screenshots come from the
+				// scraper, so a model can never invent them (or storage keys).
+				const copy = ResearchCopy.parse(result);
+				const research = ResearchResult.parse({
+					url: state.input.url,
+					...copy,
+					brand: {colors: scraped.result.colors, fonts: scraped.result.fonts, logoKey: scraped.result.logoKey},
+					screenshots: scraped.result.screenshots,
+				});
 				await deps.kv.set(cacheKey, JSON.stringify(research), RESEARCH_CACHE_SEC);
 				return {research};
 			},
@@ -239,6 +268,7 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 				}
 				const {result, cost} = await deps.llm.complete({
 					role: 'designMd',
+					...pinnedModel(state, 'designMd'),
 					data: {research: state.research, url: state.input.url},
 				});
 				await deps.recordCost(cost);
@@ -255,6 +285,7 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 			async run({state}) {
 				const {result, cost} = await deps.llm.complete({
 					role: 'director',
+					...pinnedModel(state, 'director'),
 					data: {
 						research: state.research,
 						durationSec: state.input.durationSec,
@@ -307,8 +338,8 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 				const audio: PipelineState['audio'] = [];
 				const captions: PipelineState['captions'] = [];
 				for (const line of spoken.result) {
-					const key = keys.voice(ctx.job.userId, ctx.job.id, line.index);
-					await deps.storage.putObject(key, line.audio, 'audio/wav');
+					const key = keys.voice(ctx.job.userId, ctx.job.id, line.index, line.mime === 'audio/mpeg' ? 'mp3' : 'wav');
+					await deps.storage.putObject(key, line.audio, line.mime);
 					const from = starts[line.index] ?? 0;
 					audio.push({key, fromFrame: from, volume: 1});
 					for (const word of line.words) {
@@ -328,21 +359,23 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 			node: 'sceneCoder',
 			async run({state, ctx}) {
 				const plan = state.plan!;
-				const scenes: SceneState[] = [];
-				for (const brief of plan.scenes) {
-					const written = await codeScene(deps, state, brief);
-					scenes.push({
+				// Scenes are written in parallel (a few at a time, so provider limits hold):
+				// with real models this cuts minutes off every video (NFR-PERF-03).
+				let written = 0;
+				const scenes = await mapLimit(plan.scenes, SCENE_WRITERS, async (brief): Promise<SceneState> => {
+					const scene = await codeScene(deps, state, brief);
+					await ctx.progress('sceneCoder', ++written, plan.scenes.length);
+					return {
 						index: brief.index,
-						...written,
+						...scene,
 						durationFrames: brief.durationFrames,
 						fixes: 0,
 						qa: null,
 						screenshotKey: null,
 						stillKey: null,
 						motion: null,
-					});
-					await ctx.progress('sceneCoder', scenes.length, plan.scenes.length);
-				}
+					};
+				});
 				return {scenes};
 			},
 			summary: (state) => `${state.scenes.length} scenes written`,
@@ -392,7 +425,7 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 			async run({state, ctx}) {
 				const scenes: SceneState[] = [];
 				for (const scene of state.scenes) {
-					const qa = scene.stillKey ? await qaScene(deps, scene, scene.stillKey) : null;
+					const qa = scene.stillKey ? await qaScene(deps, state, scene, scene.stillKey) : null;
 					scenes.push({...scene, qa});
 					await ctx.progress('visualQA', scenes.length, state.scenes.length);
 				}
@@ -433,7 +466,7 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 
 					// Re-render and re-check just this scene, motion included.
 					const {stillKey, motion} = await sampleScene(deps, ctx, {...state, scenes}, scenes[i]!, scenes[i]!.fixes);
-					const qa = await qaScene(deps, {...scenes[i]!, motion}, stillKey);
+					const qa = await qaScene(deps, state, {...scenes[i]!, motion}, stillKey);
 					scenes[i] = {...scenes[i]!, stillKey, motion, qa};
 					await ctx.progress('sceneFix', i + 1, scenes.length);
 				}
@@ -479,12 +512,20 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 			async run({state, ctx}) {
 				const input = await renderInputFor(deps, state, state.scenes);
 				const videoKey = keys.video(ctx.job.userId, ctx.job.id);
+				// Progress updates are written in order and finished before the step completes:
+				// a late update must never flip a finished step back to "running".
+				let updates = Promise.resolve();
+				let lastPercent = -1;
 				await deps.render.renderFinal(input, {
 					outputKey: videoKey,
 					onProgress: (progress) => {
-						void ctx.progress('finalRender', Math.max(1, Math.round(progress * 100)), 100);
+						const percent = Math.max(1, Math.round(progress * 100));
+						if (percent === lastPercent) return;
+						lastPercent = percent;
+						updates = updates.then(() => ctx.progress('finalRender', percent, 100)).catch(() => undefined);
 					},
 				});
+				await updates;
 
 				// The poster is the first scene's still, copied next to the video.
 				const posterKey = keys.poster(ctx.job.userId, ctx.job.id);

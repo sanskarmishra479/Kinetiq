@@ -23,13 +23,14 @@ import {Router} from 'express';
 import type {Container} from '../container.js';
 import {AppError, notFound} from '../errors.js';
 import {idempotent} from '../middleware/idempotency.js';
+import {RULES, setRateLimitHeaders, tooManyRequests} from '../middleware/rate-limit.js';
 import {requireAuth} from '../middleware/session.js';
 
 // Projects, chat and brand kits (docs/API.md §4, §5, §11).
 
 const SETUP_STATUSES = new Set(['setup', 'ready']);
 
-export function projectRoutes({repos, locks, storage}: Container): Router {
+export function projectRoutes({repos, locks, storage, rateLimiter}: Container): Router {
 	const router = Router();
 	router.use(['/projects', '/brand-kits'], requireAuth);
 
@@ -116,6 +117,14 @@ export function projectRoutes({repos, locks, storage}: Container): Router {
 		const input = SendMessageRequest.parse(req.body);
 		const project = await repos.projects.get(userId, String(req.params.projectId));
 		if (!project) throw notFound('Project not found');
+
+		// Free text can reach an AI model (edits, Phase 10): capped per user per day.
+		// Setup answers never do (FR-GEN-13), so they don't count.
+		if (input.content !== undefined) {
+			const limit = await rateLimiter.consume(RULES.chatUserDaily, `user:${userId}`);
+			setRateLimitHeaders(res, limit);
+			if (!limit.allowed) throw tooManyRequests(limit);
+		}
 
 		let settings = project.settings;
 		if (input.answer) {

@@ -1,6 +1,13 @@
 import {DESIGN_PRESETS, QaReport, RENDER_FPS, type ResearchResult} from '@kinetiq/shared';
 import {describe, expect, it} from 'vitest';
-import {estimateWordTimings, spokenFrames, splitWords, wordsFromSeconds} from './captions.js';
+import {
+	estimateWordTimings,
+	spokenFrames,
+	splitWords,
+	spreadWords,
+	wordsFromCharacters,
+	wordsFromSeconds,
+} from './captions.js';
 import {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames, wantsStill} from './plan.js';
 import {fixNotes, isStatic, MIN_MOTION_RATIO, MOTION_SAMPLES, verdictFor, withMotionCheck, worthFixing} from './qa.js';
 import {fontStack, onColor, shade, themeFromBrand, themeFromPreset} from './theme.js';
@@ -181,6 +188,33 @@ describe('captions', () => {
 			{text: 'hi', start: 30, end: 45},
 			{text: 'late', start: 99, end: 99},
 		]);
+	});
+});
+
+describe('word timings from voice providers', () => {
+	it('turns per-character timings into words', () => {
+		const chars = [...'Hi  there'];
+		const starts = chars.map((_, i) => i * 0.1);
+		const words = wordsFromCharacters(
+			chars,
+			starts,
+			starts.map((t) => t + 0.08),
+		);
+		expect(words.map((w) => w.text)).toEqual(['Hi', 'there']);
+		expect(words[0]).toMatchObject({start: 0});
+		expect(words[0]!.end).toBeCloseTo(0.18, 5);
+		expect(words[1]!.start).toBeCloseTo(0.4, 5);
+		expect(wordsFromCharacters([], [], [])).toEqual([]);
+		expect(wordsFromCharacters(['a'], [], [])).toEqual([{text: 'a', start: 0, end: 0}]);
+	});
+
+	it('spreads words over the real audio length, longer words taking longer', () => {
+		const words = spreadWords('Hi everyone', 2);
+		expect(words.map((w) => w.text)).toEqual(['Hi', 'everyone']);
+		expect(words[0]!.start).toBe(0);
+		expect(words[1]!.end).toBeLessThanOrEqual(2);
+		expect(words[1]!.end - words[1]!.start).toBeGreaterThan(words[0]!.end - words[0]!.start);
+		expect(spreadWords('', 2)).toEqual([]);
 	});
 });
 

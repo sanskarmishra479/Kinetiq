@@ -122,7 +122,7 @@ export type TestProviders = {
 export function testPipeline(
 	container: WorkerContainer,
 	providers: TestProviders = {},
-	options: {maxFixRounds?: number} = {},
+	options: {maxFixRounds?: number; models?: Record<string, string>} = {},
 ) {
 	return generationPipeline({
 		retryDelayMs: 0,
@@ -140,6 +140,7 @@ export function testPipeline(
 			music: providers.music ?? mockMusic(),
 			motion: providers.motion ?? alwaysMoving(),
 			...(options.maxFixRounds === undefined ? {} : {maxFixRounds: options.maxFixRounds}),
+			...(options.models ? {models: options.models} : {}),
 		},
 	});
 }

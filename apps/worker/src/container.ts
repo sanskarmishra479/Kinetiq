@@ -11,14 +11,17 @@ import {
 	type StoragePort,
 } from '@kinetiq/platform';
 import {localRender, unavailableRender, type RenderPort} from '@kinetiq/renderer/node';
-import type {Config} from '@kinetiq/shared';
+import {modelFor, type Config} from '@kinetiq/shared';
 import {Redis} from 'ioredis';
 import {pino, type Logger} from 'pino';
 import {ffprobe} from './adapters/ffprobe.js';
 import {pngMotion} from './adapters/motion.js';
+import {firecrawlScraper} from './adapters/providers/firecrawl.js';
+import {openRouterLlm} from './adapters/providers/openrouter.js';
+import {voiceProvider} from './adapters/providers/voices.js';
 import {mockLlm, mockMusic, mockScraper, mockVoice} from './adapters/mock/index.js';
 import {generationPipeline} from './pipeline/index.js';
-import {PipelineError, type MediaProbePort, type PipelinePort} from './ports.js';
+import type {MediaProbePort, PipelinePort} from './ports.js';
 
 // Composition root for the worker (docs/TEST_PLAN.md rule T4). Tests build
 // the same shape with fakes (./testing).
@@ -85,24 +88,20 @@ export function buildWorkerContainer(config: Config): WorkerContainer {
 		probe: ffprobe(),
 		render,
 		// Providers: mocks locally and in tests, the real ones in Phase 9.
-		pipeline: config.MOCK_PROVIDERS
-			? generationPipeline({
-					deps: {
-						repos,
-						storage,
-						events,
-						render,
-						kv,
-						logger,
-						assetOrigins: [config.CONTENT_ORIGIN],
-						llm: mockLlm(),
-						scraper: mockScraper(storage),
-						voice: mockVoice(),
-						music: mockMusic(),
-						motion: pngMotion(storage),
-					},
-				})
-			: unavailablePipeline(),
+		// Mock providers locally and in tests; real ones chosen from the environment (§5.1).
+		pipeline: generationPipeline({
+			deps: {
+				repos,
+				storage,
+				events,
+				render,
+				kv,
+				logger,
+				assetOrigins: [config.CONTENT_ORIGIN],
+				motion: pngMotion(storage),
+				...(config.MOCK_PROVIDERS ? mockProviders(storage) : realProviders(config, storage)),
+			},
+		}),
 		watchMs: 5000,
 		bullConnection: bull,
 		close: async () => {
@@ -112,13 +111,61 @@ export function buildWorkerContainer(config: Config): WorkerContainer {
 	};
 }
 
-/**
- * Without MOCK_PROVIDERS there is nothing to generate with yet (the real
- * providers arrive in Phase 9). Jobs fail with a clear message and a full
- * refund instead of the worker crashing, so queues and cron keep running.
- */
-const unavailablePipeline = (): PipelinePort => ({
-	run: async () => {
-		throw new PipelineError('DEGRADED', 'Video generation is temporarily unavailable. Your credits were refunded.');
-	},
+const mockProviders = (storage: StoragePort) => ({
+	llm: mockLlm(),
+	scraper: mockScraper(storage),
+	voice: mockVoice(),
+	music: mockMusic(),
+	models: null,
 });
+
+/**
+ * The real providers, chosen in the environment (NFR-MNT-05). config.ts has
+ * already checked that every key they need is set.
+ */
+export function realProviders(config: Config, storage: StoragePort) {
+	const models = Object.fromEntries(
+		(['research', 'designMd', 'director', 'sceneCoder', 'sceneFix', 'visualQA'] as const).map((role) => [
+			role,
+			modelFor(config, role)!,
+		]),
+	);
+	return {
+		llm: openRouterLlm({
+			apiKey: config.OPENROUTER_API_KEY!,
+			modelFor: (role) => models[role]!,
+			fallbackModel: config.LLM_MODEL_FALLBACK,
+			appUrl: config.WEB_ORIGIN,
+		}),
+		scraper: firecrawlScraper({apiKey: config.FIRECRAWL_API_KEY!, storage}),
+		voice: voiceProvider({
+			provider: config.TTS_PROVIDER,
+			apiKey: {
+				elevenlabs: config.ELEVENLABS_API_KEY,
+				sarvam: config.SARVAM_API_KEY,
+				openrouter: config.OPENROUTER_API_KEY,
+			}[config.TTS_PROVIDER]!,
+			model: config.TTS_MODEL,
+			voices: config.TTS_VOICES,
+		}),
+		// The music library arrives with the audio phase (Phase 10); until then, no music.
+		music: mockMusic(),
+		models,
+	};
+}
+
+/** Startup check: the configured OpenRouter models exist, and the QA model accepts images. */
+export function modelsToCheck(config: Config) {
+	const keys = [
+		'LLM_MODEL_DEFAULT',
+		'LLM_MODEL_FALLBACK',
+		'LLM_MODEL_RESEARCH',
+		'LLM_MODEL_DESIGN',
+		'LLM_MODEL_DIRECTOR',
+		'LLM_MODEL_SCENE_CODER',
+		'LLM_MODEL_VISUAL_QA',
+	] as const;
+	const list = keys.flatMap((key) => (config[key] ? [{key, model: config[key]}] : []));
+	const qa = modelFor(config, 'visualQA');
+	return qa ? [...list, {key: 'LLM_MODEL_VISUAL_QA (or default)', model: qa, needsImages: true}] : list;
+}

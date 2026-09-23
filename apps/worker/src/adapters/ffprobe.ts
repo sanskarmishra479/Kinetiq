@@ -64,3 +64,29 @@ export function ffprobe(bin = 'ffprobe', timeoutMs = 30_000): MediaProbePort {
 		},
 	};
 }
+
+/** Length of an audio clip in seconds, measured by ffprobe from a temporary file. */
+export async function audioDuration(bytes: Uint8Array, extension: 'mp3' | 'wav', bin = 'ffprobe'): Promise<number> {
+	const {mkdtemp, rm, writeFile} = await import('node:fs/promises');
+	const {tmpdir} = await import('node:os');
+	const {join} = await import('node:path');
+	const dir = await mkdtemp(join(tmpdir(), 'kinetiq-audio-'));
+	const file = join(dir, `clip.${extension}`);
+	try {
+		await writeFile(file, bytes);
+		const out = await new Promise<string>((resolve, reject) =>
+			execFile(
+				bin,
+				['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', file],
+				{timeout: 20_000},
+				(error, stdout) =>
+					error ? reject(new Error(`ffprobe failed: ${error.message.split('\n')[0]}`)) : resolve(stdout),
+			),
+		);
+		const seconds = Number(out.trim());
+		if (!Number.isFinite(seconds) || seconds <= 0) throw new Error('ffprobe returned no duration');
+		return seconds;
+	} finally {
+		await rm(dir, {recursive: true, force: true});
+	}
+}

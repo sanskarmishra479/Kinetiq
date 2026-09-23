@@ -24,4 +24,28 @@ describe('.env.example', () => {
 	it('is a valid local config as-is', () => {
 		expect(() => loadConfig(entries)).not.toThrow();
 	});
+
+	// .env.example is committed and the repo is public: real keys belong in .env (git-ignored).
+	it('never holds a real secret (NFR-SEC-14)', () => {
+		// Local-only values for the Docker services, safe to publish.
+		const localDevValues: Record<string, string> = {
+			S3_ACCESS_KEY_ID: 'minio',
+			S3_SECRET_ACCESS_KEY: 'minio-secret',
+			BETTER_AUTH_SECRET: 'local-dev-secret-change-me-0123456789abcdef', // gitleaks:allow (public dev placeholder)
+		};
+		const secretLike = Object.entries(entries).filter(([key]) => /(KEY|SECRET|TOKEN|PASSWORD|DSN)/.test(key));
+		expect(secretLike.length).toBeGreaterThan(5);
+		for (const [key, value] of secretLike) {
+			const expected = localDevValues[key] ?? '';
+			// On failure, show only the key name, never the value.
+			expect(
+				value === expected,
+				`${key} in .env.example must be ${expected ? `"${expected}"` : 'empty'}; put real keys in .env`,
+			).toBe(true);
+		}
+	});
+
+	it('keeps mocks on, so a fresh checkout costs nothing', () => {
+		expect(entries.MOCK_PROVIDERS).toBe('true');
+	});
 });

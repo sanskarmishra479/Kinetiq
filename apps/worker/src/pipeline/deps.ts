@@ -23,6 +23,8 @@ export type PipelineDeps = {
 	assetOrigins: string[];
 	/** How many times a scene may be re-written after visual QA (NFR-COST-04). */
 	maxFixRounds: number;
+	/** The model per AI role from the environment, recorded on each job (null with mocks). */
+	models?: Record<string, string> | null;
 	/** Records what a provider call cost us (NFR-COST-01). */
 	recordCost(cost: ProviderCost): Promise<void>;
 };

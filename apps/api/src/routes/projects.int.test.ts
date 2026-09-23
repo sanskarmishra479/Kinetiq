@@ -2,6 +2,7 @@ import {resetDb, testDb} from '@kinetiq/db/testing';
 import {ProjectDetailResponse, VoicesResponse} from '@kinetiq/shared';
 import type TestAgent from 'supertest/lib/agent.js';
 import {beforeEach, describe, expect, it} from 'vitest';
+import {RULES} from '../middleware/rate-limit.js';
 import {loginAs, testApi, WEB} from '../testing/index.js';
 
 // Projects, uploads, setup chat, brand kits and catalog against a real database.
@@ -196,6 +197,25 @@ describe('setup chat (FR-CHAT-01…04, FR-GEN-13)', () => {
 		projectId = (
 			await post(alice, '/v1/projects', {url: 'https://acme.com', durationSec: 15, ratio: '9:16', prompt: 'x'})
 		).body.project.id;
+	});
+
+	it('caps free-text messages per user per day, but never setup answers (NFR-COST-04)', async () => {
+		// Use up the day's allowance directly, then check the next message is refused.
+		for (let i = 0; i < 100; i++) await api.container.rateLimiter.consume(RULES.chatUserDaily, `user:${alice.userId}`);
+		const refused = await answer({content: 'make the logo bigger'});
+		expect(refused.status).toBe(429);
+		expect(refused.headers['retry-after']).toBeDefined();
+		// Setup answers still work.
+		expect((await answer({answer: {key: 'voiceover', value: false}})).status).toBe(201);
+		// Another user has their own allowance.
+		const bobProject = (await post(bob, '/v1/projects', {url: 'https://acme.com', durationSec: 15, ratio: '9:16'})).body
+			.project.id as string;
+		const bobs = await bob.agent
+			.post(`/v1/projects/${bobProject}/messages`)
+			.set('Origin', WEB)
+			.set('Idempotency-Key', key())
+			.send({content: 'hello'});
+		expect(bobs.status).toBe(201);
 	});
 
 	it('walks through every question and marks the project ready', async () => {

@@ -1,5 +1,5 @@
 import {JOB_DEFAULTS, parsePayload} from '@kinetiq/platform';
-import {QUEUES} from '@kinetiq/shared';
+import {QUEUES, type Config} from '@kinetiq/shared';
 import {Queue, Worker} from 'bullmq';
 import type {WorkerContainer} from './container.js';
 import {CRON_TASKS, isCronTask} from './processors/cron.js';
@@ -10,6 +10,14 @@ import {processMaintenance} from './processors/maintenance.js';
 // for graceful shutdown: workers finish their current jobs first (up to
 // BullMQ's close timeout); unfinished jobs are picked up again after a restart.
 
+/**
+ * How many videos one worker makes at once. Rendering locally runs Chrome on
+ * this machine, so local mode makes one at a time; Lambda renders elsewhere,
+ * so WORKER_CONCURRENCY applies.
+ */
+export const generateConcurrency = (config: Pick<Config, 'RENDER_MODE' | 'WORKER_CONCURRENCY'>) =>
+	config.RENDER_MODE === 'local' ? 1 : config.WORKER_CONCURRENCY;
+
 export async function startWorkers(c: WorkerContainer): Promise<() => Promise<void>> {
 	const connection = c.bullConnection;
 	if (!connection) throw new Error('startWorkers needs a Redis connection');
@@ -19,7 +27,7 @@ export async function startWorkers(c: WorkerContainer): Promise<() => Promise<vo
 	const workers = [
 		new Worker(QUEUES.generate, (job) => processGenerate(c, parsePayload('generate', job.data)), {
 			...common,
-			concurrency: c.config.WORKER_CONCURRENCY,
+			concurrency: generateConcurrency(c.config),
 		}),
 		new Worker(QUEUES.maintenance, (job) => processMaintenance(c, parsePayload('maintenance', job.data)), {
 			...common,
@@ -45,7 +53,7 @@ export async function startWorkers(c: WorkerContainer): Promise<() => Promise<vo
 		await cron.upsertJobScheduler(name, {every: task.everyMs}, {name, data: {}});
 	}
 
-	log.info({queues: workers.map((w) => w.name), concurrency: c.config.WORKER_CONCURRENCY}, 'worker started');
+	log.info({queues: workers.map((w) => w.name), concurrency: generateConcurrency(c.config)}, 'worker started');
 	return async () => {
 		await Promise.all(workers.map((w) => w.close()));
 		await cron.close();

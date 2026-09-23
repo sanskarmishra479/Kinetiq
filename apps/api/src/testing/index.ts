@@ -44,6 +44,7 @@ export const DEPLOYED_ENV: Record<string, string> = {
 	OPENROUTER_API_KEY: 'x',
 	ELEVENLABS_API_KEY: 'x',
 	FIRECRAWL_API_KEY: 'x',
+	LLM_MODEL_DEFAULT: 'anthropic/claude-sonnet-5',
 	GOOGLE_CLIENT_ID: 'x',
 	GOOGLE_CLIENT_SECRET: 'x',
 	TURNSTILE_SECRET_KEY: 'x',

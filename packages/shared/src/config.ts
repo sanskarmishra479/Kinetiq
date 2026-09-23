@@ -8,6 +8,36 @@ import {z} from 'zod';
 const optionalString = z.string().min(1).optional();
 const flag = z.stringbool().default(false);
 
+/** An OpenRouter model id like "anthropic/claude-sonnet-5" or "deepseek/deepseek-chat:free". */
+const modelId = z
+	.string()
+	.regex(/^~?[a-z0-9._-]+\/[A-Za-z0-9._:-]+$/, 'must be an OpenRouter model id like "vendor/model"')
+	.optional();
+
+/** The AI roles that each get their own model (docs/ARCHITECTURE.md §5.1). */
+export const LLM_ROLE_KEYS = {
+	research: 'LLM_MODEL_RESEARCH',
+	designMd: 'LLM_MODEL_DESIGN',
+	director: 'LLM_MODEL_DIRECTOR',
+	sceneCoder: 'LLM_MODEL_SCENE_CODER',
+	sceneFix: 'LLM_MODEL_SCENE_CODER',
+	visualQA: 'LLM_MODEL_VISUAL_QA',
+	edit: 'LLM_MODEL_EDIT',
+} as const;
+
+/**
+ * Our 5 voices mapped to a provider's voices, e.g. "sam=onyx,kira=nova,…".
+ * Each provider has sensible defaults; this overrides them (needed for
+ * OpenRouter, where the available voices depend on the chosen model).
+ */
+const voiceMap = z
+	.string()
+	.regex(
+		/^(sam|kira|leo|maya|arjun)=[A-Za-z0-9_.-]+(,(sam|kira|leo|maya|arjun)=[A-Za-z0-9_.-]+)*$/,
+		'must look like "sam=voice1,kira=voice2"',
+	)
+	.optional();
+
 const schema = z.object({
 	NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 	APP_ENV: z.enum(['local', 'staging', 'production']).default('local'),
@@ -51,6 +81,24 @@ const schema = z.object({
 	FIRECRAWL_API_KEY: optionalString,
 	SARVAM_API_KEY: optionalString,
 
+	/** Which provider speaks the voiceover (docs/ARCHITECTURE.md §5.1, NFR-MNT-05). */
+	TTS_PROVIDER: z.enum(['elevenlabs', 'sarvam', 'openrouter']).default('elevenlabs'),
+	/** The provider's voice model: required for OpenRouter; optional for the others (sensible defaults). */
+	TTS_MODEL: optionalString,
+	TTS_VOICES: voiceMap,
+
+	/** OpenRouter model per AI role; empty roles use LLM_MODEL_DEFAULT (NFR-MNT-05). */
+	LLM_MODEL_DEFAULT: modelId,
+	/** Answers when the chosen model fails or is unavailable (NFR-REL-03). */
+	LLM_MODEL_FALLBACK: modelId,
+	LLM_MODEL_RESEARCH: modelId,
+	LLM_MODEL_DESIGN: modelId,
+	LLM_MODEL_DIRECTOR: modelId,
+	LLM_MODEL_SCENE_CODER: modelId,
+	/** Must accept images: it looks at rendered stills. */
+	LLM_MODEL_VISUAL_QA: modelId,
+	LLM_MODEL_EDIT: modelId,
+
 	DODO_API_KEY: optionalString,
 	DODO_WEBHOOK_SECRET: optionalString,
 	DODO_ENV: z.enum(['test_mode', 'live_mode']).default('test_mode'),
@@ -73,6 +121,26 @@ const schema = z.object({
 
 export type Config = z.infer<typeof schema>;
 
+/** Every setting that names a model (checked for free endpoints outside local). */
+const MODEL_KEYS = [
+	'TTS_MODEL',
+	'LLM_MODEL_DEFAULT',
+	'LLM_MODEL_FALLBACK',
+	'LLM_MODEL_RESEARCH',
+	'LLM_MODEL_DESIGN',
+	'LLM_MODEL_DIRECTOR',
+	'LLM_MODEL_SCENE_CODER',
+	'LLM_MODEL_VISUAL_QA',
+	'LLM_MODEL_EDIT',
+] as const satisfies readonly (keyof Config)[];
+
+export type LlmRole = keyof typeof LLM_ROLE_KEYS;
+
+/** The model a role uses: its own setting, else the default. */
+export function modelFor(config: Config, role: LlmRole): string | undefined {
+	return config[LLM_ROLE_KEYS[role]] ?? config.LLM_MODEL_DEFAULT;
+}
+
 /** Every variable the app reads. .env.example must document exactly these. */
 export const CONFIG_KEYS = Object.keys(schema.shape) as (keyof Config)[];
 
@@ -86,7 +154,11 @@ function crossChecks(c: Config): Issue[] {
 	};
 
 	if (!c.MOCK_PROVIDERS) {
-		need(['OPENROUTER_API_KEY', 'ELEVENLABS_API_KEY', 'FIRECRAWL_API_KEY'], 'when MOCK_PROVIDERS=false');
+		need(['OPENROUTER_API_KEY', 'FIRECRAWL_API_KEY', 'LLM_MODEL_DEFAULT'], 'when MOCK_PROVIDERS=false');
+		// The chosen voice provider needs its own key (and OpenRouter needs a voice model).
+		if (c.TTS_PROVIDER === 'elevenlabs') need(['ELEVENLABS_API_KEY'], 'when TTS_PROVIDER=elevenlabs');
+		if (c.TTS_PROVIDER === 'sarvam') need(['SARVAM_API_KEY'], 'when TTS_PROVIDER=sarvam');
+		if (c.TTS_PROVIDER === 'openrouter') need(['TTS_MODEL'], 'when TTS_PROVIDER=openrouter');
 	}
 	if (c.RENDER_MODE === 'lambda') {
 		need(
@@ -127,6 +199,12 @@ function crossChecks(c: Config): Issue[] {
 		);
 		for (const key of ['WEB_ORIGIN', 'API_ORIGIN', 'CONTENT_ORIGIN', 'PUBLIC_CDN_ORIGIN'] as const) {
 			if (!c[key].startsWith('https://')) issues.push({path: key, message: 'must use https outside local'});
+		}
+		// Free model endpoints may log or train on prompts, which hold customers' sites and
+		// scripts, and their rate limits can't carry real traffic (NFR-SEC-18).
+		for (const key of MODEL_KEYS) {
+			if (c[key]?.endsWith(':free'))
+				issues.push({path: key, message: 'must not be a free (":free") model outside local'});
 		}
 		// User files must live on a different site than the app (NFR-SEC-10).
 		if (siteOf(c.CONTENT_ORIGIN) === siteOf(c.WEB_ORIGIN)) {

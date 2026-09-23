@@ -13,5 +13,5 @@ export * from './events.js';
 export * from './queues.js';
 export * from './llm.js';
 export * from './render.js';
-export {CONFIG_KEYS, ConfigError, loadConfig, siteOf} from './config.js';
+export {CONFIG_KEYS, ConfigError, LLM_ROLE_KEYS, loadConfig, modelFor, siteOf, type LlmRole} from './config.js';
 export type {Config} from './config.js';

@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {ConfigError, loadConfig, siteOf} from './config.js';
+import {ConfigError, loadConfig, modelFor, siteOf} from './config.js';
 
 const local = {
 	WEB_ORIGIN: 'http://localhost:3000',
@@ -32,6 +32,7 @@ const production = {
 	OPENROUTER_API_KEY: 'or-key',
 	ELEVENLABS_API_KEY: 'el-key',
 	FIRECRAWL_API_KEY: 'fc-key',
+	LLM_MODEL_DEFAULT: 'anthropic/claude-sonnet-5',
 	GOOGLE_CLIENT_ID: 'gid',
 	GOOGLE_CLIENT_SECRET: 'gsecret',
 	TURNSTILE_SECRET_KEY: 'turnstile',
@@ -90,12 +91,64 @@ describe('loadConfig', () => {
 		expect(issuesOf({...local, WORKER_CONCURRENCY: '0'})).toContain('WORKER_CONCURRENCY');
 	});
 
-	it('requires provider keys when providers are not mocked', () => {
+	it('requires provider keys and a default model when providers are not mocked', () => {
 		expect(issuesOf({...local, MOCK_PROVIDERS: 'false'})).toEqual([
 			'OPENROUTER_API_KEY',
-			'ELEVENLABS_API_KEY',
 			'FIRECRAWL_API_KEY',
+			'LLM_MODEL_DEFAULT',
+			'ELEVENLABS_API_KEY',
 		]);
+	});
+
+	describe('voice provider and models from the environment (NFR-MNT-05)', () => {
+		const real = {
+			...local,
+			MOCK_PROVIDERS: 'false',
+			OPENROUTER_API_KEY: 'or-key',
+			FIRECRAWL_API_KEY: 'fc-key',
+			LLM_MODEL_DEFAULT: 'deepseek/deepseek-chat:free',
+		};
+
+		it('asks for the key of whichever voice provider is chosen', () => {
+			expect(issuesOf({...real, TTS_PROVIDER: 'elevenlabs'})).toEqual(['ELEVENLABS_API_KEY']);
+			expect(issuesOf({...real, TTS_PROVIDER: 'sarvam'})).toEqual(['SARVAM_API_KEY']);
+			// OpenRouter voice reuses the OpenRouter key but needs a voice model.
+			expect(issuesOf({...real, TTS_PROVIDER: 'openrouter'})).toEqual(['TTS_MODEL']);
+			expect(issuesOf({...real, TTS_PROVIDER: 'openrouter', TTS_MODEL: 'openai/gpt-4o-mini-tts'})).toEqual([]);
+			expect(issuesOf({...real, TTS_PROVIDER: 'nope'})).toContain('TTS_PROVIDER');
+		});
+
+		it('allows free models locally, one per role, falling back to the default', () => {
+			const config = loadConfig({
+				...real,
+				TTS_PROVIDER: 'sarvam',
+				SARVAM_API_KEY: 'sv',
+				LLM_MODEL_DIRECTOR: 'anthropic/claude-opus-5',
+				LLM_MODEL_FALLBACK: '~anthropic/claude-sonnet-latest',
+			});
+			expect(modelFor(config, 'director')).toBe('anthropic/claude-opus-5');
+			expect(modelFor(config, 'sceneCoder')).toBe('deepseek/deepseek-chat:free');
+			expect(modelFor(config, 'sceneFix')).toBe('deepseek/deepseek-chat:free');
+			expect(config.LLM_MODEL_FALLBACK).toBe('~anthropic/claude-sonnet-latest');
+		});
+
+		it('rejects badly shaped model ids and voice maps', () => {
+			expect(issuesOf({...real, TTS_PROVIDER: 'openrouter', TTS_MODEL: 'x', LLM_MODEL_DEFAULT: 'claude'})).toEqual(
+				expect.arrayContaining(['LLM_MODEL_DEFAULT']),
+			);
+			expect(issuesOf({...local, TTS_VOICES: 'sam=onyx,kira=nova'})).toEqual([]);
+			expect(issuesOf({...local, TTS_VOICES: 'bob=onyx'})).toContain('TTS_VOICES');
+			expect(issuesOf({...local, TTS_VOICES: 'sam=on yx'})).toContain('TTS_VOICES');
+		});
+
+		// NFR-SEC-18: free endpoints may log prompts, which hold customers' data.
+		it('refuses free models outside local', () => {
+			expect(issuesOf({...production, LLM_MODEL_SCENE_CODER: 'deepseek/deepseek-chat:free'})).toEqual([
+				'LLM_MODEL_SCENE_CODER',
+			]);
+			expect(issuesOf({...production, TTS_PROVIDER: 'openrouter', TTS_MODEL: 'some/tts:free'})).toEqual(['TTS_MODEL']);
+			expect(issuesOf(production)).toEqual([]);
+		});
 	});
 
 	it('requires the Lambda settings when rendering on Lambda', () => {

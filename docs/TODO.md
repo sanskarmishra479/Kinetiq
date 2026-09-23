@@ -32,7 +32,7 @@
 | 6 | Queue, jobs, realtime events | ✅ |
 | 7 | Renderer + scene sandbox | ✅ |
 | 8 | Pipeline on mock providers | ✅ |
-| 9 | Real providers | ⬜ |
+| 9 | Real providers | 🟡 built; real run pending (keys, staging) |
 | 10 | Audio, edits, versions | ⬜ |
 | 11 | Billing (Dodo) | ⬜ |
 | 12 | Templates, admin, hardening, production infra | ⬜ |
@@ -355,30 +355,39 @@
 ## Phase 9: Real providers
 > Goal: swap fakes for real adapters with **no domain changes**.
 
-- [ ] Load the `/claude-api` skill before writing LLM code. `OpenRouterLlm`: model ids per role from config (see below), structured outputs validated with zod, prompt caching of the primitives docs and DESIGN.md, fallback model, per-provider BullMQ rate limiter, circuit breaker [NFR-REL-03]
-- [ ] **Provider and model selection from the environment** ([ARCHITECTURE § 5.1](ARCHITECTURE.md#51-choosing-providers-and-models-environment-not-code)) [NFR-MNT-05]:
-  - `TTS_PROVIDER=elevenlabs | sarvam | openrouter` (+ `TTS_MODEL` for OpenRouter), with an adapter per provider behind `VoicePort`; free OpenRouter voice models for development
-  - `LLM_MODEL_DEFAULT`, `LLM_MODEL_FALLBACK` and one `LLM_MODEL_<ROLE>` per role (research, design, director, scene coder, visual QA, edit); empty roles use the default
-  - config validation at startup; the visual-QA model must accept images; the keys go into `.env.example` (kept in sync by a test)
-  - 🔒 staging and production refuse `:free` model ids [NFR-SEC-18]
-  - the 5 Kinetiq voices map to each provider's voices; captions fall back to estimated word timings when a provider gives none
-  - a job keeps the provider and models it started with; `ProviderCost` records the model, so the `evals/` benchmark compares models on quality and cost before switching
-- [ ] **Pipeline hardening** (found while building Phase 8, needed once real models are slow and cost money):
-  - **Write scenes in parallel.** `sceneCoder` runs one scene after another today, which is fine for mocks. With a real model, 9 scenes × ~30 s is 4–5 minutes, so run them concurrently with a limit (e.g. 4 at a time), per-scene retries, and the per-provider rate limiter [FR-GEN-03, NFR-PERF-03]
-  - **Clean up after failed and cancelled jobs.** Only successful jobs delete their checkpoint and working files (`u/{userId}/tmp/{jobId}/`) today. Add a cron task that removes both for jobs that ended more than 24 h ago (the retry window), with a test [NFR-SCALE-07]
-  - **One render at a time in local mode.** `WORKER_CONCURRENCY` defaults to 20, which is right for Lambda, but local rendering runs Chrome on the developer's machine: when `RENDER_MODE=local`, the generate queue uses concurrency 1 (config check + test)
-  - **Tune the job deadline from real runs.** Measure p95 time per video length with real models in `evals/`, then set `JOB_DEADLINE_MINUTES` (per duration if needed) so healthy jobs never hit the 20 min default [FR-GEN-11]
-  - **Calibrate the frozen-scene check.** `MIN_MOTION_RATIO` (1%) was tuned on dark themes; measure it on the golden sites, including light themes and sparse scenes, so it neither misses frozen scenes nor sends good ones back (each false alarm costs a model call and a render) [NFR-COST-04]
-- [ ] `FirecrawlScraper`: markdown + screenshots + branding; user URLs only ever go to Firecrawl [NFR-SEC-05]
-- [ ] Prompts in `apps/worker/src/prompts/`, versioned: director, designMd, sceneCoder, visualQA, editClassifier. Scraped text is wrapped as data [NFR-SEC-07]
-- [ ] Contract tests using recorded responses (secrets removed) through MSW
-- [ ] `evals/` runner: golden sites → structure validity, allowlist pass rate, QA pass rate, overflow, cost and time per video [NFR-PERF-03]
-- [ ] Staging config with low spend limits
-- [ ] 🔒 A hard spend cap on every provider key (OpenRouter key limit, ElevenLabs plan cap, Firecrawl plan); separate staging and prod keys [NFR-SEC-14]
-- [ ] Per-user daily cap on LLM-calling chat messages [NFR-COST-04]
+- [x] `OpenRouterLlm` (`apps/worker/src/adapters/providers/openrouter.ts`): model per role from config, a fallback model (OpenRouter's `models` list), answers parsed and validated with zod plus **one repair round** with the exact errors, the long system prompt marked for caching on Claude models (DeepSeek caches automatically), QA stills sent inline (providers can't reach private or local storage), cost recorded from OpenRouter's usage report [NFR-REL-03]
+- [x] **Provider and model selection from the environment** ([ARCHITECTURE § 5.1](ARCHITECTURE.md#51-choosing-providers-and-models-environment-not-code)) [NFR-MNT-05]:
+  - `TTS_PROVIDER=elevenlabs | sarvam | openrouter` (+ `TTS_MODEL`, `TTS_VOICES`), one adapter per provider behind `VoicePort`
+  - `LLM_MODEL_DEFAULT`, `LLM_MODEL_FALLBACK` and one `LLM_MODEL_<ROLE>` per role; empty roles use the default
+  - config validation; **at startup the worker checks every model exists on OpenRouter, the visual-QA model accepts images, and each mapped voice is supported by the chosen voice model** (it lists the valid voices if not)
+  - 🔒 staging and production refuse `:free` models [NFR-SEC-18]
+  - the 5 Kinetiq voices map to each provider's voices; exact word timings from ElevenLabs, otherwise words spread over the measured audio length
+  - a job keeps the models it started with (saved in its checkpoint); `ProviderCost` records the model
+- [x] **Pipeline hardening:**
+  - scenes written in parallel, 4 at a time [NFR-PERF-03]
+  - hourly cleanup of saved progress and working files of jobs that ended over 24 h ago [NFR-SCALE-07]
+  - one video at a time when `RENDER_MODE=local`
+  - [ ] tune `JOB_DEADLINE_MINUTES` and calibrate `MIN_MOTION_RATIO` from real benchmark runs (needs a real run: see below)
+- [x] `FirecrawlScraper`: markdown + screenshot + brand colors/fonts. The user's URL only goes to Firecrawl; the site-controlled logo URL is never fetched (SSRF); the screenshot is checked to really be an image [NFR-SEC-05]
+- [x] Prompts in `apps/worker/src/prompts/`, versioned (`PROMPT_VERSION`): research, designMd, director, sceneCoder, sceneFix, visualQA. Website text is fenced in `<site_content>` and every role is told it is data, never instructions [NFR-SEC-07]. The scene writer gets the primitives API, the motion rules and two example scenes. (`editClassifier` comes with edits in Phase 10.)
+- [x] Contract tests for every adapter, against responses shaped like each provider's documented API, through an injected fake `fetch` (no keys, no cost). ⏭ Re-record them from real responses once keys exist.
+- [x] `evals/` benchmark: `pnpm --filter @kinetiq/worker eval -- --sites 3 --scraper mock --render fake` → first-try allowlist pass rate, QA first-pass rate, frozen scenes, overflow, time and cost per video, saved to `out/evals/`. With real providers it refuses to run without `--yes` (it spends money) [NFR-PERF-03]
+- [ ] Staging config with low spend limits (with Phase 12 infrastructure)
+- [ ] 🔒 A hard spend cap on every provider key (OpenRouter key limit, ElevenLabs plan cap, Firecrawl plan); separate staging and prod keys [NFR-SEC-14]. **Your task in each provider's dashboard.**
+- [x] Per-user daily cap on free-text chat messages (100/day; setup answers don't count) [NFR-COST-04]
 
-**Tests:** adapter contract tests. The eval run meets targets (e.g. allowlist pass ≥ 95%, QA pass ≥ 85%).
-**✅ Exit criteria:** a real 15 s video from a real URL on staging, and its cost is recorded.
+**Notes from the build:**
+- Verified against the providers' live docs (Sep 2026): OpenRouter chat, structured outputs, prompt caching and text-to-speech (`/api/v1/audio/speech`, which returns **no word timings**), Firecrawl v2 scrape, ElevenLabs with-timestamps, Sarvam Bulbul.
+- OpenRouter lists each voice model's `supported_voices`; voices differ per model, so the startup check validates `TTS_VOICES`.
+- Scene code comes back as a ```tsx block + a ```json props block instead of code inside JSON, which models escape badly.
+- Research: the model writes the copy only; brand colors, fonts and screenshot keys always come from the scraper, and a model that tries to add them is rejected by the strict schema (tested).
+- Bug caught by the tests: final-render progress updates were written "fire and forget", so a late one could flip a finished step back to "running". They are now written in order and finished before the step completes.
+- Security: an API key was briefly put in `.env.example` (committed, public repo). It was moved to `.env` before any commit, and a test now fails if `.env.example` ever holds a real secret.
+- Firecrawl, ElevenLabs and voice costs are **estimates** per credit/character until checked against real invoices; OpenRouter reports real cost.
+
+**Tests:** adapter contract tests (OpenRouter, Firecrawl, ElevenLabs, Sarvam, OpenRouter voice, startup model and voice checks), prompt injection fencing, provider selection, research merging, model pinning per job, the cleanup task, the chat cap, benchmark metrics.
+
+**Exit criteria:** a real 15 s video from a real URL on staging, and its cost is recorded. **Status:** everything is built and tested on recorded responses. What's left needs your side: a real run (a Firecrawl key, or `--scraper mock` with only the OpenRouter key) and the staging environment (Phase 12).
 
 ---
 

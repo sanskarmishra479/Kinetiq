@@ -1,10 +1,13 @@
 export {
 	estimateWordTimings,
 	spokenFrames,
+	spreadWords,
 	splitWords,
+	wordsFromCharacters,
 	wordsFromSeconds,
 	WORDS_PER_SECOND,
 	type SpokenWord,
+	type TimedWord,
 } from './captions.js';
 export {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames, wantsStill} from './plan.js';
 export {

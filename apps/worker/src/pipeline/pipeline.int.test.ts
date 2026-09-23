@@ -4,11 +4,13 @@ import {grantCredits, makeUser, resetDb, testDb, testRepos} from '@kinetiq/db/te
 import {RENDER_FPS, type QaReport} from '@kinetiq/shared';
 import {beforeEach, describe, expect, it} from 'vitest';
 import {mockLlm, mockScraper} from '../adapters/mock/index.js';
+import {createHash} from 'node:crypto';
+import {normalizeUrl} from './nodes.js';
 import {processGenerate} from '../processors/generate.js';
 import {fakeRender, testPipeline, testWorker} from '../testing/index.js';
 import type {WorkerContainer} from '../container.js';
 import type {MotionPort} from '../adapters/motion.js';
-import type {LlmPort, LlmRequest} from '../ports.js';
+import type {LlmPort, LlmRequest, ScraperPort} from '../ports.js';
 
 // The whole generation pipeline on mock providers (docs/TODO.md Phase 8).
 // Rendering is faked here so the tests stay fast; pipeline.e2e.int.test.ts
@@ -316,6 +318,80 @@ describe('retries and resuming (FR-GEN-05)', () => {
 	});
 });
 
+describe('real-provider behaviour (Phase 9)', () => {
+	it('takes brand colors, fonts and screenshots from the scraper, never from the model', async () => {
+		const s = await setup();
+		const scraper: ScraperPort = {
+			async scrape() {
+				return {
+					result: {
+						title: 'Acme Analytics — Answers, not dashboards',
+						description: 'Plain answers from product data.',
+						markdown: '# Acme',
+						colors: ['#101010', '#ff5d5d'],
+						fonts: ['Geist'],
+						screenshots: [{key: 'scrape/acme-analytics.com/shot.png', section: 'home'}],
+						logoKey: null,
+					},
+					cost: {provider: 'firecrawl', units: 1, usdMicros: 1000},
+				};
+			},
+		};
+		// A model that tries to smuggle in its own brand and storage keys.
+		const sneaky: LlmPort = {
+			async complete(request) {
+				const answer = await mockLlm().complete(request);
+				return request.role === 'research'
+					? {
+							...answer,
+							result: {
+								...(answer.result as object),
+								brand: {colors: ['#000000']},
+								screenshots: [{key: 'u/other/x', section: 'x'}],
+							},
+						}
+					: answer;
+			},
+		};
+		s.container.pipeline = testPipeline(s.container, {llm: sneaky, scraper});
+		// The strict schema rejects the extra fields, so the research step fails instead of trusting them.
+		expect(await run(s.container, s.payload)).toBe('failed');
+
+		const honest = await setup();
+		honest.container.pipeline = testPipeline(honest.container, {llm: mockLlm(), scraper});
+		expect(await run(honest.container, honest.payload)).toBe('succeeded');
+		const research = JSON.parse(
+			(await honest.container.kv.get(`research:${researchKey('https://acme-analytics.com')}`))!,
+		);
+		expect(research.brand).toEqual({colors: ['#101010', '#ff5d5d'], fonts: ['Geist'], logoKey: null});
+		expect(research.screenshots).toEqual([{key: 'scrape/acme-analytics.com/shot.png', section: 'home'}]);
+	});
+
+	it('a job keeps the models it started with (NFR-MNT-05)', async () => {
+		const s = await setup();
+		const seen: {role: string; model: string | undefined}[] = [];
+		const recording: LlmPort = {
+			async complete(request) {
+				seen.push({role: request.role, model: request.model});
+				return mockLlm().complete(request);
+			},
+		};
+		const models = {
+			research: 'deepseek/r',
+			designMd: 'deepseek/d',
+			director: 'anthropic/director',
+			sceneCoder: 'deepseek/c',
+			sceneFix: 'deepseek/c',
+			visualQA: 'anthropic/qa',
+		};
+		s.container.pipeline = testPipeline(s.container, {llm: recording, scraper: mockScraper(s.storage)}, {models});
+		expect(await run(s.container, s.payload)).toBe('succeeded');
+		expect(seen.find((c) => c.role === 'director')?.model).toBe('anthropic/director');
+		expect(seen.filter((c) => c.role === 'sceneCoder').every((c) => c.model === 'deepseek/c')).toBe(true);
+		expect(seen.find((c) => c.role === 'visualQA')?.model).toBe('anthropic/qa');
+	});
+});
+
 describe('cost and caching', () => {
 	it('caches research per site for a day (FR-GEN-12)', async () => {
 		const first = await setup();
@@ -370,3 +446,5 @@ describe('cost and caching', () => {
 		expect(frames).toBe(45 * RENDER_FPS);
 	});
 });
+
+const researchKey = (url: string) => createHash('sha256').update(normalizeUrl(url)).digest('hex').slice(0, 32);

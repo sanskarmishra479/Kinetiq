@@ -75,6 +75,8 @@ export type LlmRole = 'research' | 'designMd' | 'director' | 'sceneCoder' | 'sce
 
 export type LlmRequest = {
 	role: LlmRole;
+	/** Pin a model (a job keeps the models it started with); otherwise the adapter picks by role. */
+	model?: string;
 	/** Untrusted site content is passed here, never inside the instructions. */
 	data: Record<string, unknown>;
 	/** PNG stills for vision roles, as short-lived URLs. */
@@ -89,11 +91,14 @@ export interface LlmPort {
 export type SpokenLine = {
 	index: number;
 	audio: Uint8Array;
+	/** What the audio bytes are. */
+	mime: 'audio/wav' | 'audio/mpeg';
 	durationSec: number;
+	/** Word timings in seconds from the line's start (exact from ElevenLabs, spread over the audio otherwise). */
 	words: {text: string; start: number; end: number}[];
 };
 
-/** Text to speech (ElevenLabs in production). */
+/** Text to speech: ElevenLabs, Sarvam or OpenRouter, chosen with TTS_PROVIDER. */
 export interface VoicePort {
 	speak(input: {
 		lines: {index: number; text: string}[];
