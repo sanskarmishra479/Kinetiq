@@ -131,7 +131,8 @@ export function voiceProvider(options: VoiceOptions): VoicePort {
 				cost: {
 					provider: `${options.provider}:${model || 'default'}`,
 					units: chars,
-					usdMicros: Math.round(chars * USD_PER_CHAR[options.provider] * 1_000_000),
+					// Free models (":free") cost nothing.
+					usdMicros: model?.endsWith(':free') ? 0 : Math.round(chars * USD_PER_CHAR[options.provider] * 1_000_000),
 				},
 			};
 		},

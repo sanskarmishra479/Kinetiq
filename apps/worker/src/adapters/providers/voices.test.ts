@@ -104,6 +104,20 @@ describe('OpenRouter (audio bytes, no timings)', () => {
 		expect(cost).toMatchObject({provider: 'openrouter:openai/gpt-4o-mini-tts', units: 18});
 	});
 
+	it('records free voice models at no cost', async () => {
+		const voice = voiceProvider({
+			provider: 'openrouter',
+			apiKey: 'or-test',
+			model: 'deepgram/flux-tts:free',
+			voices: 'sam=flux-marcus-en',
+			fetch: fakeFetch([bytes(MP3, 'audio/mpeg')]),
+			gate: gate(),
+			measure: async () => 1.1,
+		});
+		const {cost} = await voice.speak({lines: [line], voiceId: 'sam', language: 'en'});
+		expect(cost).toEqual({provider: 'openrouter:deepgram/flux-tts:free', units: 12, usdMicros: 0});
+	});
+
 	it('rejects an empty reply and unknown voices', async () => {
 		const empty = voiceProvider({
 			provider: 'openrouter',

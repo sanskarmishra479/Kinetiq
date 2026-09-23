@@ -32,7 +32,7 @@
 | 6 | Queue, jobs, realtime events | ✅ |
 | 7 | Renderer + scene sandbox | ✅ |
 | 8 | Pipeline on mock providers | ✅ |
-| 9 | Real providers | 🟡 built; real run pending (keys, staging) |
+| 9 | Real providers | 🟡 first real video made locally; staging pending (Phase 12) |
 | 10 | Audio, edits, versions | ⬜ |
 | 11 | Billing (Dodo) | ⬜ |
 | 12 | Templates, admin, hardening, production infra | ⬜ |
@@ -389,7 +389,7 @@
 
 **Tests:** adapter contract tests (OpenRouter incl. BYOK cost, OpenAI direct, Firecrawl, ElevenLabs, Sarvam, OpenRouter voice, startup model and voice checks), prompt injection fencing, provider selection, research merging, model pinning per job, the cleanup task, the chat cap, benchmark metrics.
 
-**Exit criteria:** a real 15 s video from a real URL on staging, and its cost is recorded. **Status:** everything is built and tested on recorded responses. What's left needs your side: a real run (a Firecrawl key, or `--scraper mock` with only the OpenRouter key) and the staging environment (Phase 12).
+**Exit criteria:** a real 15 s video from a real URL on staging, and its cost is recorded. **Status:** first real video made locally (23 Sep 2026): linear.app, 15 s asked, 23 s with voiceover, $0.66 (OpenAI direct: gpt-5.6-sol + luna; free OpenRouter voice), 16 min, 3 of 6 scenes fixed after QA (overflow). Findings to act on: the narration runs past the asked length, scene fixes are the slowest step (7 min), and text overflow is common. Everything is built and tested on recorded responses. What's left needs your side: a real run (a Firecrawl key, or `--scraper mock` with only the OpenRouter key) and the staging environment (Phase 12).
 
 ---
 
