@@ -335,6 +335,8 @@
 - Every artifact lives under `u/{userId}/`, so deleting an account removes the videos too (NFR-LEG-02).
 - Bugs caught by testing it for real: a 30 s video with narration needs one audio track per scene (the contract allowed 4), and a light-colored brand was given a dark background. Both fixed, both now covered by tests.
 - Found by watching a real render (`out/phase8-demo-fernpay.mp4`): captions sat clipped at the top (now in the bottom safe area, outside the lens); a brand font we can't load fell back to a system font (now a stack ending in Inter); long statements overflowed (now centered, word by word); the demo subline repeated the headline and was cut mid-word; preview stills loaded audio and could hang (stills now skip audio and have their own 2-minute limit, so a stuck one is retried quickly).
+- **Motion rule (user feedback on the first demo: it froze and felt pre-made):** something is always moving. The camera drifts at a steady speed for the whole scene, product scenes type the URL, load, click and scroll, words arrive at speaking pace, and scenes hand over with a focus-push transition instead of hard cuts. The lens is no longer a whole-video filter, only a subtle effect on full-frame UI shots. Enforced three ways: the templates, the rules in `packages/primitives/API.md` (which the scene-writing AI reads in Phase 9), and a **frozen-scene QA check** that samples three frames per scene and sends any scene that stops moving back to be rewritten. A real-render test proves it catches the old "animate in, then hold" scene.
+- Captions are grouped per spoken line, so they never show the next sentence early.
 - ⏭ Phase 9: real providers behind the same ports; a brand's own font; music.
 - ⏭ Phase 10: `aiClips` (no model is enabled in the MVP).
 

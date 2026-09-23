@@ -3,9 +3,11 @@ import {
 	estimate,
 	fitToNarration,
 	fixNotes,
+	MOTION_SAMPLES,
 	themeFromBrand,
 	themeFromPreset,
 	verdictFor,
+	withMotionCheck,
 	type ValidationError,
 } from '@kinetiq/domain';
 import {
@@ -33,8 +35,11 @@ import type {PipelineNodeDef} from './runner.js';
 const STILL_SCALE = 0.5;
 const RESEARCH_CACHE_SEC = 24 * 60 * 60;
 const SIGNED_URL_SEC = 60 * 60;
-/** The signature curved-glass finish (docs/PRD.md). */
-const LENS = true;
+/**
+ * No lens over the whole video: on flat backgrounds it only bends the edges of
+ * windows. Scenes use <Lens> themselves, on full-frame UI with the camera moving.
+ */
+const LENS = false;
 
 const hashUrl = (url: string) => createHash('sha256').update(normalizeUrl(url)).digest('hex').slice(0, 32);
 
@@ -64,9 +69,14 @@ export async function renderInputFor(
 			id: `s${scene.index}`,
 			code: scene.compiled,
 			durationInFrames: scene.durationFrames,
-			props: scene.screenshotKey
-				? {...scene.props, screenshot: await deps.storage.presignGet(scene.screenshotKey, {expiresSec: SIGNED_URL_SEC})}
-				: scene.props,
+			// Scenes time their motion to their own length.
+			props: {
+				...scene.props,
+				durationInFrames: scene.durationFrames,
+				...(scene.screenshotKey
+					? {screenshot: await deps.storage.presignGet(scene.screenshotKey, {expiresSec: SIGNED_URL_SEC})}
+					: {}),
+			},
 		})),
 	);
 	const audio = await Promise.all(
@@ -136,26 +146,37 @@ async function codeScene(
 	throw new PipelineError('INTERNAL', 'The scene writer could not produce code that passes the safety checks');
 }
 
-/** Renders one small still and stores it. Returns its key. */
-async function renderStillFor(
+const SAMPLE_NAMES = ['a', 'b', 'c'] as const;
+
+const sampleFrame = (scene: SceneState, at: number) =>
+	Math.min(scene.durationFrames - 1, Math.floor(scene.durationFrames * at));
+
+/**
+ * Renders two small stills of a scene, early and late, and measures how much
+ * changed between them (motion rule: something is always moving). The late
+ * still is the one QA looks at and the browser shows as a thumbnail.
+ */
+async function sampleScene(
 	deps: PipelineDeps,
 	ctx: PipelineContext,
 	state: PipelineState,
 	scene: SceneState,
 	round: number,
-): Promise<string> {
-	const key = keys.still(ctx.job.userId, ctx.job.id, scene.index, round);
+): Promise<{stillKey: string; motion: number}> {
 	// A still has no sound: leave the audio out so the page never waits for it to load.
 	const input = await renderInputFor(deps, {...state, audio: [], captions: []}, [scene]);
-	await deps.render.renderStill(input, {
-		frame: Math.floor(scene.durationFrames / 2),
-		outputKey: key,
-		scale: STILL_SCALE,
-	});
-	return key;
+	const sampleKeys: string[] = [];
+	for (const [i, at] of MOTION_SAMPLES.entries()) {
+		const key = keys.still(ctx.job.userId, ctx.job.id, scene.index, round, SAMPLE_NAMES[i]!);
+		await deps.render.renderStill(input, {frame: sampleFrame(scene, at), outputKey: key, scale: STILL_SCALE});
+		sampleKeys.push(key);
+	}
+	// The scene must move between every pair of samples; the least motion decides.
+	const ratios = await Promise.all(sampleKeys.slice(1).map((key, i) => deps.motion.changedRatio(sampleKeys[i]!, key)));
+	return {stillKey: sampleKeys.at(-1)!, motion: Math.min(...ratios)};
 }
 
-/** Asks the QA model to look at a still. */
+/** Asks the QA model to look at a still, then adds the motion check's verdict. */
 async function qaScene(deps: PipelineDeps, scene: SceneState, stillKey: string): Promise<QaReport> {
 	const url = await deps.storage.presignGet(stillKey, {expiresSec: SIGNED_URL_SEC});
 	const {result, cost} = await deps.llm.complete({
@@ -164,7 +185,8 @@ async function qaScene(deps: PipelineDeps, scene: SceneState, stillKey: string):
 		images: [url],
 	});
 	await deps.recordCost(cost);
-	return QaReport.parse(result);
+	const report = QaReport.parse(result);
+	return scene.motion === null ? report : withMotionCheck(report, scene.motion, sampleFrame(scene, MOTION_SAMPLES[2]));
 }
 
 export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
@@ -309,6 +331,7 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 						qa: null,
 						screenshotKey: null,
 						stillKey: null,
+						motion: null,
 					});
 					await ctx.progress('sceneCoder', scenes.length, plan.scenes.length);
 				}
@@ -339,8 +362,8 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 			async run({state, ctx}) {
 				const scenes: SceneState[] = [];
 				for (const scene of state.scenes) {
-					const stillKey = await renderStillFor(deps, ctx, state, scene, scene.fixes);
-					scenes.push({...scene, stillKey});
+					const {stillKey, motion} = await sampleScene(deps, ctx, state, scene, scene.fixes);
+					scenes.push({...scene, stillKey, motion});
 					await ctx.progress('previewStills', scenes.length, state.scenes.length);
 					await deps.events.publish(ctx.job.projectId, {
 						type: 'step.progress',
@@ -400,10 +423,10 @@ export function pipelineNodes(deps: PipelineDeps): PipelineNodeDef[] {
 						scenes[i] = {...scene, ...written, fixes: scene.fixes + 1};
 					}
 
-					// Re-render and re-check just this scene.
-					const stillKey = await renderStillFor(deps, ctx, {...state, scenes}, scenes[i]!, scenes[i]!.fixes);
-					const qa = await qaScene(deps, scenes[i]!, stillKey);
-					scenes[i] = {...scenes[i]!, stillKey, qa};
+					// Re-render and re-check just this scene, motion included.
+					const {stillKey, motion} = await sampleScene(deps, ctx, {...state, scenes}, scenes[i]!, scenes[i]!.fixes);
+					const qa = await qaScene(deps, {...scenes[i]!, motion}, stillKey);
+					scenes[i] = {...scenes[i]!, stillKey, motion, qa};
 					await ctx.progress('sceneFix', i + 1, scenes.length);
 				}
 				return {scenes};

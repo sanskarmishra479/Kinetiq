@@ -14,6 +14,23 @@ non-literal key (use `arr.at(i)`), `Math.random` (use remotion's `random(seed)`)
 classes, `this`, async code, `ref`, event handlers, `<img>`/`<a>`/`<script>`.
 Read the theme with `useTheme()`; never hard-code brand colors.
 
+## Motion rules (every scene)
+
+Something is always moving; a scene that holds still fails QA and is rewritten.
+
+- **The camera never locks off.** Keep a slow push or pan running at a steady speed from the
+  first frame to the last (`interpolate(frame, [0, durationInFrames], …)`). Use `<Camera>`
+  keyframes for deliberate moves (close-up, then pull back), on top of the steady drift.
+- **Product UI is used, not shown.** The cursor travels and clicks, text types, menus open,
+  the page scrolls. Aim the camera at what is happening (`browserLayout` gives the URL field).
+- **New information keeps arriving.** Reveal words at speaking pace across the scene
+  (`stagger`, `blurInEnd`), not all in the first second.
+- **Shots flow into each other.** The renderer adds transitions between scenes; don't fade to
+  black or hold a finished frame at the end.
+- **`<Lens>` only on full-frame UI with the camera moving**, subtly (strength ≤ 0.08). Never
+  on flat backgrounds.
+- Scenes receive `durationInFrames` as a prop: time every move to it.
+
 ## Components
 
 ### <Background>

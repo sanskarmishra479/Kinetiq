@@ -1,8 +1,8 @@
-import {DESIGN_PRESETS, RENDER_FPS, type QaReport, type ResearchResult} from '@kinetiq/shared';
+import {DESIGN_PRESETS, QaReport, RENDER_FPS, type ResearchResult} from '@kinetiq/shared';
 import {describe, expect, it} from 'vitest';
 import {estimateWordTimings, spokenFrames, splitWords, wordsFromSeconds} from './captions.js';
 import {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames} from './plan.js';
-import {fixNotes, verdictFor, worthFixing} from './qa.js';
+import {fixNotes, isStatic, MIN_MOTION_RATIO, MOTION_SAMPLES, verdictFor, withMotionCheck, worthFixing} from './qa.js';
 import {fontStack, onColor, shade, themeFromBrand, themeFromPreset} from './theme.js';
 
 // The pure parts of the pipeline (FR-GEN-03, FR-GEN-07, FR-GEN-08).
@@ -180,6 +180,18 @@ describe('visual QA decisions (FR-GEN-07, NFR-COST-04)', () => {
 		expect(worthFixing(report(false, 'medium'))).toBe(true);
 		expect(worthFixing(report(false, 'low'))).toBe(false);
 		expect(worthFixing(report(true))).toBe(false);
+	});
+
+	it('flags a scene that holds still (motion rule) and leaves moving scenes alone', () => {
+		expect(isStatic(0.001)).toBe(true);
+		expect(isStatic(MIN_MOTION_RATIO)).toBe(false);
+		const moving = withMotionCheck(report(true), 0.05, 40);
+		expect(moving).toEqual(report(true));
+		const frozen = withMotionCheck(report(true), 0.002, 40);
+		expect(frozen.pass).toBe(false);
+		expect(frozen.issues).toEqual([expect.objectContaining({kind: 'static', severity: 'high', frame: 40})]);
+		expect(QaReport.safeParse(frozen).success).toBe(true);
+		expect(MOTION_SAMPLES).toHaveLength(3);
 	});
 
 	it('hands back the worst issues first, in short lines', () => {

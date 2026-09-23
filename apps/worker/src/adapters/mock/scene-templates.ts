@@ -8,163 +8,382 @@ import type {ResearchResult, SceneBrief} from '@kinetiq/shared';
 // Text is passed as props, not baked into the code, so the same scene can be
 // re-rendered with different copy without touching the sandboxed code.
 
-const HOOK = `import {AbsoluteFill} from 'remotion';
-import {Background, BlurInText} from '@kinetiq/primitives';
+// Motion rule for every template: something is always moving. The camera
+// never locks off (slow pushes, pulls and pans), product scenes type, load,
+// click and scroll, and text arrives in stages. Scenes receive their own length
+// as `durationInFrames`, so the motion spans the whole scene.
 
-type Props = {title: string; subtitle: string};
+const HOOK = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Background, BlurInText, blurInEnd} from '@kinetiq/primitives';
 
-export default function HookScene({title, subtitle}: Props) {
+type Props = {title: string; subtitle: string; durationInFrames: number};
+
+// New information keeps arriving: words land at speaking pace (~2.6 words a second),
+// finishing by 70% of the scene, instead of everything appearing in the first second.
+function pace(text: string, from: number, durationInFrames: number) {
+	const words = Math.max(1, text.split(' ').length);
+	return Math.max(3, Math.min(11, Math.floor((durationInFrames * 0.7 - from) / words)));
+}
+
+export default function HookScene({title, subtitle, durationInFrames}: Props) {
+	const frame = useCurrentFrame();
+	const {width, height} = useVideoConfig();
+	const unit = Math.min(width, height);
+	// A pull back at constant speed from the first frame to the last: it never eases to a stop.
+	const scale = interpolate(frame, [0, durationInFrames], [1.2, 1]);
+	const rise = interpolate(frame, [0, durationInFrames], [height * 0.03, -height * 0.03]);
+	const titleEnd = blurInEnd(title.length, 0, 2, 12);
+	const subtitleAt = titleEnd + 4;
 	return (
 		<Background glow>
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', padding: 120}}>
-				<BlurInText text={title} fontSize={104} weight={700} align="center" maxWidth={1500} />
-				{subtitle ? (
-					<BlurInText text={subtitle} at={16} fontSize={40} weight={500} align="center" maxWidth={1200} />
-				) : null}
+			<AbsoluteFill style={{transform: 'translateY(' + rise + 'px) scale(' + scale + ')'}}>
+				<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: unit * 0.03, padding: unit * 0.1}}>
+					<BlurInText text={title} by="letter" stagger={2} duration={12} fontSize={unit * 0.1} weight={700} align="center" maxWidth={width * 0.8} />
+					{subtitle ? (
+						<BlurInText
+							text={subtitle}
+							by="word"
+							at={subtitleAt}
+							stagger={pace(subtitle, subtitleAt, durationInFrames)}
+							fontSize={unit * 0.036}
+							weight={500}
+							align="center"
+							maxWidth={width * 0.62}
+						/>
+					) : null}
+				</AbsoluteFill>
 			</AbsoluteFill>
 		</Background>
 	);
 }
 `;
 
-const STATEMENT = `import {AbsoluteFill, useVideoConfig} from 'remotion';
-import {Background, BlurInText} from '@kinetiq/primitives';
+const STATEMENT = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Background, BlurInText, blurInEnd, tween, useTheme} from '@kinetiq/primitives';
 
-type Props = {headline: string; detail: string};
+type Props = {headline: string; detail: string; durationInFrames: number};
 
-export default function StatementScene({headline, detail}: Props) {
-	const {width} = useVideoConfig();
-	return (
-		<Background>
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 32, padding: 140}}>
-				<BlurInText text={headline} by="word" fontSize={Math.round(width / 22)} weight={700} align="center" maxWidth={width * 0.78} />
-				{detail ? (
-					<BlurInText text={detail} by="word" at={14} fontSize={Math.round(width / 52)} weight={500} align="center" maxWidth={width * 0.6} />
-				) : null}
-			</AbsoluteFill>
-		</Background>
-	);
+// Words land at speaking pace across the scene, never all at once.
+function pace(text: string, from: number, until: number) {
+	const words = Math.max(1, text.split(' ').length);
+	return Math.max(3, Math.min(11, Math.floor((until - from) / words)));
 }
-`;
 
-const CARDS = `import {AbsoluteFill} from 'remotion';
-import {Background, BlurInText, CardGrid} from '@kinetiq/primitives';
-
-type Props = {heading: string; cards: {title: string; body: string}[]; variant: 'grid' | 'list'};
-
-export default function CardsScene({heading, cards, variant}: Props) {
-	return (
-		<Background>
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 56, padding: 100}}>
-				<BlurInText text={heading} fontSize={64} weight={600} align="center" maxWidth={1400} />
-				<CardGrid cards={cards} variant={variant} at={14} />
-			</AbsoluteFill>
-		</Background>
-	);
-}
-`;
-
-const DEMO = `import {AbsoluteFill, useVideoConfig} from 'remotion';
-import {Background, Browser, useTheme} from '@kinetiq/primitives';
-
-type Props = {url: string; headline: string; subline: string; cta: string; screenshot: string | null};
-
-export default function DemoScene({url, headline, subline, cta, screenshot}: Props) {
+export default function StatementScene({headline, detail, durationInFrames}: Props) {
+	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
 	const theme = useTheme();
-	const frameWidth = Math.round(width * 0.82);
-	const frameHeight = Math.round(height * 0.66);
+	const unit = Math.min(width, height);
+	// A lateral pan with a gentle push, at constant speed for the whole scene.
+	const pan = interpolate(frame, [0, durationInFrames], [width * 0.05, -width * 0.05]);
+	const scale = interpolate(frame, [0, durationInFrames], [1.04, 1.18]);
+	const words = Math.max(1, headline.split(' ').length);
+	const headlineStagger = pace(headline, 4, durationInFrames * (detail ? 0.45 : 0.7));
+	const headlineEnd = blurInEnd(words, 4, headlineStagger, 14);
+	const detailAt = headlineEnd + 6;
+	const underline = tween(frame, [headlineEnd - 6, headlineEnd + 18], [0, 1]);
 	return (
 		<Background>
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', paddingBottom: Math.round(height * 0.1)}}>
-				<Browser
-					url={url}
-					width={frameWidth}
-					height={frameHeight}
-					typeAt={8}
-					contentHeight={frameHeight}
-					src={screenshot === null ? undefined : screenshot}
-				>
-					{screenshot === null ? (
-						<AbsoluteFill
-							style={{
-								alignItems: 'center',
-								justifyContent: 'center',
-								gap: 28,
-								padding: 80,
-								textAlign: 'center',
-								background: theme.surface,
-							}}
-						>
-							<div style={{fontSize: 56, fontWeight: 700, color: theme.fg, fontFamily: theme.fontFamily}}>
-								{headline}
-							</div>
-							<div style={{fontSize: 26, color: theme.muted, maxWidth: 720, fontFamily: theme.fontFamily}}>
-								{subline}
-							</div>
-							<div
-								style={{
-									marginTop: 12,
-									padding: '14px 28px',
-									borderRadius: theme.radius,
-									background: theme.accent,
-									color: theme.accentFg,
-									fontSize: 24,
-									fontWeight: 600,
-									fontFamily: theme.fontFamily,
-								}}
-							>
-								{cta}
-							</div>
-						</AbsoluteFill>
+			<AbsoluteFill style={{transform: 'translateX(' + pan + 'px) scale(' + scale + ')'}}>
+				<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: unit * 0.035, padding: unit * 0.12}}>
+					<BlurInText
+						text={headline}
+						by="word"
+						at={4}
+						stagger={headlineStagger}
+						duration={14}
+						fontSize={unit * 0.068}
+						weight={700}
+						align="center"
+						maxWidth={width * 0.74}
+					/>
+					<div style={{width: unit * 0.28 * underline, height: Math.max(3, unit * 0.005), borderRadius: 4, background: theme.accent}} />
+					{detail ? (
+						<BlurInText
+							text={detail}
+							by="word"
+							at={detailAt}
+							stagger={pace(detail, detailAt, durationInFrames * 0.8)}
+							fontSize={unit * 0.032}
+							weight={500}
+							align="center"
+							maxWidth={width * 0.56}
+							color={theme.muted}
+						/>
 					) : null}
-				</Browser>
+				</AbsoluteFill>
 			</AbsoluteFill>
 		</Background>
 	);
 }
 `;
 
-const CTA = `import {AbsoluteFill} from 'remotion';
-import {Background, BlurInText, useTheme} from '@kinetiq/primitives';
+const CARDS = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Background, BlurInText, Camera, CardGrid} from '@kinetiq/primitives';
 
-type Props = {headline: string; domain: string};
+type Card = {title: string; body: string; icon: 'bolt' | 'sparkle' | 'shield' | 'chart' | 'globe' | 'layers'};
+type Props = {heading: string; cards: Card[]; variant: 'grid' | 'list'; durationInFrames: number};
 
-export default function CtaScene({headline, domain}: Props) {
+export default function CardsScene({heading, cards, variant, durationInFrames}: Props) {
+	const frame = useCurrentFrame();
+	const {width, height} = useVideoConfig();
+	const unit = Math.min(width, height);
+	// A deliberate move (close on the heading, pull back to the cards) on top of a constant drift.
+	const shots = [
+		{frame: 0, x: width / 2, y: height * 0.34, scale: 1.35},
+		{frame: Math.max(1, Math.round(durationInFrames * 0.35)), x: width / 2, y: height * 0.5, scale: 1},
+	];
+	const drift = interpolate(frame, [0, durationInFrames], [1, 1.1]);
+	const pan = interpolate(frame, [0, durationInFrames], [width * 0.02, -width * 0.02]);
+	return (
+		<Background>
+			<AbsoluteFill style={{transform: 'translateX(' + pan + 'px) scale(' + drift + ')'}}>
+			<Camera shots={shots}>
+				<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: unit * 0.05, padding: unit * 0.08}}>
+					<BlurInText text={heading} by="word" fontSize={unit * 0.06} weight={700} align="center" maxWidth={width * 0.8} />
+					<CardGrid cards={cards} variant={variant} at={16} stagger={5} />
+				</AbsoluteFill>
+			</Camera>
+			</AbsoluteFill>
+		</Background>
+	);
+}
+`;
+
+const DEMO = `import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {
+	Background,
+	Browser,
+	Camera,
+	Cursor,
+	Lens,
+	browserLayout,
+	browserTimeline,
+	chromeScale,
+	isPressed,
+	splitUrl,
+	useTheme,
+} from '@kinetiq/primitives';
+
+type Feature = {title: string; body: string};
+type Props = {
+	url: string;
+	headline: string;
+	subline: string;
+	cta: string;
+	features: Feature[];
+	screenshot: string | null;
+	durationInFrames: number;
+};
+
+// Keyframes must move forward in time, however short the scene is.
+function forward<T extends {frame: number}>(keys: T[]): T[] {
+	let last = -1;
+	return keys.map((key) => {
+		const frame = Math.max(key.frame, last + 1);
+		last = frame;
+		return {...key, frame};
+	});
+}
+
+export default function DemoScene({url, headline, subline, cta, features, screenshot, durationInFrames}: Props) {
+	const frame = useCurrentFrame();
+	const {width, height, fps} = useVideoConfig();
 	const theme = useTheme();
+	const unit = Math.min(width, height);
+
+	// The browser window and its page, in frame pixels.
+	const W = Math.round(width * 0.84);
+	const H = Math.round(height * 0.82);
+	const left = Math.round((width - W) / 2);
+	const top = Math.round((height - H) / 2);
+	const chrome = browserLayout(W, chromeScale(W, unit));
+	const pageTop = top + chrome.toolbar;
+	const pageHeight = H - chrome.toolbar;
+	const button = {x: left + W / 2, y: pageTop + pageHeight * 0.62};
+	const field = {x: left + chrome.field.x + chrome.field.w / 2, y: top + chrome.field.y + chrome.field.h / 2};
+
+	// Beats: type the URL, the page loads, the cursor clicks the button, the page scrolls to the features.
+	const parts = splitUrl(url);
+	const timeline = browserTimeline(parts.domain + parts.path, 4, fps);
+	const loaded = timeline.revealEnd;
+	const rest = Math.max(30, durationInFrames - loaded);
+	const clickAt = loaded + Math.round(rest * 0.35);
+	const scrollStart = clickAt + Math.round(rest * 0.12);
+	const scrollEnd = scrollStart + Math.round(rest * 0.3);
+	const scrollTo = Math.round(pageHeight * 0.8);
+
+	// The camera is never still: close on the address bar, pull back, push onto the button, follow the scroll.
+	const shots = forward([
+		{frame: 0, x: field.x, y: field.y + height * 0.05, scale: 2.1},
+		{frame: timeline.typeEnd, x: field.x, y: field.y + height * 0.08, scale: 1.95},
+		{frame: loaded, x: width / 2, y: height / 2, scale: 1.02},
+		{frame: clickAt - 6, x: button.x, y: button.y, scale: 1.45},
+		{frame: clickAt + 8, x: button.x, y: button.y - height * 0.01, scale: 1.52},
+		{frame: scrollEnd, x: width / 2, y: height * 0.52, scale: 1.12},
+		{frame: durationInFrames, x: width * 0.53, y: height * 0.5, scale: 1.2},
+	]);
+	const path = forward([
+		{frame: loaded - 6, x: width * 0.86, y: height * 0.94},
+		{frame: clickAt - 2, x: button.x, y: button.y},
+		{frame: scrollStart, x: button.x + unit * 0.01, y: button.y + unit * 0.01},
+		{frame: scrollEnd, x: left + W * 0.27, y: pageTop + pageHeight * 0.55},
+		{frame: durationInFrames, x: left + W * 0.3, y: pageTop + pageHeight * 0.5},
+	]);
+	const pressed = isPressed(frame, [clickAt]);
+	const k = W / 1600;
+
+	const page = (
+		<div style={{position: 'absolute', left: 0, top: 0, width: W, height: pageHeight * 2.2, background: theme.bg, fontFamily: theme.fontFamily}}>
+			<div style={{position: 'absolute', left: 48 * k, right: 48 * k, top: 26 * k, display: 'flex', alignItems: 'center', gap: 32 * k}}>
+				<div style={{width: 30 * k, height: 30 * k, borderRadius: 8 * k, background: theme.accent}} />
+				<div style={{fontSize: 22 * k, fontWeight: 700, color: theme.fg}}>{parts.domain}</div>
+				<div style={{flex: 1}} />
+				<div style={{fontSize: 18 * k, color: theme.muted}}>Product</div>
+				<div style={{fontSize: 18 * k, color: theme.muted}}>Pricing</div>
+				<div style={{fontSize: 18 * k, color: theme.muted}}>Docs</div>
+			</div>
+			<div style={{position: 'absolute', left: W * 0.12, right: W * 0.12, top: pageHeight * 0.2, textAlign: 'center'}}>
+				<div style={{fontSize: 64 * k, fontWeight: 800, lineHeight: 1.08, letterSpacing: '-0.02em', color: theme.fg}}>{headline}</div>
+				<div style={{marginTop: 22 * k, fontSize: 24 * k, lineHeight: 1.45, color: theme.muted}}>{subline}</div>
+			</div>
+			<div
+				style={{
+					position: 'absolute',
+					left: W / 2,
+					top: pageHeight * 0.62,
+					transform: 'translate(-50%, -50%) scale(' + (pressed ? 0.94 : 1) + ')',
+					padding: 18 * k + 'px ' + 36 * k + 'px',
+					borderRadius: theme.radius * k,
+					background: theme.accent,
+					color: theme.accentFg,
+					fontSize: 24 * k,
+					fontWeight: 700,
+					boxShadow: '0 ' + 12 * k + 'px ' + 40 * k + 'px rgba(0,0,0,0.35)',
+				}}
+			>
+				{cta}
+			</div>
+			<div style={{position: 'absolute', left: W * 0.08, right: W * 0.08, top: pageHeight * 1.02, display: 'flex', gap: 28 * k}}>
+				{features.map((feature) => (
+					<div
+						key={feature.title}
+						style={{flex: 1, padding: 32 * k, borderRadius: theme.radius * k, background: theme.surface, border: '1px solid ' + theme.border}}
+					>
+						<div style={{width: 40 * k, height: 40 * k, borderRadius: 10 * k, background: theme.accent, opacity: 0.9}} />
+						<div style={{marginTop: 20 * k, fontSize: 26 * k, fontWeight: 700, color: theme.fg}}>{feature.title}</div>
+						<div style={{marginTop: 10 * k, fontSize: 18 * k, lineHeight: 1.5, color: theme.muted}}>{feature.body}</div>
+					</div>
+				))}
+			</div>
+		</div>
+	);
+
+	return (
+		<Lens strength={0.07} vignette={0.3}>
+			<Background>
+				<Camera shots={shots}>
+					<div style={{position: 'absolute', left, top}}>
+						<Browser
+							url={url}
+							width={W}
+							height={H}
+							typeAt={4}
+							scroll={[
+								{frame: scrollStart, y: 0},
+								{frame: scrollEnd, y: scrollTo},
+							]}
+							contentHeight={pageHeight * 2.2}
+							src={screenshot === null ? undefined : screenshot}
+						>
+							{screenshot === null ? page : null}
+						</Browser>
+					</div>
+					<Cursor path={path} clicks={[clickAt]} hideBefore={loaded - 6} />
+				</Camera>
+			</Background>
+		</Lens>
+	);
+}
+`;
+
+const CTA = `import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Background, BlurInText, Camera, Cursor, isPressed, useTheme} from '@kinetiq/primitives';
+
+type Props = {headline: string; domain: string; durationInFrames: number};
+
+export default function CtaScene({headline, domain, durationInFrames}: Props) {
+	const frame = useCurrentFrame();
+	const {width, height} = useVideoConfig();
+	const theme = useTheme();
+	const unit = Math.min(width, height);
+	const button = {x: width / 2, y: height * 0.6};
+	const clickAt = Math.round(durationInFrames * 0.55);
+	// Push in toward the button while the cursor comes to click it.
+	const shots = [
+		{frame: 0, x: width / 2, y: height * 0.48, scale: 1.02},
+		{frame: durationInFrames, x: button.x, y: button.y - height * 0.04, scale: 1.2},
+	];
+	const path = [
+		{frame: Math.round(durationInFrames * 0.2), x: width * 0.84, y: height * 0.95},
+		{frame: clickAt - 2, x: button.x + unit * 0.04, y: button.y + unit * 0.01},
+		{frame: durationInFrames, x: button.x + unit * 0.05, y: button.y + unit * 0.03},
+	];
+	const pressed = isPressed(frame, [clickAt]);
 	return (
 		<Background glow>
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center', gap: 40, padding: 120}}>
-				<BlurInText text={headline} fontSize={88} weight={700} align="center" maxWidth={1400} />
+			<Camera shots={shots}>
+				<AbsoluteFill style={{alignItems: 'center', paddingTop: height * 0.3}}>
+					<BlurInText text={headline} by="word" fontSize={unit * 0.08} weight={700} align="center" maxWidth={width * 0.8} />
+				</AbsoluteFill>
 				<div
 					style={{
-						padding: '18px 36px',
+						position: 'absolute',
+						left: button.x,
+						top: button.y,
+						transform: 'translate(-50%, -50%) scale(' + (pressed ? 0.94 : 1) + ')',
+						padding: unit * 0.02 + 'px ' + unit * 0.04 + 'px',
 						borderRadius: theme.radius,
-						border: '1px solid ' + theme.border,
-						background: theme.surface,
-						color: theme.fg,
-						fontSize: 34,
+						background: theme.accent,
+						color: theme.accentFg,
+						fontSize: unit * 0.032,
+						fontWeight: 700,
 						fontFamily: theme.fontFamily,
 					}}
 				>
 					{domain}
 				</div>
-			</AbsoluteFill>
+				<Cursor path={path} clicks={[clickAt]} hideBefore={Math.round(durationInFrames * 0.2)} />
+			</Camera>
 		</Background>
 	);
 }
 `;
 
-const LOGO = `import {AbsoluteFill} from 'remotion';
-import {Background, LogoReveal} from '@kinetiq/primitives';
+const LOGO = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
+import {Background, BlurInText, LogoReveal, useTheme} from '@kinetiq/primitives';
 
-type Props = {name: string; tagline: string};
+type Props = {name: string; tagline: string; domain: string; durationInFrames: number};
 
-export default function LogoScene({name, tagline}: Props) {
+export default function LogoScene({name, tagline, domain, durationInFrames}: Props) {
+	const frame = useCurrentFrame();
+	const {width, height} = useVideoConfig();
+	const theme = useTheme();
+	const unit = Math.min(width, height);
+	// A steady push in, a slow rise, and the address arriving late: the end card never sits still.
+	const scale = interpolate(frame, [0, durationInFrames], [0.96, 1.22]);
+	const rise = interpolate(frame, [0, durationInFrames], [height * 0.02, -height * 0.02]);
+	const domainAt = Math.max(24, Math.round(durationInFrames * 0.45));
 	return (
 		<Background glow>
-			<AbsoluteFill style={{alignItems: 'center', justifyContent: 'center'}}>
+			<AbsoluteFill style={{transform: 'translateY(' + rise + 'px) scale(' + scale + ')'}}>
 				<LogoReveal name={name} tagline={tagline} />
+				{/* LogoReveal centers itself in the frame; the address sits in the lower third, below the tagline. */}
+				<AbsoluteFill style={{alignItems: 'center', justifyContent: 'flex-end', paddingBottom: height * 0.2}}>
+					<div style={{padding: unit * 0.012 + 'px ' + unit * 0.03 + 'px', borderRadius: 999, border: '1px solid ' + theme.border}}>
+						<BlurInText text={domain} by="letter" at={domainAt} stagger={2} fontSize={unit * 0.03} weight={600} color={theme.fg} />
+					</div>
+				</AbsoluteFill>
 			</AbsoluteFill>
 		</Background>
 	);
@@ -192,6 +411,8 @@ export function templateFor(brief: SceneBrief): TemplateId {
 	}
 }
 
+const CARD_ICONS = ['bolt', 'sparkle', 'shield', 'chart', 'globe', 'layers'] as const;
+
 /** Shortens text at a word boundary, never mid-word. */
 export function clip(text: string, max: number): string {
 	if (text.length <= max) return text;
@@ -214,20 +435,27 @@ export function propsFor(brief: SceneBrief, research: ResearchResult, template: 
 			return {
 				heading: first,
 				variant: brief.purpose === 'social_proof' ? 'list' : 'grid',
-				cards: research.features.slice(0, 3).map((f) => ({title: f.title, body: f.description})),
+				cards: research.features
+					.slice(0, 3)
+					.map((f, i) => ({title: f.title, body: f.description, icon: CARD_ICONS[i % CARD_ICONS.length]!})),
 			};
 		case 'demo':
 			return {
 				url: research.url,
-				headline: first,
+				// The page replicates their homepage, whose hero is the tagline.
+				headline: research.tagline || first,
 				// Never repeat the headline as the subline.
-				subline: clip([second, research.description, research.tagline].find((t) => t && t !== first) ?? '', 110),
+				subline: clip(
+					[research.description, second, first].find((t) => t && t !== (research.tagline || first)) ?? '',
+					110,
+				),
 				cta: `Try ${research.productName}`,
+				features: research.features.slice(0, 3).map((f) => ({title: f.title, body: clip(f.description, 70)})),
 				screenshot: null,
 			};
 		case 'cta':
 			return {headline: first, domain: domainOf(research.url)};
 		case 'logo':
-			return {name: research.productName, tagline: research.tagline};
+			return {name: research.productName, tagline: research.tagline, domain: domainOf(research.url)};
 	}
 }

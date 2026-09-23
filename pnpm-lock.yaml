@@ -297,6 +297,12 @@ importers:
       pino:
         specifier: 10.3.1
         version: 10.3.1
+      pixelmatch:
+        specifier: 7.2.0
+        version: 7.2.0
+      pngjs:
+        specifier: 7.0.0
+        version: 7.0.0
       zod:
         specifier: 4.5.4
         version: 4.5.4
@@ -304,6 +310,9 @@ importers:
       '@kinetiq/api':
         specifier: workspace:*
         version: link:../api
+      '@types/pngjs':
+        specifier: 6.0.5
+        version: 6.0.5
       '@types/supertest':
         specifier: 7.2.1
         version: 7.2.1
@@ -450,6 +459,9 @@ importers:
         specifier: 4.0.526
         version: 4.0.526(lightningcss@1.33.0)(postcss@8.5.28)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@remotion/renderer':
+        specifier: 4.0.526
+        version: 4.0.526(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      '@remotion/transitions':
         specifier: 4.0.526
         version: 4.0.526(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       react:

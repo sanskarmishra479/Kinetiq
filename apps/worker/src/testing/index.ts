@@ -9,6 +9,7 @@ import type {WorkerContainer} from '../container.js';
 import {unavailableRender, type RenderPort} from '@kinetiq/renderer/node';
 import {mockLlm, mockMusic, mockScraper, mockVoice} from '../adapters/mock/index.js';
 import {generationPipeline} from '../pipeline/index.js';
+import {alwaysMoving, type MotionPort} from '../adapters/motion.js';
 import type {LlmPort, MusicPort, ScraperPort, VoicePort} from '../ports.js';
 import type {MediaProbePort, PipelinePort, ProbeFacts} from '../ports.js';
 
@@ -105,7 +106,14 @@ export function fakeRender(
 	};
 }
 
-export type TestProviders = {llm?: LlmPort; scraper?: ScraperPort; voice?: VoicePort; music?: MusicPort};
+export type TestProviders = {
+	llm?: LlmPort;
+	scraper?: ScraperPort;
+	voice?: VoicePort;
+	music?: MusicPort;
+	/** Defaults to "every scene moves"; pass pngMotion() to measure real renders. */
+	motion?: MotionPort;
+};
 
 /**
  * The real generation pipeline wired to the mock providers: what the worker
@@ -130,6 +138,7 @@ export function testPipeline(
 			scraper: providers.scraper ?? mockScraper(container.storage),
 			voice: providers.voice ?? mockVoice(),
 			music: providers.music ?? mockMusic(),
+			motion: providers.motion ?? alwaysMoving(),
 			...(options.maxFixRounds === undefined ? {} : {maxFixRounds: options.maxFixRounds}),
 		},
 	});

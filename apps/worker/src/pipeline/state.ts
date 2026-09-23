@@ -30,6 +30,8 @@ export const SceneState = z.strictObject({
 	/** Set when the rebuilt UI was replaced by the real screenshot. */
 	screenshotKey: z.string().nullable(),
 	stillKey: z.string().nullable(),
+	/** Share of the frame that changes between an early and a late frame (motion check). */
+	motion: z.number().min(0).max(1).nullable(),
 });
 export type SceneState = z.infer<typeof SceneState>;
 
@@ -101,8 +103,8 @@ export const initialState = (input: JobInput): PipelineState => ({
 /** Storage layout. Everything lives under the user's folder, so deleting an account removes it all. */
 export const keys = {
 	temp: (userId: string, jobId: string) => `u/${userId}/tmp/${jobId}/`,
-	still: (userId: string, jobId: string, index: number, round: number) =>
-		`u/${userId}/tmp/${jobId}/still-${index}-${round}.png`,
+	still: (userId: string, jobId: string, index: number, round: number, sample: 'a' | 'b' | 'c') =>
+		`u/${userId}/tmp/${jobId}/still-${index}-${round}${sample}.png`,
 	voice: (userId: string, jobId: string, index: number) => `u/${userId}/tmp/${jobId}/vo-${index}.wav`,
 	music: (userId: string, jobId: string) => `u/${userId}/tmp/${jobId}/music.mp3`,
 	video: (userId: string, jobId: string) => `u/${userId}/v/${jobId}.mp4`,

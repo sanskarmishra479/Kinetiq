@@ -15,6 +15,7 @@ import type {Config} from '@kinetiq/shared';
 import {Redis} from 'ioredis';
 import {pino, type Logger} from 'pino';
 import {ffprobe} from './adapters/ffprobe.js';
+import {pngMotion} from './adapters/motion.js';
 import {mockLlm, mockMusic, mockScraper, mockVoice} from './adapters/mock/index.js';
 import {generationPipeline} from './pipeline/index.js';
 import {PipelineError, type MediaProbePort, type PipelinePort} from './ports.js';
@@ -98,6 +99,7 @@ export function buildWorkerContainer(config: Config): WorkerContainer {
 						scraper: mockScraper(storage),
 						voice: mockVoice(),
 						music: mockMusic(),
+						motion: pngMotion(storage),
 					},
 				})
 			: unavailablePipeline(),

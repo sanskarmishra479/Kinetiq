@@ -7,7 +7,8 @@ import {mockLlm, mockScraper} from '../adapters/mock/index.js';
 import {processGenerate} from '../processors/generate.js';
 import {fakeRender, testPipeline, testWorker} from '../testing/index.js';
 import type {WorkerContainer} from '../container.js';
-import type {LlmPort} from '../ports.js';
+import type {MotionPort} from '../adapters/motion.js';
+import type {LlmPort, LlmRequest} from '../ports.js';
 
 // The whole generation pipeline on mock providers (docs/TODO.md Phase 8).
 // Rendering is faked here so the tests stay fast; pipeline.e2e.int.test.ts
@@ -33,6 +34,8 @@ type Options = {
 	maxFixRounds?: number;
 	/** Wraps the mock model, e.g. to give its answers a price. */
 	wrapLlm?: (llm: LlmPort) => LlmPort;
+	/** How much each scene moves between sample frames (default: plenty). */
+	motion?: MotionPort;
 };
 
 /** A project ready to generate, plus the worker wired to the real pipeline. */
@@ -73,7 +76,11 @@ async function setup(options: Options = {}) {
 	});
 	w.container.pipeline = testPipeline(
 		w.container,
-		{llm: options.wrapLlm ? options.wrapLlm(llm) : llm, scraper: mockScraper(w.storage)},
+		{
+			llm: options.wrapLlm ? options.wrapLlm(llm) : llm,
+			scraper: mockScraper(w.storage),
+			...(options.motion ? {motion: options.motion} : {}),
+		},
 		options.maxFixRounds === undefined ? {} : {maxFixRounds: options.maxFixRounds},
 	);
 	return {...w, render, llm, payload: {jobId: job.id, projectId: project.id, userId}, reserved};
@@ -173,6 +180,39 @@ describe('visual QA and the fix loop (FR-GEN-07, NFR-COST-04)', () => {
 		const steps = (await t.repos.jobs.get(userId, s.payload.jobId))!.steps;
 		expect(steps.find((step) => step.node === 'sceneFix')?.status).toBe('done');
 		expect(s.llm.calls.filter((c) => c === 'sceneFix')).toHaveLength(1);
+		const scene = await db.scene.findFirstOrThrow({where: {index: 0}});
+		expect((scene.qaReport as QaReport).pass).toBe(true);
+	});
+
+	it('sends a frozen scene back to be rewritten, telling the writer why (motion rule)', async () => {
+		// Scene 0 barely changes between its sample frames the first time; the rewrite moves.
+		let firstLook = true;
+		const motion: MotionPort = {
+			changedRatio: async (first) => {
+				if (first.includes('still-0-0')) return firstLook ? 0.001 : 0.2;
+				return 0.2;
+			},
+		};
+		const fixRequests: LlmRequest[] = [];
+		const s = await setup({
+			motion: {
+				changedRatio: async (a, b) => {
+					const ratio = await motion.changedRatio(a, b);
+					if (a.includes('still-0-0') && b.includes('c.png')) firstLook = false;
+					return ratio;
+				},
+			},
+			wrapLlm: (llm) => ({
+				complete: async (request) => {
+					if (request.role === 'sceneFix') fixRequests.push(request);
+					return llm.complete(request);
+				},
+			}),
+		});
+		expect(await run(s.container, s.payload)).toBe('succeeded');
+
+		expect(fixRequests).toHaveLength(1);
+		expect((fixRequests[0]!.data.problems as string[]).join(' ')).toMatch(/static \(high\).*holds still/);
 		const scene = await db.scene.findFirstOrThrow({where: {index: 0}});
 		expect((scene.qaReport as QaReport).pass).toBe(true);
 	});

@@ -42,3 +42,38 @@ export function fixNotes(report: QaReport, max = 6): string[] {
 		.slice(0, max)
 		.map((i) => `${i.kind} (${i.severity}) at frame ${i.frame}: ${i.description}`);
 }
+
+// ── Motion check ─────────────────────────────────────────────────────────────
+// Motion rule: something is always moving (the camera drifts, the cursor
+// travels, text types, the page scrolls). Two frames of a scene far apart must
+// differ; if they barely do, the scene froze and goes back to be rewritten.
+
+/** Share of pixels that must change between the two sample frames. */
+export const MIN_MOTION_RATIO = 0.01;
+
+/**
+ * Where in a scene the sample frames are taken, as fractions of its length.
+ * Motion is required between each pair, so a scene that moves and then stops
+ * (the classic "animate in, then hold") is caught too.
+ */
+export const MOTION_SAMPLES = [0.3, 0.6, 0.9] as const;
+
+export const isStatic = (changedRatio: number) => changedRatio < MIN_MOTION_RATIO;
+
+/** Adds a "static" issue to a QA report when the scene doesn't move. */
+export function withMotionCheck(report: QaReport, changedRatio: number, frame: number): QaReport {
+	if (!isStatic(changedRatio)) return report;
+	return {
+		...report,
+		pass: false,
+		issues: [
+			...report.issues,
+			{
+				kind: 'static' as const,
+				severity: 'high' as const,
+				frame,
+				description: `Only ${(changedRatio * 100).toFixed(2)}% of the frame changes between sample frames: the scene holds still. Keep the camera moving at a steady speed (push or pan) for the whole scene and add motion: cursor, typing, scroll or a staged reveal.`,
+			},
+		].slice(0, 20),
+	};
+}

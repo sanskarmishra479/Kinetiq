@@ -83,16 +83,39 @@ function narration(
 	}
 }
 
+/**
+ * On-screen text per scene. Each scene says something new: the tagline opens
+ * the video, then the audience, the product's own description and its features.
+ */
 function onScreen(
 	purpose: SceneBrief['purpose'],
 	research: ResearchResult,
 	feature?: ResearchResult['features'][number],
 ) {
-	if (purpose === 'hook') return [research.productName, sentence(research.tagline, 60)].filter(Boolean);
-	if (purpose === 'logo') return [research.productName];
-	if (purpose === 'cta') return [`Try ${research.productName}`, sentence(research.url.replace(/^https?:\/\//, ''), 60)];
-	if (feature) return [sentence(feature.title, 60), sentence(feature.description, 90)];
-	return [sentence(research.tagline || research.productName, 60)];
+	const name = research.productName;
+	switch (purpose) {
+		case 'hook':
+			return [name, sentence(research.tagline, 60)].filter(Boolean);
+		case 'problem':
+			return research.audience
+				? [
+						sentence(`Built for ${research.audience}`, 60),
+						sentence(research.features[0]?.description ?? '', 90),
+					].filter(Boolean)
+				: [sentence(`Meet ${name}`, 60)];
+		case 'solution':
+			return [sentence(research.description || research.tagline || name, 90)];
+		case 'social_proof':
+			return [sentence(`Why teams choose ${name}`, 60)];
+		case 'logo':
+			return [name];
+		case 'cta':
+			return [`Try ${name}`, sentence(research.url.replace(/^https?:\/\//, ''), 60)];
+		default:
+			return feature
+				? [sentence(feature.title, 60), sentence(feature.description, 90)]
+				: [sentence(research.tagline || name, 60)];
+	}
 }
 
 /** Builds the storyboard: which scenes, in which order, how long, and what they say. */

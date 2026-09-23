@@ -64,6 +64,8 @@ export const QA_ISSUE_KINDS = [
 	'empty_frame',
 	'overlap',
 	'off_brand',
+	/** Nothing moves: the scene holds still (motion rule: something is always moving). */
+	'static',
 	'other',
 ] as const;
 
