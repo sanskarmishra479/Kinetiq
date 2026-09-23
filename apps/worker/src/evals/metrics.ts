@@ -17,6 +17,10 @@ export type EvalRun = {
 	/** QA findings by kind (overflow, cut_off_text, static, …). */
 	qaIssues: Record<string, number>;
 	usdMicros: number;
+	/** Cost per provider and model, in millionths of a dollar. */
+	costByProvider: Record<string, number>;
+	/** Where the finished video was saved (with --keep). */
+	kept: string | null;
 };
 
 export type EvalSummary = {
@@ -106,6 +110,12 @@ export function report(runs: readonly EvalRun[], meta: Record<string, string>): 
 		`| Cost per video (avg / max) | $${s.avgUsd.toFixed(3)} / $${s.maxUsd.toFixed(3)} | below the credit price |`,
 		`| Slowest step | ${s.slowestStep ? `${s.slowestStep.step} (${s.slowestStep.avgSeconds.toFixed(0)} s avg)` : '-'} | |`,
 		'',
+		'## Cost per provider (all videos)',
+		'',
+		'| Provider / model | Cost |',
+		'|---|---|',
+		...costRows(runs),
+		'',
 		'| Site | Result | Time | Scenes | Rewrites | Fixes | Cost |',
 		'|---|---|---|---|---|---|---|',
 		...runs.map(
@@ -115,4 +125,14 @@ export function report(runs: readonly EvalRun[], meta: Record<string, string>): 
 		'',
 	];
 	return lines.join('\n');
+}
+
+/** Total cost per provider across runs, most expensive first. */
+function costRows(runs: readonly EvalRun[]): string[] {
+	const totals = new Map<string, number>();
+	for (const run of runs)
+		for (const [p, micros] of Object.entries(run.costByProvider)) totals.set(p, (totals.get(p) ?? 0) + micros);
+	return [...totals.entries()]
+		.sort((a, b) => b[1] - a[1])
+		.map(([p, micros]) => `| ${p} | $${(micros / 1_000_000).toFixed(4)} |`);
 }

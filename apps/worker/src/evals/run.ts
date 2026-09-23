@@ -2,6 +2,7 @@ import {createDb, createIdGenerator, createRepos} from '@kinetiq/db';
 import {memoryEventBus, memoryKv, s3Storage} from '@kinetiq/platform';
 import {localRender} from '@kinetiq/renderer/node';
 import {loadConfig, QaReport} from '@kinetiq/shared';
+import {execFileSync} from 'node:child_process';
 import {mkdirSync, readFileSync, writeFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {parseArgs} from 'node:util';
@@ -37,6 +38,10 @@ const {values} = parseArgs({
 		duration: {type: 'string', default: '15'},
 		voiceover: {type: 'boolean', default: false},
 		yes: {type: 'boolean', default: false},
+		/** Save each finished video (MP4, poster, frame sheet) to out/videos/. */
+		keep: {type: 'boolean', default: false},
+		/** Stop when AI spending in this run passes this many dollars. */
+		'max-usd': {type: 'string', default: '2'},
 	},
 });
 
@@ -81,10 +86,18 @@ const providers = real
 const scraper = values.scraper === 'mock' ? mockScraper(storage) : providers.scraper;
 const rendering = values.render === 'local';
 
-/** Wraps the model to count scene writes, fixes and QA findings for one run. */
+const maxUsdMicros = Math.round(Number(values['max-usd']) * 1_000_000);
+let spentUsdMicros = 0;
+
+/** Wraps the model to count scene writes, fixes and QA findings for one run, and to enforce the budget. */
 function instrument(llm: LlmPort, run: EvalRun): LlmPort {
 	return {
 		async complete(request) {
+			if (spentUsdMicros >= maxUsdMicros) {
+				throw new Error(
+					`budget reached: $${(spentUsdMicros / 1e6).toFixed(2)} of $${values['max-usd']} (raise --max-usd to continue)`,
+				);
+			}
 			// Without real renders there is no real still for the vision model: QA isn't measured.
 			if (request.role === 'visualQA' && !rendering) {
 				return {
@@ -95,6 +108,7 @@ function instrument(llm: LlmPort, run: EvalRun): LlmPort {
 			if (request.role === 'sceneCoder') run.sceneWrites++;
 			if (request.role === 'sceneFix') run.sceneFixes++;
 			const answer = await llm.complete(request);
+			spentUsdMicros += answer.cost.usdMicros;
 			if (request.role === 'visualQA') {
 				for (const issue of QaReport.parse(answer.result).issues)
 					run.qaIssues[issue.kind] = (run.qaIssues[issue.kind] ?? 0) + 1;
@@ -102,6 +116,39 @@ function instrument(llm: LlmPort, run: EvalRun): LlmPort {
 			return answer;
 		},
 	};
+}
+
+const VIDEOS = fileURLToPath(new URL('../../../../out/videos/', import.meta.url));
+
+/** Copies the finished video out of storage before the benchmark cleans up, plus a frame sheet to glance at. */
+async function keepVideo(jobId: string, site: string): Promise<string> {
+	const version = await db.version.findFirstOrThrow({where: {jobId}});
+	mkdirSync(VIDEOS, {recursive: true});
+	const name = `${new URL(site).hostname.replace(/^www\./, '')}-${new Date().toISOString().replaceAll(':', '-').slice(0, 19)}`;
+	const read = async (key: string) => {
+		const head = await storage.head(key);
+		return head ? storage.readStart(key, head.size) : null;
+	};
+	const video = await read(version.videoKey!);
+	if (!video) throw new Error('the finished video is missing from storage');
+	const mp4 = `${VIDEOS}${name}.mp4`;
+	writeFileSync(mp4, video);
+	const poster = version.posterKey ? await read(version.posterKey) : null;
+	if (poster) writeFileSync(`${VIDEOS}${name}-poster.png`, poster);
+	// Two frames a second, tiled: the whole video at a glance.
+	execFileSync('ffmpeg', [
+		'-v',
+		'error',
+		'-y',
+		'-i',
+		mp4,
+		'-vf',
+		'fps=2,scale=384:-1,tile=5x8:padding=4',
+		'-frames:v',
+		'1',
+		`${VIDEOS}${name}-frames.png`,
+	]);
+	return mp4;
 }
 
 const runs: EvalRun[] = [];
@@ -117,6 +164,8 @@ for (const site of chosen) {
 		sceneFixes: 0,
 		qaIssues: {},
 		usdMicros: 0,
+		costByProvider: {},
+		kept: null,
 	};
 	const user = await db.user.create({
 		data: {id: ids.next('usr'), email: `${ids.next('eval')}@eval.local`, name: 'Benchmark', emailVerified: true},
@@ -173,17 +222,24 @@ for (const site of chosen) {
 		});
 		run.ok = true;
 		run.scenes = await db.scene.count({where: {version: {jobId: job.id}}});
-		run.usdMicros = await repos.costs.totalFor(job.id);
+		if (values.keep) run.kept = await keepVideo(job.id, site);
 	} catch (error) {
-		run.error = (error as Error).message.slice(0, 120);
+		run.error = (error as Error).message.slice(0, 160);
 	} finally {
+		// What this video cost, per provider and model (also stored per job in provider_cost).
+		const job = await db.job.findFirst({where: {userId: user.id}, select: {id: true}});
+		if (job) {
+			const rows = await db.providerCost.groupBy({by: ['provider'], where: {jobId: job.id}, _sum: {usdMicros: true}});
+			run.costByProvider = Object.fromEntries(rows.map((r) => [r.provider, r._sum.usdMicros ?? 0]));
+			run.usdMicros = rows.reduce((sum, r) => sum + (r._sum.usdMicros ?? 0), 0);
+		}
 		run.seconds = (Date.now() - started) / 1000;
 		await db.user.delete({where: {id: user.id}}).catch(() => undefined);
 		await storage.deletePrefix(`u/${user.id}/`).catch(() => undefined);
 	}
 	runs.push(run);
 	console.error(
-		`${run.ok ? 'ok    ' : 'FAILED'} ${site} (${run.seconds.toFixed(0)} s)${run.error ? `: ${run.error}` : ''}`,
+		`${run.ok ? 'ok    ' : 'FAILED'} ${site} (${run.seconds.toFixed(0)} s, $${(run.usdMicros / 1e6).toFixed(3)})${run.error ? `: ${run.error}` : ''}${run.kept ? `\n       saved ${run.kept}` : ''}`,
 	);
 }
 

@@ -30,8 +30,27 @@ type ChatContent =
 type ChatResponse = {
 	model?: string;
 	choices?: {message?: {content?: string | null}; finish_reason?: string | null}[];
-	usage?: {prompt_tokens?: number; completion_tokens?: number; total_tokens?: number; cost?: number};
+	usage?: {
+		prompt_tokens?: number;
+		completion_tokens?: number;
+		total_tokens?: number;
+		/** What OpenRouter charged (0 with BYOK). */
+		cost?: number;
+		/** True when the account uses its own provider key: the provider bills it directly. */
+		is_byok?: boolean;
+		cost_details?: {upstream_inference_cost?: number | null};
+	};
 };
+
+/**
+ * The real price of a call. With "bring your own key" (BYOK) OpenRouter's own
+ * charge is 0 and the provider bills the account directly: that part is in
+ * cost_details.upstream_inference_cost, so both are counted.
+ */
+export function dollarsSpent(usage: NonNullable<ChatResponse['usage']>): number {
+	const upstream = usage.is_byok ? (usage.cost_details?.upstream_inference_cost ?? 0) : 0;
+	return (usage.cost ?? 0) + upstream;
+}
 
 /** Claude only caches blocks that are marked; other providers cache automatically. */
 const marksCache = (model: string) => /^~?anthropic\//.test(model);
@@ -80,7 +99,6 @@ export function openRouterLlm(options: OpenRouterOptions): LlmPort {
 					{role: 'user', content: userContent},
 				],
 				max_tokens: maxTokens,
-				usage: {include: true},
 			}),
 		});
 		const body = (await response.json()) as ChatResponse;
@@ -89,7 +107,7 @@ export function openRouterLlm(options: OpenRouterOptions): LlmPort {
 		const cost: ProviderCost = {
 			provider: `openrouter:${body.model ?? model}`,
 			units: usage.total_tokens ?? (usage.prompt_tokens ?? 0) + (usage.completion_tokens ?? 0),
-			usdMicros: Math.round((usage.cost ?? 0) * 1_000_000),
+			usdMicros: Math.round(dollarsSpent(usage) * 1_000_000),
 		};
 		if (!text)
 			throw new ProviderError(

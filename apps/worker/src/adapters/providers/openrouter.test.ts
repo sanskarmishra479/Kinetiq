@@ -2,7 +2,7 @@ import {describe, expect, it} from 'vitest';
 import {SCENE_TEMPLATES} from '../mock/scene-templates.js';
 import {fakeFetch, json} from './fake-fetch.js';
 import {Gate} from './http.js';
-import {checkModels, checkVoices, extractJson, extractScene, openRouterLlm} from './openrouter.js';
+import {checkModels, checkVoices, dollarsSpent, extractJson, extractScene, openRouterLlm} from './openrouter.js';
 
 // Contract tests: responses shaped like OpenRouter's chat completions API
 // (https://openrouter.ai/docs/api-reference/chat-completion).
@@ -61,7 +61,6 @@ describe('openRouterLlm', () => {
 		};
 		expect(body.model).toBe('deepseek/deepseek-chat:free');
 		expect(body.models).toEqual(['deepseek/deepseek-chat:free', 'anthropic/claude-sonnet-5']);
-		expect(body.usage).toEqual({include: true});
 		// Only Claude needs explicit cache markers; DeepSeek caches on its own.
 		expect(body.messages[0]!.content[0]!.cache_control).toBeUndefined();
 		// Website text is fenced as data, never mixed into the instructions (NFR-SEC-07).
@@ -162,6 +161,28 @@ describe('openRouterLlm', () => {
 		await expect(llm(fetch).complete({role: 'research', data: {url: 'https://fernpay.io', site}})).rejects.toThrow(
 			/empty answer \(length\)/,
 		);
+	});
+});
+
+describe('cost (NFR-COST-01)', () => {
+	it('counts what the provider bills directly when the account brings its own key (BYOK)', () => {
+		// Recorded from a real OpenRouter reply (Sep 2026) on a BYOK account.
+		const byok = {
+			prompt_tokens: 8,
+			completion_tokens: 6,
+			total_tokens: 14,
+			cost: 0,
+			is_byok: true,
+			cost_details: {
+				upstream_inference_cost: 0.000152,
+				upstream_inference_prompt_cost: 3.2e-5,
+				upstream_inference_completions_cost: 0.00012,
+			},
+		};
+		expect(dollarsSpent(byok)).toBeCloseTo(0.000152, 9);
+		// Normal accounts: OpenRouter's charge is the whole cost; upstream is 0 or null.
+		expect(dollarsSpent({cost: 0.0042, is_byok: false, cost_details: {upstream_inference_cost: null}})).toBe(0.0042);
+		expect(dollarsSpent({})).toBe(0);
 	});
 });
 

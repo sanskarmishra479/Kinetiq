@@ -12,6 +12,8 @@ const run = (overrides: Partial<EvalRun> = {}): EvalRun => ({
 	sceneFixes: 0,
 	qaIssues: {},
 	usdMicros: 120_000,
+	costByProvider: {'openrouter:openai/gpt-5.6-sol': 110_000, firecrawl: 10_000},
+	kept: null,
 	...overrides,
 });
 
@@ -61,5 +63,7 @@ describe('benchmark metrics', () => {
 		expect(md).toContain('- **Models:** x');
 		expect(md).toContain('| Videos made | 1/2 | all |');
 		expect(md).toContain('| https://b.com | failed: boom |');
+		expect(md).toContain('| openrouter:openai/gpt-5.6-sol | $0.2200 |');
+		expect(md).toContain('| firecrawl | $0.0200 |');
 	});
 });
