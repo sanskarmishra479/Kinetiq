@@ -42,6 +42,12 @@ export const SceneBrief = z.strictObject({
 	onScreenText: z.array(z.string().min(1).max(120)).max(8),
 	voiceoverText: z.string().max(600).nullable(),
 	usesProductUi: z.boolean(),
+	/**
+	 * Scenes move by default (camera drift, cursor, typing, scroll), which is what makes a
+	 * video feel made by a person. `still` is a deliberate choice: the user asked for it, or
+	 * the director judged a held shot is right (a dramatic pause, a calm end card).
+	 */
+	motion: z.enum(['moving', 'still']).default('moving'),
 });
 export type SceneBrief = z.infer<typeof SceneBrief>;
 

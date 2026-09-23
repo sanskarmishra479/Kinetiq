@@ -6,7 +6,7 @@ export {
 	WORDS_PER_SECOND,
 	type SpokenWord,
 } from './captions.js';
-export {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames} from './plan.js';
+export {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames, wantsStill} from './plan.js';
 export {
 	fixNotes,
 	isStatic,

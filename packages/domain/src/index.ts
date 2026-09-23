@@ -73,6 +73,7 @@ export {
 	themeFromBrand,
 	themeFromPreset,
 	verdictFor,
+	wantsStill,
 	WORDS_PER_SECOND,
 	wordsFromSeconds,
 	worthFixing,

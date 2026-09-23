@@ -118,6 +118,17 @@ function onScreen(
 	}
 }
 
+/**
+ * True when the user asked for still shots in their prompt ("keep it static",
+ * "no camera movement"). Motion is the default; this is the user's override.
+ */
+export function wantsStill(prompt: string | null | undefined): boolean {
+	if (!prompt) return false;
+	return /\b(static|still (shots?|frames?|camera)|keep it still|no (camera )?(movement|motion|moves)|without (camera )?(movement|motion)|minimal (motion|movement)|locked(-| )off|no zoom(ing)?)\b/i.test(
+		prompt,
+	);
+}
+
 /** Builds the storyboard: which scenes, in which order, how long, and what they say. */
 export function planScenes({research, durationSec, voiceover, prompt}: PlanInput): DirectorPlan {
 	const count = sceneCount(durationSec);
@@ -127,6 +138,7 @@ export function planScenes({research, durationSec, voiceover, prompt}: PlanInput
 		shape.map((s) => s.weight),
 	);
 	let featureIndex = 0;
+	const still = wantsStill(prompt);
 
 	const scenes = shape.map((step, index): SceneBrief => {
 		const feature = step.purpose === 'feature' ? research.features[featureIndex++] : undefined;
@@ -142,6 +154,7 @@ export function planScenes({research, durationSec, voiceover, prompt}: PlanInput
 			onScreenText: onScreen(step.purpose, research, feature),
 			voiceoverText: voiceover ? narration(step.purpose, research, feature) : null,
 			usesProductUi: step.purpose === 'demo' || step.purpose === 'solution',
+			motion: still ? 'still' : 'moving',
 		};
 	});
 

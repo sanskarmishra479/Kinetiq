@@ -162,19 +162,27 @@ async function sampleScene(
 	state: PipelineState,
 	scene: SceneState,
 	round: number,
-): Promise<{stillKey: string; motion: number}> {
+): Promise<{stillKey: string; motion: number | null}> {
 	// A still has no sound: leave the audio out so the page never waits for it to load.
 	const input = await renderInputFor(deps, {...state, audio: [], captions: []}, [scene]);
+	// A scene that is still on purpose (the user asked, or the director chose a held shot)
+	// isn't measured: one frame for QA is enough, and holding still is not a defect.
+	const samples = isStillOnPurpose(state, scene) ? MOTION_SAMPLES.slice(-1) : MOTION_SAMPLES;
 	const sampleKeys: string[] = [];
-	for (const [i, at] of MOTION_SAMPLES.entries()) {
+	for (const [i, at] of samples.entries()) {
 		const key = keys.still(ctx.job.userId, ctx.job.id, scene.index, round, SAMPLE_NAMES[i]!);
 		await deps.render.renderStill(input, {frame: sampleFrame(scene, at), outputKey: key, scale: STILL_SCALE});
 		sampleKeys.push(key);
 	}
+	if (sampleKeys.length === 1) return {stillKey: sampleKeys[0]!, motion: null};
 	// The scene must move between every pair of samples; the least motion decides.
 	const ratios = await Promise.all(sampleKeys.slice(1).map((key, i) => deps.motion.changedRatio(sampleKeys[i]!, key)));
 	return {stillKey: sampleKeys.at(-1)!, motion: Math.min(...ratios)};
 }
+
+/** Scenes move by default; the storyboard can mark one as a deliberate still shot. */
+const isStillOnPurpose = (state: PipelineState, scene: SceneState) =>
+	state.plan?.scenes[scene.index]?.motion === 'still';
 
 /** Asks the QA model to look at a still, then adds the motion check's verdict. */
 async function qaScene(deps: PipelineDeps, scene: SceneState, stillKey: string): Promise<QaReport> {

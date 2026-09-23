@@ -112,9 +112,15 @@ non-literal key (use \`arr.at(i)\`), \`Math.random\` (use remotion's \`random(se
 classes, \`this\`, async code, \`ref\`, event handlers, \`<img>\`/\`<a>\`/\`<script>\`.
 Read the theme with \`useTheme()\`; never hard-code brand colors.
 
-## Motion rules (every scene)
+## Motion rules
 
-Something is always moving; a scene that holds still fails QA and is rewritten.
+Scenes **move by default**: it is what makes a video feel made by a person, not generated.
+A scene may be **still on purpose** when the user asked for it or a held shot is clearly
+better (a dramatic pause, a calm end card); the storyboard marks it \`motion: 'still'\` and
+the scene receives \`still: true\`. Only unintended freezing is a defect: a moving scene that
+holds still fails QA and is rewritten.
+
+For moving scenes (the default):
 
 - **The camera never locks off.** Keep a slow push or pan running at a steady speed from the
   first frame to the last (\`interpolate(frame, [0, durationInFrames], …)\`). Use \`<Camera>\`
@@ -127,6 +133,10 @@ Something is always moving; a scene that holds still fails QA and is rewritten.
   black or hold a finished frame at the end.
 - **\`<Lens>\` only on full-frame UI with the camera moving**, subtly (strength ≤ 0.08). Never
   on flat backgrounds.
+
+For still scenes: lock the camera, keep the composition balanced; the content may still animate
+(text arriving, a click, a scroll).
+
 - Scenes receive \`durationInFrames\` as a prop: time every move to it.
 
 ## Components

@@ -1,7 +1,7 @@
 import {DESIGN_PRESETS, QaReport, RENDER_FPS, type ResearchResult} from '@kinetiq/shared';
 import {describe, expect, it} from 'vitest';
 import {estimateWordTimings, spokenFrames, splitWords, wordsFromSeconds} from './captions.js';
-import {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames} from './plan.js';
+import {fitToNarration, MIN_SCENE_FRAMES, planScenes, sceneCount, splitFrames, wantsStill} from './plan.js';
 import {fixNotes, isStatic, MIN_MOTION_RATIO, MOTION_SAMPLES, verdictFor, withMotionCheck, worthFixing} from './qa.js';
 import {fontStack, onColor, shade, themeFromBrand, themeFromPreset} from './theme.js';
 
@@ -108,6 +108,31 @@ describe('planScenes', () => {
 		const plan = planScenes({research: bare, durationSec: 45, voiceover: true});
 		expect(plan.scenes.every((s) => s.onScreenText.length > 0)).toBe(true);
 	});
+});
+
+describe('still scenes on request (motion is the default, not a law)', () => {
+	it.each([
+		'Keep it static, please',
+		'no camera movement',
+		'Use still shots for a calm, premium feel',
+		'minimal motion',
+		'locked-off shots only',
+	])('"%s" asks for still shots', (prompt) => {
+		expect(wantsStill(prompt)).toBe(true);
+		expect(
+			planScenes({research, durationSec: 15, voiceover: false, prompt}).scenes.every((s) => s.motion === 'still'),
+		).toBe(true);
+	});
+
+	it.each(['make it punchy', 'I still want it fast', 'show the dashboard', null])(
+		'"%s" keeps the default motion',
+		(prompt) => {
+			expect(wantsStill(prompt)).toBe(false);
+			expect(
+				planScenes({research, durationSec: 15, voiceover: false, prompt}).scenes.every((s) => s.motion === 'moving'),
+			).toBe(true);
+		},
+	);
 });
 
 describe('splitFrames', () => {

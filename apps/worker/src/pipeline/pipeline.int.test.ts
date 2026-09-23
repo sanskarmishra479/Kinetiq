@@ -36,6 +36,7 @@ type Options = {
 	wrapLlm?: (llm: LlmPort) => LlmPort;
 	/** How much each scene moves between sample frames (default: plenty). */
 	motion?: MotionPort;
+	prompt?: string;
 };
 
 /** A project ready to generate, plus the worker wired to the real pipeline. */
@@ -45,7 +46,7 @@ async function setup(options: Options = {}) {
 		durationSec: options.durationSec ?? 15,
 		ratio: '16:9',
 		assetIds: [],
-		prompt: 'keep it punchy',
+		prompt: options.prompt ?? 'keep it punchy',
 	});
 	if (options.voiceover) {
 		await t.repos.projects.updateSettings(userId, project.id, {
@@ -215,6 +216,20 @@ describe('visual QA and the fix loop (FR-GEN-07, NFR-COST-04)', () => {
 		expect((fixRequests[0]!.data.problems as string[]).join(' ')).toMatch(/static \(high\).*holds still/);
 		const scene = await db.scene.findFirstOrThrow({where: {index: 0}});
 		expect((scene.qaReport as QaReport).pass).toBe(true);
+	});
+
+	it('leaves a scene alone when stillness was asked for (motion is the default, not a law)', async () => {
+		// Nothing moves at all, but the user asked for still shots.
+		const s = await setup({
+			prompt: 'Keep it static: no camera movement, calm and premium.',
+			motion: {changedRatio: async () => 0},
+		});
+		expect(await run(s.container, s.payload)).toBe('succeeded');
+		expect(s.llm.calls).not.toContain('sceneFix');
+		const scenes = await db.scene.findMany();
+		expect(scenes.every((scene) => (scene.qaReport as QaReport).pass)).toBe(true);
+		// Still scenes need one preview frame each, not three.
+		expect(s.render.calls.filter((c) => c.kind === 'still')).toHaveLength(scenes.length);
 	});
 
 	it('stops after the allowed rounds instead of burning credits forever', async () => {

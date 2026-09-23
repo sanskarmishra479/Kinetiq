@@ -16,7 +16,7 @@ import type {ResearchResult, SceneBrief} from '@kinetiq/shared';
 const HOOK = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Background, BlurInText, blurInEnd} from '@kinetiq/primitives';
 
-type Props = {title: string; subtitle: string; durationInFrames: number};
+type Props = {title: string; subtitle: string; durationInFrames: number; still: boolean};
 
 // New information keeps arriving: words land at speaking pace (~2.6 words a second),
 // finishing by 70% of the scene, instead of everything appearing in the first second.
@@ -25,13 +25,14 @@ function pace(text: string, from: number, durationInFrames: number) {
 	return Math.max(3, Math.min(11, Math.floor((durationInFrames * 0.7 - from) / words)));
 }
 
-export default function HookScene({title, subtitle, durationInFrames}: Props) {
+export default function HookScene({title, subtitle, durationInFrames, still}: Props) {
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
 	const unit = Math.min(width, height);
-	// A pull back at constant speed from the first frame to the last: it never eases to a stop.
-	const scale = interpolate(frame, [0, durationInFrames], [1.2, 1]);
-	const rise = interpolate(frame, [0, durationInFrames], [height * 0.03, -height * 0.03]);
+	// A pull back at constant speed from the first frame to the last (camera locked when still).
+	const move = still ? 0 : 1;
+	const scale = interpolate(frame, [0, durationInFrames], [1 + 0.2 * move, 1]);
+	const rise = interpolate(frame, [0, durationInFrames], [height * 0.03 * move, -height * 0.03 * move]);
 	const titleEnd = blurInEnd(title.length, 0, 2, 12);
 	const subtitleAt = titleEnd + 4;
 	return (
@@ -61,7 +62,7 @@ export default function HookScene({title, subtitle, durationInFrames}: Props) {
 const STATEMENT = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Background, BlurInText, blurInEnd, tween, useTheme} from '@kinetiq/primitives';
 
-type Props = {headline: string; detail: string; durationInFrames: number};
+type Props = {headline: string; detail: string; durationInFrames: number; still: boolean};
 
 // Words land at speaking pace across the scene, never all at once.
 function pace(text: string, from: number, until: number) {
@@ -69,14 +70,15 @@ function pace(text: string, from: number, until: number) {
 	return Math.max(3, Math.min(11, Math.floor((until - from) / words)));
 }
 
-export default function StatementScene({headline, detail, durationInFrames}: Props) {
+export default function StatementScene({headline, detail, durationInFrames, still}: Props) {
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
 	const theme = useTheme();
 	const unit = Math.min(width, height);
-	// A lateral pan with a gentle push, at constant speed for the whole scene.
-	const pan = interpolate(frame, [0, durationInFrames], [width * 0.05, -width * 0.05]);
-	const scale = interpolate(frame, [0, durationInFrames], [1.04, 1.18]);
+	// A lateral pan with a gentle push, at constant speed for the whole scene (locked when still).
+	const move = still ? 0 : 1;
+	const pan = interpolate(frame, [0, durationInFrames], [width * 0.05 * move, -width * 0.05 * move]);
+	const scale = interpolate(frame, [0, durationInFrames], [1 + 0.04 * move, 1 + 0.18 * move]);
 	const words = Math.max(1, headline.split(' ').length);
 	const headlineStagger = pace(headline, 4, durationInFrames * (detail ? 0.45 : 0.7));
 	const headlineEnd = blurInEnd(words, 4, headlineStagger, 14);
@@ -122,19 +124,20 @@ const CARDS = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfi
 import {Background, BlurInText, Camera, CardGrid} from '@kinetiq/primitives';
 
 type Card = {title: string; body: string; icon: 'bolt' | 'sparkle' | 'shield' | 'chart' | 'globe' | 'layers'};
-type Props = {heading: string; cards: Card[]; variant: 'grid' | 'list'; durationInFrames: number};
+type Props = {heading: string; cards: Card[]; variant: 'grid' | 'list'; durationInFrames: number; still: boolean};
 
-export default function CardsScene({heading, cards, variant, durationInFrames}: Props) {
+export default function CardsScene({heading, cards, variant, durationInFrames, still}: Props) {
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
 	const unit = Math.min(width, height);
 	// A deliberate move (close on the heading, pull back to the cards) on top of a constant drift.
+	const move = still ? 0 : 1;
 	const shots = [
-		{frame: 0, x: width / 2, y: height * 0.34, scale: 1.35},
+		{frame: 0, x: width / 2, y: height * (0.5 - 0.16 * move), scale: 1 + 0.35 * move},
 		{frame: Math.max(1, Math.round(durationInFrames * 0.35)), x: width / 2, y: height * 0.5, scale: 1},
 	];
-	const drift = interpolate(frame, [0, durationInFrames], [1, 1.1]);
-	const pan = interpolate(frame, [0, durationInFrames], [width * 0.02, -width * 0.02]);
+	const drift = interpolate(frame, [0, durationInFrames], [1, 1 + 0.1 * move]);
+	const pan = interpolate(frame, [0, durationInFrames], [width * 0.02 * move, -width * 0.02 * move]);
 	return (
 		<Background>
 			<AbsoluteFill style={{transform: 'translateX(' + pan + 'px) scale(' + drift + ')'}}>
@@ -174,6 +177,7 @@ type Props = {
 	features: Feature[];
 	screenshot: string | null;
 	durationInFrames: number;
+	still: boolean;
 };
 
 // Keyframes must move forward in time, however short the scene is.
@@ -186,7 +190,7 @@ function forward<T extends {frame: number}>(keys: T[]): T[] {
 	});
 }
 
-export default function DemoScene({url, headline, subline, cta, features, screenshot, durationInFrames}: Props) {
+export default function DemoScene({url, headline, subline, cta, features, screenshot, durationInFrames, still}: Props) {
 	const frame = useCurrentFrame();
 	const {width, height, fps} = useVideoConfig();
 	const theme = useTheme();
@@ -213,8 +217,11 @@ export default function DemoScene({url, headline, subline, cta, features, screen
 	const scrollEnd = scrollStart + Math.round(rest * 0.3);
 	const scrollTo = Math.round(pageHeight * 0.8);
 
-	// The camera is never still: close on the address bar, pull back, push onto the button, follow the scroll.
-	const shots = forward([
+	// The camera follows the action: close on the address bar, pull back, push onto the button,
+	// follow the scroll. When the scene is meant to be still, it stays on the wide shot while the
+	// page still types, loads, clicks and scrolls.
+	const wide = [{frame: 0, x: width / 2, y: height / 2, scale: 1}];
+	const shots = still ? wide : forward([
 		{frame: 0, x: field.x, y: field.y + height * 0.05, scale: 2.1},
 		{frame: timeline.typeEnd, x: field.x, y: field.y + height * 0.08, scale: 1.95},
 		{frame: loaded, x: width / 2, y: height / 2, scale: 1.02},
@@ -310,20 +317,22 @@ export default function DemoScene({url, headline, subline, cta, features, screen
 const CTA = `import {AbsoluteFill, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Background, BlurInText, Camera, Cursor, isPressed, useTheme} from '@kinetiq/primitives';
 
-type Props = {headline: string; domain: string; durationInFrames: number};
+type Props = {headline: string; domain: string; durationInFrames: number; still: boolean};
 
-export default function CtaScene({headline, domain, durationInFrames}: Props) {
+export default function CtaScene({headline, domain, durationInFrames, still}: Props) {
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
 	const theme = useTheme();
 	const unit = Math.min(width, height);
 	const button = {x: width / 2, y: height * 0.6};
 	const clickAt = Math.round(durationInFrames * 0.55);
-	// Push in toward the button while the cursor comes to click it.
-	const shots = [
-		{frame: 0, x: width / 2, y: height * 0.48, scale: 1.02},
-		{frame: durationInFrames, x: button.x, y: button.y - height * 0.04, scale: 1.2},
-	];
+	// Push in toward the button while the cursor comes to click it (camera locked when still).
+	const shots = still
+		? [{frame: 0, x: width / 2, y: height / 2, scale: 1}]
+		: [
+				{frame: 0, x: width / 2, y: height * 0.48, scale: 1.02},
+				{frame: durationInFrames, x: button.x, y: button.y - height * 0.04, scale: 1.2},
+			];
 	const path = [
 		{frame: Math.round(durationInFrames * 0.2), x: width * 0.84, y: height * 0.95},
 		{frame: clickAt - 2, x: button.x + unit * 0.04, y: button.y + unit * 0.01},
@@ -363,16 +372,17 @@ export default function CtaScene({headline, domain, durationInFrames}: Props) {
 const LOGO = `import {AbsoluteFill, interpolate, useCurrentFrame, useVideoConfig} from 'remotion';
 import {Background, BlurInText, LogoReveal, useTheme} from '@kinetiq/primitives';
 
-type Props = {name: string; tagline: string; domain: string; durationInFrames: number};
+type Props = {name: string; tagline: string; domain: string; durationInFrames: number; still: boolean};
 
-export default function LogoScene({name, tagline, domain, durationInFrames}: Props) {
+export default function LogoScene({name, tagline, domain, durationInFrames, still}: Props) {
 	const frame = useCurrentFrame();
 	const {width, height} = useVideoConfig();
 	const theme = useTheme();
 	const unit = Math.min(width, height);
 	// A steady push in, a slow rise, and the address arriving late: the end card never sits still.
-	const scale = interpolate(frame, [0, durationInFrames], [0.96, 1.22]);
-	const rise = interpolate(frame, [0, durationInFrames], [height * 0.02, -height * 0.02]);
+	const move = still ? 0 : 1;
+	const scale = interpolate(frame, [0, durationInFrames], [1 - 0.04 * move, 1 + 0.22 * move]);
+	const rise = interpolate(frame, [0, durationInFrames], [height * 0.02 * move, -height * 0.02 * move]);
 	const domainAt = Math.max(24, Math.round(durationInFrames * 0.45));
 	return (
 		<Background glow>
@@ -425,6 +435,11 @@ const domainOf = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/,
 
 /** The data a scene's code renders. Screenshots are filled in later if QA falls back. */
 export function propsFor(brief: SceneBrief, research: ResearchResult, template: TemplateId): Record<string, unknown> {
+	// Scenes move by default; a still scene locks its camera (the content can still animate).
+	return {...contentFor(brief, research, template), still: brief.motion === 'still'};
+}
+
+function contentFor(brief: SceneBrief, research: ResearchResult, template: TemplateId): Record<string, unknown> {
 	const [first = research.productName, second = ''] = brief.onScreenText;
 	switch (template) {
 		case 'hook':
