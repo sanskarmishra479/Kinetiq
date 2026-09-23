@@ -43,7 +43,7 @@ if (!config.MOCK_PROVIDERS) {
 		for (const problem of problems) logger.error(problem);
 		process.exit(1);
 	}
-	logger.info({tts: config.TTS_PROVIDER}, 'providers ready');
+	logger.info({llm: config.LLM_PROVIDER, tts: config.TTS_PROVIDER}, 'providers ready');
 }
 
 const stop = await startWorkers(container);

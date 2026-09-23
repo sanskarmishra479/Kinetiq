@@ -200,7 +200,7 @@ This document turns the product features in [PRD.md](PRD.md) into **exact, numbe
 | NFR-MNT-02 | The full product MUST run locally with `MOCK_PROVIDERS=true` at zero cost. |
 | NFR-MNT-03 | CI MUST block a merge if typecheck, lint or tests fail, or if coverage on critical modules drops below its threshold ([TEST_PLAN § 5](TEST_PLAN.md#5-ci-quality-gates)). |
 | NFR-MNT-04 | Money and credit logic MUST be pure functions with 100% branch coverage. |
-| NFR-MNT-05 | The voice provider (`TTS_PROVIDER`: ElevenLabs, Sarvam or OpenRouter) and the OpenRouter model for each AI role (research, design, director, scene coder, visual QA, edits, plus a default and a fallback) MUST be chosen through environment variables, so switching (e.g. free models in development, Claude or DeepSeek in production) needs a restart, not a code change. Invalid choices MUST stop the service at startup. |
+| NFR-MNT-05 | The voice provider (`TTS_PROVIDER`: ElevenLabs, Sarvam or OpenRouter) the LLM provider (`LLM_PROVIDER`: OpenRouter, or OpenAI directly) and the model for each AI role (research, design, director, scene coder, visual QA, edits, plus a default and a fallback) MUST be chosen through environment variables, so switching (e.g. free models in development, Claude or DeepSeek in production) needs a restart, not a code change. Invalid choices MUST stop the service at startup. |
 
 ### 5.6 Compliance and legal (LEG)
 | ID | Requirement |

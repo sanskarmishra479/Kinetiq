@@ -251,7 +251,7 @@ const models = providers.models
 const markdown = report(runs, {
 	Date: new Date().toISOString(),
 	Providers: real ? 'real' : 'mock',
-	Models: models,
+	Models: real ? `${models} (via ${config.LLM_PROVIDER})` : models,
 	Voice: real ? `${config.TTS_PROVIDER} ${config.TTS_MODEL ?? ''}`.trim() : 'mock',
 	Scraper: values.scraper ?? 'real',
 	Render: rendering ? 'local (QA and motion measured)' : 'fake (QA and motion not measured)',

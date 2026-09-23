@@ -93,11 +93,33 @@ describe('loadConfig', () => {
 
 	it('requires provider keys and a default model when providers are not mocked', () => {
 		expect(issuesOf({...local, MOCK_PROVIDERS: 'false'})).toEqual([
-			'OPENROUTER_API_KEY',
 			'FIRECRAWL_API_KEY',
 			'LLM_MODEL_DEFAULT',
+			'OPENROUTER_API_KEY',
 			'ELEVENLABS_API_KEY',
 		]);
+	});
+
+	it('can call OpenAI directly for the AI roles, with OpenAI models only', () => {
+		const direct = {
+			...local,
+			MOCK_PROVIDERS: 'false',
+			FIRECRAWL_API_KEY: 'fc-key',
+			LLM_PROVIDER: 'openai',
+			LLM_MODEL_DEFAULT: 'openai/gpt-5-mini',
+			TTS_PROVIDER: 'sarvam',
+			SARVAM_API_KEY: 'sv',
+		};
+		expect(issuesOf(direct)).toEqual(['OPENAI_API_KEY']);
+		expect(issuesOf({...direct, OPENAI_API_KEY: 'sk-x'})).toEqual([]);
+		expect(issuesOf({...direct, OPENAI_API_KEY: 'sk-x', LLM_MODEL_DIRECTOR: 'anthropic/claude-opus-5'})).toEqual([
+			'LLM_MODEL_DIRECTOR',
+		]);
+		// An OpenRouter voice still needs the OpenRouter key.
+		expect(issuesOf({...direct, OPENAI_API_KEY: 'sk-x', TTS_PROVIDER: 'openrouter', TTS_MODEL: 'x/tts:free'})).toEqual([
+			'OPENROUTER_API_KEY',
+		]);
+		expect(issuesOf({...direct, LLM_PROVIDER: 'nope'})).toContain('LLM_PROVIDER');
 	});
 
 	describe('voice provider and models from the environment (NFR-MNT-05)', () => {

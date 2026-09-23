@@ -356,6 +356,8 @@
 > Goal: swap fakes for real adapters with **no domain changes**.
 
 - [x] `OpenRouterLlm` (`apps/worker/src/adapters/providers/openrouter.ts`): model per role from config, a fallback model (OpenRouter's `models` list), answers parsed and validated with zod plus **one repair round** with the exact errors, the long system prompt marked for caching on Claude models (DeepSeek caches automatically), QA stills sent inline (providers can't reach private or local storage), cost recorded from OpenRouter's usage report [NFR-REL-03]
+- [x] `OpenAiLlm` (`openai.ts`): `LLM_PROVIDER=openai` calls OpenAI directly with `OPENAI_API_KEY`, for development without OpenRouter credit (OpenRouter checks its own balance even when your own provider key pays). Same prompts, parsing and repair round (`chat.ts`); model ids keep OpenRouter's names (`openai/…`); cost priced per token from OpenRouter's public model list, cached input at the cache rate
+- [x] OpenRouter cost with your own provider key (BYOK): OpenRouter reports 0; the real price in `cost_details.upstream_inference_cost` is counted
 - [x] **Provider and model selection from the environment** ([ARCHITECTURE § 5.1](ARCHITECTURE.md#51-choosing-providers-and-models-environment-not-code)) [NFR-MNT-05]:
   - `TTS_PROVIDER=elevenlabs | sarvam | openrouter` (+ `TTS_MODEL`, `TTS_VOICES`), one adapter per provider behind `VoicePort`
   - `LLM_MODEL_DEFAULT`, `LLM_MODEL_FALLBACK` and one `LLM_MODEL_<ROLE>` per role; empty roles use the default
@@ -385,7 +387,7 @@
 - Security: an API key was briefly put in `.env.example` (committed, public repo). It was moved to `.env` before any commit, and a test now fails if `.env.example` ever holds a real secret.
 - Firecrawl, ElevenLabs and voice costs are **estimates** per credit/character until checked against real invoices; OpenRouter reports real cost.
 
-**Tests:** adapter contract tests (OpenRouter, Firecrawl, ElevenLabs, Sarvam, OpenRouter voice, startup model and voice checks), prompt injection fencing, provider selection, research merging, model pinning per job, the cleanup task, the chat cap, benchmark metrics.
+**Tests:** adapter contract tests (OpenRouter incl. BYOK cost, OpenAI direct, Firecrawl, ElevenLabs, Sarvam, OpenRouter voice, startup model and voice checks), prompt injection fencing, provider selection, research merging, model pinning per job, the cleanup task, the chat cap, benchmark metrics.
 
 **Exit criteria:** a real 15 s video from a real URL on staging, and its cost is recorded. **Status:** everything is built and tested on recorded responses. What's left needs your side: a real run (a Firecrawl key, or `--scraper mock` with only the OpenRouter key) and the staging environment (Phase 12).
 

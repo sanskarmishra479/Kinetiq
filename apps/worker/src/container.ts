@@ -17,6 +17,7 @@ import {pino, type Logger} from 'pino';
 import {ffprobe} from './adapters/ffprobe.js';
 import {pngMotion} from './adapters/motion.js';
 import {firecrawlScraper} from './adapters/providers/firecrawl.js';
+import {openAiLlm} from './adapters/providers/openai.js';
 import {openRouterLlm} from './adapters/providers/openrouter.js';
 import {voiceProvider} from './adapters/providers/voices.js';
 import {mockLlm, mockMusic, mockScraper, mockVoice} from './adapters/mock/index.js';
@@ -131,12 +132,19 @@ export function realProviders(config: Config, storage: StoragePort) {
 		]),
 	);
 	return {
-		llm: openRouterLlm({
-			apiKey: config.OPENROUTER_API_KEY!,
-			modelFor: (role) => models[role]!,
-			fallbackModel: config.LLM_MODEL_FALLBACK,
-			appUrl: config.WEB_ORIGIN,
-		}),
+		llm:
+			config.LLM_PROVIDER === 'openai'
+				? openAiLlm({
+						apiKey: config.OPENAI_API_KEY!,
+						modelFor: (role) => models[role]!,
+						fallbackModel: config.LLM_MODEL_FALLBACK,
+					})
+				: openRouterLlm({
+						apiKey: config.OPENROUTER_API_KEY!,
+						modelFor: (role) => models[role]!,
+						fallbackModel: config.LLM_MODEL_FALLBACK,
+						appUrl: config.WEB_ORIGIN,
+					}),
 		scraper: firecrawlScraper({apiKey: config.FIRECRAWL_API_KEY!, storage}),
 		voice: voiceProvider({
 			provider: config.TTS_PROVIDER,
@@ -154,7 +162,10 @@ export function realProviders(config: Config, storage: StoragePort) {
 	};
 }
 
-/** Startup check: the configured OpenRouter models exist, and the QA model accepts images. */
+/**
+ * Startup check: the configured models exist in OpenRouter's list (also for
+ * LLM_PROVIDER=openai, which uses the same names), and the QA model accepts images.
+ */
 export function modelsToCheck(config: Config) {
 	const keys = [
 		'LLM_MODEL_DEFAULT',

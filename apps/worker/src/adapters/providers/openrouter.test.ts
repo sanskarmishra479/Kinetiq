@@ -2,7 +2,8 @@ import {describe, expect, it} from 'vitest';
 import {SCENE_TEMPLATES} from '../mock/scene-templates.js';
 import {fakeFetch, json} from './fake-fetch.js';
 import {Gate} from './http.js';
-import {checkModels, checkVoices, dollarsSpent, extractJson, extractScene, openRouterLlm} from './openrouter.js';
+import {extractJson, extractScene} from './chat.js';
+import {checkModels, checkVoices, dollarsSpent, openRouterLlm} from './openrouter.js';
 
 // Contract tests: responses shaped like OpenRouter's chat completions API
 // (https://openrouter.ai/docs/api-reference/chat-completion).

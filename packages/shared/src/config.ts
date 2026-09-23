@@ -77,6 +77,7 @@ const schema = z.object({
 	RENDER_MODE: z.enum(['local', 'lambda']).default('local'),
 
 	OPENROUTER_API_KEY: optionalString,
+	OPENAI_API_KEY: optionalString,
 	ELEVENLABS_API_KEY: optionalString,
 	FIRECRAWL_API_KEY: optionalString,
 	SARVAM_API_KEY: optionalString,
@@ -87,6 +88,11 @@ const schema = z.object({
 	TTS_MODEL: optionalString,
 	TTS_VOICES: voiceMap,
 
+	/**
+	 * Who answers the AI roles: openrouter (any model) | openai (direct, with an
+	 * OpenAI key; models must be "openai/…"). Model ids use OpenRouter's names either way.
+	 */
+	LLM_PROVIDER: z.enum(['openrouter', 'openai']).default('openrouter'),
 	/** OpenRouter model per AI role; empty roles use LLM_MODEL_DEFAULT (NFR-MNT-05). */
 	LLM_MODEL_DEFAULT: modelId,
 	/** Answers when the chosen model fails or is unavailable (NFR-REL-03). */
@@ -154,7 +160,16 @@ function crossChecks(c: Config): Issue[] {
 	};
 
 	if (!c.MOCK_PROVIDERS) {
-		need(['OPENROUTER_API_KEY', 'FIRECRAWL_API_KEY', 'LLM_MODEL_DEFAULT'], 'when MOCK_PROVIDERS=false');
+		need(['FIRECRAWL_API_KEY', 'LLM_MODEL_DEFAULT'], 'when MOCK_PROVIDERS=false');
+		if (c.LLM_PROVIDER === 'openrouter' || c.TTS_PROVIDER === 'openrouter')
+			need(['OPENROUTER_API_KEY'], 'when LLM_PROVIDER or TTS_PROVIDER is openrouter');
+		if (c.LLM_PROVIDER === 'openai') {
+			need(['OPENAI_API_KEY'], 'when LLM_PROVIDER=openai');
+			for (const key of MODEL_KEYS) {
+				if (key !== 'TTS_MODEL' && c[key] && !c[key].startsWith('openai/'))
+					issues.push({path: key, message: 'must be an "openai/…" model when LLM_PROVIDER=openai'});
+			}
+		}
 		// The chosen voice provider needs its own key (and OpenRouter needs a voice model).
 		if (c.TTS_PROVIDER === 'elevenlabs') need(['ELEVENLABS_API_KEY'], 'when TTS_PROVIDER=elevenlabs');
 		if (c.TTS_PROVIDER === 'sarvam') need(['SARVAM_API_KEY'], 'when TTS_PROVIDER=sarvam');

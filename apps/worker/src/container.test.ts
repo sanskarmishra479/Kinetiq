@@ -1,6 +1,6 @@
 import {memoryStorage} from '@kinetiq/platform';
 import {loadConfig} from '@kinetiq/shared';
-import {describe, expect, it} from 'vitest';
+import {describe, expect, it, vi} from 'vitest';
 import {modelsToCheck, realProviders} from './container.js';
 
 const base = {
@@ -39,6 +39,39 @@ describe('provider choice from the environment (NFR-MNT-05)', () => {
 		});
 		expect(typeof providers.llm.complete).toBe('function');
 		expect(typeof providers.voice.speak).toBe('function');
+	});
+
+	it('calls OpenAI directly when LLM_PROVIDER=openai', async () => {
+		// A fake network, installed before the adapter is built (it keeps the fetch it was given).
+		const calls: string[] = [];
+		vi.stubGlobal('fetch', async (url: string | URL | Request) => {
+			calls.push(String(url));
+			return new Response('{}', {status: 401});
+		});
+		try {
+			const providers = realProviders(
+				loadConfig({
+					...base,
+					LLM_PROVIDER: 'openai',
+					OPENAI_API_KEY: 'sk-x',
+					LLM_MODEL_DEFAULT: 'openai/gpt-5-mini',
+					LLM_MODEL_DIRECTOR: 'openai/gpt-5',
+					LLM_MODEL_VISUAL_QA: undefined,
+				}),
+				memoryStorage(),
+			);
+			expect(providers.models.director).toBe('openai/gpt-5');
+			expect(providers.models.sceneCoder).toBe('openai/gpt-5-mini');
+			await expect(
+				providers.llm.complete({
+					role: 'research',
+					data: {url: 'https://x.io', site: {title: 'X', description: 'X', markdown: '# X'}},
+				}),
+			).rejects.toThrow(/openai: HTTP 401/);
+			expect(calls).toEqual(['https://api.openai.com/v1/chat/completions']);
+		} finally {
+			vi.unstubAllGlobals();
+		}
 	});
 
 	it('checks every configured model, and the QA model for images', () => {

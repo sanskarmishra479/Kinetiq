@@ -148,7 +148,8 @@ Every AI call goes through a port (§8), and **which provider or model answers i
 TTS_PROVIDER=openrouter          # elevenlabs | sarvam | openrouter
 TTS_MODEL=                       # OpenRouter voice model id (only when TTS_PROVIDER=openrouter)
 
-# Language models, all through OpenRouter: one model per role.
+# Language models: who answers, and one model per role (OpenRouter's names in both cases).
+LLM_PROVIDER=openrouter          # openrouter (any model) | openai (direct with OPENAI_API_KEY; openai/… models only)
 # Any role left empty uses LLM_MODEL_DEFAULT; LLM_MODEL_FALLBACK answers when the chosen one fails.
 LLM_MODEL_DEFAULT=               # e.g. an anthropic/claude-… id
 LLM_MODEL_FALLBACK=              # e.g. a deepseek/… id
@@ -162,9 +163,10 @@ LLM_MODEL_EDIT=
 
 - **Typical setups:**
   - Development: `TTS_PROVIDER=openrouter` with a free voice model, and free LLM models.
+  - Development without OpenRouter credit: `LLM_PROVIDER=openai` with an OpenAI key. OpenRouter checks its own balance before every request, even when your own provider key pays ("BYOK"), so a $0 balance blocks large requests. Direct OpenAI avoids that; prices per token still come from OpenRouter's public model list, so cost tracking is the same.
   - Production: ElevenLabs for voice, Claude for the director, and a cheaper model where quality allows.
 - **Checked at startup** (the service refuses to start on a bad value, like the rest of `config.ts`):
-  - the chosen voice provider has its API key
+  - the chosen voice and LLM providers have their API keys, and `LLM_PROVIDER=openai` only gets `openai/…` models
   - model ids have the right shape
   - staging and production refuse `:free` models (NFR-SEC-18)
   - the worker checks each id against OpenRouter's model list, that the visual-QA model accepts images, and that each mapped voice is supported by the chosen OpenRouter voice model (voices differ per model).
