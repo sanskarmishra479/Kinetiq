@@ -284,7 +284,7 @@ Payloads are zod schemas in `packages/shared/src/queues.ts`. The API and worker 
 
 | Queue | Payload | Producer | Retries | Notes |
 |---|---|---|---|---|
-| `generate` | `{ jobId, projectId, userId }` | API | 3, exponential | Runs the LangGraph generate graph from its checkpoint |
+| `generate` | `{ jobId, projectId, userId }` | API | 3, exponential | Runs the generate pipeline from its checkpoint (own runner today; LangGraph possible behind the same contract, ARCHITECTURE §5.2) |
 | `edit` | `{ jobId, projectId, userId, messageId }` | API | 3 | Edit graph |
 | `render` | `{ jobId, kind: "still" \| "final", versionId, inputPropsKey }` | Worker | 2 | Remotion Lambda |
 | `media-poll` | `{ jobId, clipId, providerJobId }` | Worker | backoff up to 20 min | Fallback when the video callback doesn't arrive |

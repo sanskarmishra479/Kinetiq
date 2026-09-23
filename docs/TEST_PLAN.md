@@ -27,7 +27,7 @@ These rules are what make the code testable. Code review rejects anything that b
 | T3 | **No hidden globals.** Time comes from `ClockPort`, ids from `IdPort`, randomness from a seeded RNG, config from a typed `Config` object. | `new Date()` and `Math.random()` are banned in `packages/domain` (enforced by a lint rule). |
 | T4 | **One composition root per app.** Dependencies are wired in `container.ts`, and tests build the container with fakes. | `buildContainer({ llm: new FakeLlm(script) })` |
 | T5 | **Contracts are zod schemas** shared by producer and consumer (API bodies, SSE events, queue payloads, LLM structured outputs). | `ProjectEvent.parse(data)` on both sides |
-| T6 | **Pipeline nodes are functions** `(state, ports) → Promise<statePatch>`, testable one at a time without LangGraph. | `await sceneCoder(state, { llm: fakeLlm })` |
+| T6 | **Pipeline nodes are functions** `(state, ports) → Promise<statePatch>`, testable one at a time without any pipeline engine (our runner today, LangGraph if we ever switch; ARCHITECTURE §5.2). | `await sceneCoder(state, { llm: fakeLlm })` |
 | T7 | **Small modules, explicit errors.** Domain errors are typed (`InsufficientCredits`, `ValidationRejected`), never string-matched. | `expect(() => reserve(...)).toThrow(InsufficientCredits)` |
 | T8 | **Every bug fix starts with a failing test** that reproduces it. | A regression test is named after the issue id |
 | T9 | **Idempotency by design.** Any handler that can be retried (webhooks, jobs, POST with a key) has a "run it twice" test. | Same Dodo event twice → credits granted once |

@@ -210,7 +210,7 @@ This document turns the product features in [PRD.md](PRD.md) into **exact, numbe
 
 ## 6. Constraints and assumptions
 
-- **Stack:** Next.js, Node.js/Express, BetterAuth, Postgres (Neon) + Prisma, Redis + BullMQ, LangGraph.js, Remotion, OpenRouter, ElevenLabs/Sarvam, Firecrawl, Dodo Payments, Cloudflare R2.
+- **Stack:** Next.js, Node.js/Express, BetterAuth, Postgres (Neon) + Prisma, Redis + BullMQ, pipeline runner (LangGraph.js as the ready alternative), Remotion, OpenRouter, ElevenLabs/Sarvam, Firecrawl, Dodo Payments, Cloudflare R2.
 - Visitors per month: 5k expected at launch, up to 100k in the viral case. Paid users: tens to low hundreds.
 - Provider prices and limits can change. Every provider sits behind an adapter so it can be swapped.
 

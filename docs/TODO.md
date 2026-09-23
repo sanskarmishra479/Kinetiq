@@ -329,7 +329,7 @@
 - [x] `MOCK_PROVIDERS=true` wires every mock in the container [NFR-MNT-02]
 
 **Notes from the build:**
-- **Not LangGraph.** The pipeline is a ~120-line runner in `apps/worker/src/pipeline/runner.ts`. Our nodes are already pure functions behind ports, BullMQ already handles queueing and retries, and LangGraph's Postgres checkpointer would create its own tables outside our Prisma migrations. The runner keeps checkpoints in `job_checkpoint` and is swappable behind `PipelinePort`.
+- **Not LangGraph.** The pipeline is a ~120-line runner in `apps/worker/src/pipeline/runner.ts`. Our nodes are already pure functions behind ports, BullMQ already handles queueing and retries, and LangGraph's Postgres checkpointer would create its own tables outside our Prisma migrations. The runner keeps checkpoints in `job_checkpoint` and is swappable behind `PipelinePort`; **LangGraph.js stays the ready alternative** (when to switch and how: [ARCHITECTURE § 5.2](ARCHITECTURE.md#52-pipeline-engine-our-runner-now-langgraph-when-needed), Phase 19).
 - The planners in `packages/domain/src/pipeline` (theme, storyboard, caption timing, QA rules) are pure and shared: the mock model uses them today, and they stay as the fallback when a real model is unavailable or answers with nonsense (Phase 9).
 - Scene text is passed as **props**, not baked into the code, so copy can change without touching sandboxed code.
 - Every artifact lives under `u/{userId}/`, so deleting an account removes the videos too (NFR-LEG-02).
@@ -528,6 +528,7 @@ Two panes, following [`../image.png`](../image.png):
 - [ ] Regional pricing
 - [ ] 3D device mockups (`@remotion/three`)
 - [ ] Team workspaces, public API, timeline editor (see [PRD § 6.3](PRD.md#63-later))
+- [ ] **On demand: switch the pipeline engine to LangGraph.js** when a trigger in [ARCHITECTURE § 5.2](ARCHITECTURE.md#52-pipeline-engine-our-runner-now-langgraph-when-needed) is met (agent-style director with tools, several human approval points, complex branching, or the runner misbehaving in production). Behind `PipelinePort` with `PIPELINE_ENGINE=runner | langgraph`; the node functions and `PipelineState` are reused as they are; both engines run the same tests and `evals/` before flipping the default (~1–2 days)
 
 ---
 ← [TEST_PLAN](TEST_PLAN.md) · **Back to start ↺** [README.md](README.md)

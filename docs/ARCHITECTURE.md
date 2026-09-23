@@ -34,7 +34,7 @@ These come from [SRS.md § 5](SRS.md#5-non-functional-requirements):
                              Redis (Railway) — BullMQ queues · rate limits · pub/sub
                                          │
                              Worker service (Railway, N replicas)
-                             • LangGraph.js pipelines (generate, edit)
+                             • pipeline runner (generate, edit); LangGraph.js as drop-in alternative (§5.2)
                              • provider adapters · cost tracking
           ┌──────────────┬───────────────┼────────────────┬──────────────────┐
      Firecrawl      OpenRouter LLM    ElevenLabs /     OpenRouter video     Remotion Lambda (AWS)
@@ -51,7 +51,7 @@ These come from [SRS.md § 5](SRS.md#5-non-functional-requirements):
 |---|---|---|---|
 | **Web** (`apps/web`) | Next.js App Router, Tailwind, shadcn/ui | Landing, gallery, templates, pricing (static); login; project page (chat + live pane); billing | Vercel CDN (automatic) |
 | **API** (`apps/api`) | Express, BetterAuth, zod, Prisma | Auth, REST, SSE, webhooks, credit reservation, enqueueing jobs | More replicas (stateless) |
-| **Worker** (`apps/worker`) | BullMQ, LangGraph.js | Runs pipelines, calls providers, tracks costs, sends events | More replicas and the `WORKER_CONCURRENCY` env var |
+| **Worker** (`apps/worker`) | BullMQ, pipeline runner (LangGraph.js as alternative, §5.2) | Runs pipelines, calls providers, tracks costs, sends events | More replicas and the `WORKER_CONCURRENCY` env var |
 | **Renderer** (`packages/renderer`) | Remotion 4 | Dynamic scene runtime and final composition; deployed once to Lambda | Lambda concurrency (scales to zero) |
 | **Primitives** (`packages/primitives`) | React + Remotion | Hand-tuned motion building blocks (Cursor, Camera, Lens…) | n/a (a library) |
 | **Shared** (`packages/shared`) | TypeScript + zod | Request/response/event schemas, plan and credit tables, model registry | n/a |
@@ -77,7 +77,7 @@ Browser                API                         Redis/BullMQ        Worker   
   │◄── {credits} ──────│                            │                   │                       │
   │ POST /generate ───►│ SERIALIZABLE tx:           │                   │                       │
   │  (Idempotency-Key) │  reserve credits, Job row  │                   │                       │
-  │                    │ enqueue generate ─────────►│──────────────────►│ LangGraph run         │
+  │                    │ enqueue generate ─────────►│──────────────────►│ pipeline run          │
   │◄── 202 {jobId} ────│                            │                   │ research ────────────►│ Firecrawl
   │ GET /events (SSE) ►│ subscribe project channel ◄│◄── publish step ──│ designMd/director ───►│ OpenRouter
   │◄── step events ────│                            │                   │ sceneCoder ×N ───────►│ OpenRouter
@@ -172,6 +172,42 @@ LLM_MODEL_EDIT=
 - **Word timings:** if a voice provider gives no word timestamps, captions fall back to estimated timings (`estimateWordTimings`, already built), which are slightly less precise.
 - **Consistency within a job:** a job records which provider and models it started with in its checkpoint, so a restart with new settings never mixes models inside one video.
 - **Cost tracking:** every call's `ProviderCost` row names the provider and model, so models can be compared on real cost per video before switching (with the `evals/` benchmark, Phase 9).
+
+### 5.2 Pipeline engine: our runner now, LangGraph when needed
+
+The pipeline runs on a small in-house runner (`apps/worker/src/pipeline/runner.ts`, ~120 lines). **LangGraph.js is the documented alternative**: if the runner stops being enough, we switch without touching the rest of the app.
+
+**Why the runner today.** Our pipeline is a fixed sequence with one bounded loop (QA, then at most one fix round):
+- BullMQ already handles queueing, retries and deadlines.
+- The runner adds checkpoints in one Prisma-managed table.
+- Every node is a plain, testable function.
+
+LangGraph would add a fast-moving dependency tree and its own database tables outside our migrations, without adding much for this shape. AI cost is identical either way; the models and prompts don't change.
+
+**Switch to LangGraph when any of these becomes true:**
+1. **Agent-style flows.** A model that calls tools and decides its own next step (e.g. an agentic director that browses the site, inspects screenshots and re-plans).
+2. **Pausing for people.** Several human approval points inside a run (approve the storyboard, then the voice, then the render), beyond the simple "save and resume" the runner can do.
+3. **Complex branching.** Many conditional paths, nested sub-pipelines or dynamic fan-out that make the runner's code hard to follow.
+4. **The runner misbehaves in production:** resumes wrongly, loses state, or its checkpoints can't keep up. We fix it first, and switch if the fix would mean rebuilding what LangGraph already offers.
+
+Observability is **not** a reason to switch: LangSmith (or self-hosted Langfuse) traces AI calls with or without LangGraph (Phase 9).
+
+**Why switching is cheap (by design):**
+
+| Part | Today | With LangGraph |
+|---|---|---|
+| Nodes | `PipelineNodeDef.run(state) → patch` | The same functions become graph nodes unchanged (LangGraph nodes are also `state → patch`) |
+| State | `PipelineState` (zod) | The same schema becomes the graph's state annotation |
+| Order and loops | the node list + `skip` rules | edges + conditional edges (e.g. `visualQA → sceneFix → visualQA`) |
+| Checkpoints | `CheckpointStore` → `job_checkpoint` | LangGraph's Postgres saver (its tables added through a Prisma migration, so one system still owns the schema) |
+| Events, costs, cancel, deadline | `PipelineContext` (step events, cost rows, abort signal) | wrapped the same way around each node |
+| Worker, API, tests | `PipelinePort` | **unchanged**: they only see `PipelinePort` |
+
+**How to switch** (about 1–2 days):
+1. Add `@langchain/langgraph` + the Postgres checkpointer.
+2. Write `langgraphPipeline()` implementing `PipelinePort`, reusing the node functions and `PipelineState`.
+3. Choose the engine with an env var (`PIPELINE_ENGINE=runner | langgraph`), so both can run side by side.
+4. Run the full pipeline test suite and the `evals/` benchmark on both engines, then flip the default.
 
 ## 6. Dynamic scene runtime (sandbox)
 
@@ -322,7 +358,7 @@ Cinelaunch/
 ├─ apps/
 │  ├─ web/            Next.js (landing, login, project page, billing)
 │  ├─ api/            Express (routes, auth, SSE, webhooks) + src/container.ts
-│  └─ worker/         BullMQ processors, LangGraph graphs, adapters + src/container.ts
+│  └─ worker/         BullMQ processors, pipeline runner + nodes (swappable for LangGraph), adapters + src/container.ts
 ├─ packages/
 │  ├─ shared/         zod schemas (API, events, queues), plans, credit table, model registry
 │  ├─ domain/         pure business logic: credits, pipeline nodes, validator, templates
@@ -369,6 +405,7 @@ Cinelaunch/
 | 6 | Credit ledger with buckets | Fair hybrid pricing; auditable; no negative margins |
 | 7 | Ports and adapters with fakes | Testable, swappable providers, zero-cost local development |
 | 8 | Cloudflare R2 | No egress fees for video-heavy traffic |
+| 9 | Own pipeline runner now, LangGraph.js as the ready alternative (§5.2) | Fixed pipeline with one bounded loop; fewer dependencies, one migration system, simpler tests; switch behind `PipelinePort` when agent-style flows or complex branching arrive |
 
 ---
 ← [SRS](SRS.md) · **Next →** [API.md: API Reference](API.md)
