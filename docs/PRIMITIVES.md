@@ -180,9 +180,36 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 
 **Lessons:** the brand motif (here the logo's circle) is given a meaning, carried through almost every transition (the outgoing shot collapses into it, the next grows out of it) and paid off by becoming the logo. For other brands the motif comes from their own mark. The story has a turn ("But what if… Well… there is."); one idea per shot, lots of empty space.
 
+### refFour: Higgsfield "All in one place" ad
+`/mnt/d/Downloads/kinetiq-refs/refFour.mp4` · 29s · 1280×720 · 30fps · style: **punchy, cut-driven ad** (about 30 cuts, fast montage synced to music, light grey + one lime accent). What the user liked: the opening text zooming into the button, the cut to many different buttons in sync with the music, "But…" followed by the sentence zoom, the speed, and the transitions.
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0–1.7s | Small words appear one by one over a soft landscape: "We've all pressed this [Button] before". The button is a real UI pill sitting inside the sentence like a word. A cursor drifts | BlurInText ✅, InlineUI 🆕, Cursor ✅ |
+| 1.8s | **Snap zoom:** in 2 frames the camera slams into the sentence with heavy motion blur, so the button fills the centre and the words run off both edges. The cursor presses it (click squish) | SnapZoom 🔶, Cursor ✅ |
+| 3.3–7.6s | **Anchor montage:** hard cuts to ~20 different real-world buttons (pay, buy, try, upgrade…), each in the **same place and size**. The cursor clicks the first few. Cuts speed up (0.5s → 0.33s → a steady 0.2s, every 6 frames); the first and last cuts land exactly on sound hits | AnchorMontage 🆕, BeatSync 🆕 |
+| 7.6–8.2s | "But…" rises in giant letters with motion blur, the dots pop in one by one | GiantType 🆕, BlurInText ✅ |
+| 8.2–9.8s | A dark card slides across as a wipe, revealing a cream/lime gradient. "But, what if one **Button**" types in huge cropped letters while the camera pans with the caret; "Button" is bold | PanelSlide 🆕, TypeTrack 🆕, WordAccent 🆕 |
+| 9.8–12.5s | The button sits between two reaching hands (a famous painting); every beat the whole image changes style (painting → stained glass → pencil sketch → photo) and the label becomes the brand name. Same subject, same place | AnchorMontage 🆕 (style variant) |
+| 12.5–15s | Light grey: "No more *endless* ai subscriptions" word by word, "endless" bold blue; a fire emoji bubble pops in; cursor | BlurInText ✅, WordAccent 🆕, Doodles 🆕 |
+| 15–17s | Dark: "No more unnecessary costs" on a 3D arc, "unnecessary" in bouncy red letters, blurred tilted cards behind | ArcText 🆕, Bokeh 🆕 |
+| 17–18.7s | "Pay once, And done (:" blurs in, a hand-drawn underline strokes under "Pay once" | BlurInText ✅, WordAccent 🆕 (underline) |
+| 18.7–22.8s | Capability beats, ~1s each: "Video" with photo tiles orbiting in 3D; "Voice" with bouncing letters and a voice-picker UI; "Image" with a photo collage flying in; a lime/cyan **colour flash** whip into "Motion" and "*Pure* Creation" over the collage | PhotoRing 🆕, MediaGrid 🆕, ColorFlash 🆕, WordAccent 🆕 |
+| 22.8–25.5s | Fade to white. A thin vertical line grows into a pill, then into the app icon while the logo stroke draws; "All in one place." word by word with "place." in brand lime | ShapeMorph 🆕, DrawPath 🆕, BlurInText ✅ |
+| 25.5–29s | The scene darkens to black while the icon slides into the horizontal logo lockup; hold, then fade out | LogoReveal ✅, Morph 🆕 |
+
+**Measured:** 30 cuts in 29s. The montage cuts every 0.2s, and the first and last cuts land on sound hits (3.30s, 7.57s). The brand's lime appears only on the logo and "place." in the last 5 seconds; the montage borrows each button's own colours.
+
+**Lessons:**
+- **Anchor for fast cuts:** fast montage only reads because the subject keeps the same position and size across cuts. The eye stays put and only the style changes.
+- **Speed builds:** the cut rhythm accelerates into the montage, then a hard stop ("But…") resets the pace.
+- **Text and UI mix:** a UI element sits inside a sentence as a word, then the camera snaps into it.
+- **Sync to music:** cuts start and end on sound hits. This needs music with known beat times.
+- A third style profile: **punchy** (cut-driven, social-ad pace), next to energetic (refTwo) and calm (refThree).
+
 ### Across references
 - Shared by all: something from the outgoing shot carries into the next one; holds long enough to read; a still ending; brand colour as accent or light, never big fills; one idea per beat.
-- They differ in energy: pick a style profile per brand or prompt (energetic like refTwo, calm like refThree) instead of one fixed motion rule.
+- They differ in energy: pick a style profile per brand or prompt (energetic like refTwo, calm like refThree, punchy like refFour) instead of one fixed motion rule.
 
 ---
 
@@ -195,7 +222,7 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
 | StatCounter | 🔶 | A number counts or builds up ("0 → 0.01%", "10,000 users"), with a label and glow. Can roll and shift colour (red costs climbing) | refOne, refThree, ref-motion idea | P1 |
-| WordAccent | 🆕 | One word gets a different style (accent color, caps, huge, marker highlight, *italic serif*, red underline, smaller "of") | refOne, refTwo, refThree | P1 |
+| WordAccent | 🆕 | One word gets a different style (accent color, caps, huge, marker highlight, *italic serif*, red underline, hand-drawn underline stroke, bold, smaller "of") | refOne, refTwo, refThree, refFour | P1 |
 | EchoStack | 🆕 | A phrase repeated above and below itself, fading, like a scrolling list | refOne | P2 |
 | TextPush | 🆕 | Text swings in or past with 3D perspective and motion blur | refOne | P2 |
 | TitleCard | 🆕 | End-card layout: title and subtitle on black, blur in and out (built on BlurInText) | refOne | P2 |
@@ -203,7 +230,10 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
 | WordSwap | 🆕 | One word in a sentence rolls through options | refThree | P2 |
 | PhraseCards | 🆕 | **Type scene:** a sentence alone in the centre, built word by word in time with the voice (re-centres as it grows); each phrase replaces the last, with a slow scale drift, an accent word and an optional giant word as a beat. Replaces bottom captions at the story's key moments | refThree | P1 |
-| GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree | P2 |
+| GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree, refFour | P1 |
+| InlineUI | 🆕 | A UI element (button, chip) sits inside a sentence as one of its words | refFour | P2 |
+| TypeTrack | 🔶 | Huge typing text cropped by the frame while the camera pans with the caret (extends Typewriter) | refFour | P2 |
+| ArcText | 🆕 | Text laid out on a 3D arc, letters bouncing | refFour | P3 |
 | WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence | refThree | P3 |
 | FlipDrop | 🆕 | An element (logo, word) drops in flipping on its X axis with motion blur and a glow bloom | refTwo | P2 |
 | Tracking ease | 🔶 | Letter spacing tightens as text blurs in (extends BlurInText) | refTwo | P3 |
@@ -215,17 +245,17 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | DotField | 🆕 | A dot grows into a circle or grid of dots, or fills the screen as a crowd. Some highlight, move, or show filled/hollow status. Pointer dot with a label | refOne, refThree | P1 |
 | DotMatrix | 🆕 | A dot grid where dots light up into glowing shapes, like an LED display | refOne | P1 |
 | Ribbon | 🆕 | A thick brush ribbon sweeps across the frame with motion blur. Can fill the screen as a transition | refOne | P2 |
-| Doodles | 🆕 | Our own hand-drawn stickers (bulb, star, heart, flame, bubble) pop in with a wobble | refOne | P2 |
+| Doodles | 🆕 | Our own hand-drawn stickers (bulb, star, heart, flame, bubble) pop in with a wobble | refOne, refFour | P2 |
 | TickRuler | 🆕 | Rows of small ticks framing a title, sliding in | refOne | P3 |
 | BrandGlyph | 🆕 | A huge, soft, blurred version of the customer's logo shape behind every scene | refOne | P1 |
 | BrandMotif | 🆕 | **One shape from the customer's logo that carries meaning through the whole video**: scenes collapse into it and grow out of it, and it becomes the logo at the end. The shape comes from each brand's mark (never dots by default) | refThree, refOne | P1 |
 | Orb | 🆕 | Soft gradient orb with a status label, standing in for an agent or persona | refThree | P2 |
 | LoaderRing | 🆕 | Dots circle a label, then squeeze into a pill or button | refThree | P3 |
 | PathTravel | 🆕 | A dotted route with dots travelling along it; waypoint icons change state | refThree | P2 |
-| DrawPath | 🆕 | An SVG line or icon draws itself on | ref-motion | P2 |
+| DrawPath | 🆕 | An SVG line or icon draws itself on | ref-motion, refFour | P2 |
 | NodeGraph | 🆕 | Boxes connected by lines that draw in, with dots travelling along them | ref-motion, refThree | P2 |
 | HUDRings | 🆕 | Rotating dashed rings and ticks, for a "tech" look (also as a glass platform ring) | ref-motion, refThree | P3 |
-| Morph | 🆕 | One shape smoothly becomes another (e.g. logo morph). See ShapeMorph under Transitions | ref-motion, refTwo, refThree | P1 |
+| Morph | 🆕 | One shape smoothly becomes another (e.g. logo morph). See ShapeMorph under Transitions | ref-motion, refTwo, refThree, refFour | P1 |
 
 ### Footage and images
 Needs the footage pipeline (customer uploads, free stock, AI images/video → saved to R2 → passed to scenes as URLs, since the render sandbox has no network). Not yet written into ARCHITECTURE.md.
@@ -235,7 +265,8 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | FootageLayer | 🆕 | Full-screen clip or photo with a slow push-in and a color treatment (dim, black & white, duotone). Nature photos as the backdrop for UI | refOne, refThree | P1 |
 | FlashCuts | 🆕 | Several clips cut quickly behind text that stays still (or inside a growing motif) | refOne, refThree | P2 |
 | ImageStrip | 🆕 | Photos and color bars slide in one after another behind a title | refOne | P2 |
-| MediaGrid | 🆕 | A collage of photos pops in next to a big word | refOne | P2 |
+| MediaGrid | 🆕 | A collage of photos pops in next to a big word | refOne, refFour | P2 |
+| PhotoRing | 🆕 | Photo tiles orbit a word in 3D | refFour | P3 |
 | Halftone | 🆕 | Turns footage into a dot or scanline print look | refOne | P3 |
 
 ### Product UI
@@ -261,12 +292,14 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath | refOne | P2 |
-| ColorFlash | 🆕 | One full-screen color frame as a hard cut on the beat | refOne | P3 |
+| PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath | refOne, refFour | P2 |
+| ColorFlash | 🆕 | One full-screen color frame (or gradient whip) as a hard cut on the beat | refOne, refFour | P2 |
 | FadeToBlack | 🆕 | Slow dip to black | refOne | P3 |
 | WhipPan | 🆕 | Fast blurred slide between scenes | idea | P2 |
 | ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea, refThree | P2 |
-| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text) | refTwo, refThree | P1 |
+| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon) | refTwo, refThree, refFour | P1 |
+| AnchorMontage | 🆕 | **Fast montage around a fixed anchor:** hard cuts every few frames between variations (different buttons, or the same image in different styles), all in the same place and size; cuts accelerate, then a hard stop. Timed to the beat | refFour | P1 |
+| SnapZoom | 🔶 | A 2–3 frame slam zoom into a word or element with heavy motion blur (a Camera preset) | refFour | P1 |
 | PunchIn | 🆕 | Hard cut from a wide shot to a tight crop of the same UI, then a very slow drift (locked-camera style) | refThree | P1 |
 | GlowDive | 🆕 | The background glow swells into a ring and swallows an element; new content rises out of the dark | refTwo | P2 |
 
@@ -277,14 +310,15 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | PrismFlare | 🆕 | Small rainbow lens flares drifting across the frame | refOne | P1 |
 | Grain | 🆕 | Fine film noise (deterministic, seeded) | refOne | P1 |
 | Soft light / vignette | 🔶 | Bright soft center and darker edges (extends Lens) | refOne, ref-motion | P2 |
-| Bokeh | 🆕 | Big blurred shapes in front of and behind the UI for depth | refThree | P3 |
+| Bokeh | 🆕 | Big blurred shapes in front of and behind the UI for depth | refThree, refFour | P3 |
 | MotionBlur helper | 🔶 | Motion blur for any fast-moving element, not only the camera (Camera has it) | refTwo | P2 |
 
 ### Sound and system
 
 | Item | Status | What it does | Priority |
 |---|---|---|---|
-| Style profile | 🆕 | Energetic (camera moves, morphs, one motion peak) or calm (locked camera, punch-in cuts, pulse rhythm, long holds), chosen by the director per brand or prompt; replaces the planned "energy" setting | P1 |
+| Style profile | 🆕 | Energetic (camera moves, morphs, one motion peak), calm (locked camera, punch-in cuts, pulse rhythm, long holds) or punchy (cut-driven, montages on the beat, snap zooms), chosen by the director per brand or prompt; replaces the planned "energy" setting | P1 |
+| BeatSync | 🆕 | Cuts and hits land on the music's beats: music tracks carry beat times (library metadata or detection), and scene timing snaps to them | P1 |
 | SFX cues | 🆕 | Whoosh, click, pop and riser timed to primitive events (royalty-free or generated) | P2 |
 | Music bed + ducking | 🆕 | Background music that dips under the voiceover | P2 |
 | Responsive pass | 🔶 | Every primitive checked in 16:9, 9:16 and 1:1 (Browser and BlurInText already are) | P2 |
