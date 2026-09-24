@@ -69,7 +69,7 @@ All files are in `packages/primitives/src/primitives/`. Demos render with `npx r
 | `KineticStack` | ✅ | Brand | Stacked bold lines ("LAUNCH / VIDEOS / IN MINUTES") | `lines`, `exitAt` | Showcase |
 | `Typewriter` | ✅ | Brand | Types text with a caret | `text`, `startAt`, `charsPerSecond` | Showcase |
 | `ChatBubble` + `TypingDots` | ✅ | Brand | Message bubbles that pop in with a spring. Typing indicator | `text`, `from`, `delay` | Showcase, RefIntro |
-| `Captions` | ✅ | Brand | Word-by-word captions synced to timings | `words` | Showcase |
+| `Captions` | ✅ | Brand | Word-by-word captions synced to timings. The references use no bottom caption track, so this becomes opt-in (see PhraseCards) | `words` | Showcase |
 | `CaptionPills` | ✅ | Brand | Small caption pills for short lines | `lines` | RefIntro |
 | `LogoReveal` | ✅ | Brand | Logo and tagline end card | `name`, `tagline` | Showcase |
 | `Notification` | ✅ | Replica | macOS-style banner sliding in from the right | `app`, `title`, `body`, `at` | RefIntro |
@@ -160,7 +160,7 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 | 20–23s | Identities (API key, Ella S., service account, token) with filled/hollow status dots, which then carry badges | DotField 🆕, NodeGraph 🆕 |
 | 23–25s | Dashboard cards fill with data, big blurred dots in front and behind for depth | Bokeh 🆕, CardGrid ✅ |
 | 25–27s | "Planning…", "Invoking tool…" with red cost counters rolling (-$0.42 → -$129) | StatCounter 🔶 |
-| 27–34s | "But what if there was a way…" word by word, "your terms?" tinted, "Well…" huge, "well… there is." | BlurInText ✅, GiantType 🆕, WordAccent 🆕 |
+| 27–34s | **Type scene, no captions:** only the sentence, centred, on the plain cream background. It builds word by word and re-centres as it grows ("But" → "But what if" → "…there was a way"), then each phrase replaces the last ("to make sure", "your agents worked on your terms?"), 1–2.5s each, drifting slightly larger. "your terms" tints for a moment. "Well…" is huge and cropped for half a second, then "well… there is." at normal size. Hard cut to the product reveal | PhraseCards 🆕, BlurInText ✅ (`grow`), WordAccent 🆕, GiantType 🆕 |
 | 34–38s | Hard cut to a landscape photo: Island logo, then "The *Control Plane* for the Agentic Enterprise"; a glass pill sweeps across and tints "Control Plane" | FootageLayer 🆕, HighlightSweep 🆕 |
 | 38–42s | Frosted-glass platform ring over the landscape, slowly rotating | GlassCard 🆕, HUDRings 🆕 |
 | 42–51s | White dots on dark line up and reveal a table card over a landscape; AI apps, MCP servers, AI skills tables; a punch-in cut to a close-up of risk badges | GlassCard 🆕, DataTable 🆕, PunchIn 🆕 |
@@ -175,6 +175,8 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 - Motion: about 80% of seconds are almost still. Movement comes in 0.3–0.6s bursts followed by 1–3s holds (a pulse). The camera never flies: closer views are **punch-in cuts** (45.6s: the wide table holds ~0.9s, then a cut to a tight crop). About 15 hard cuts, each on a beat. The last ~3s are completely still.
 - Colour: warm cream `#F1EDE9` (problem act), dark teal-black `#061615` (payoff), nature photos behind frosted-glass UI (product act). Accents are tiny and mean something: soft red = danger, mint = safe, pastel orbs = agents. The three colour worlds follow the three acts.
 - Type: one neutral sans plus an *italic serif* accent word for emphasis.
+
+**No subtitle track.** Words never sit at the bottom of the frame over other visuals. At the key story moments (hook, turn, payoff) the words *are* the scene: centred, alone, built phrase by phrase. During UI scenes there's no text overlay at all; the product speaks for itself.
 
 **Lessons:** the brand motif (here the logo's circle) is given a meaning, carried through almost every transition (the outgoing shot collapses into it, the next grows out of it) and paid off by becoming the logo. For other brands the motif comes from their own mark. The story has a turn ("But what if… Well… there is."); one idea per shot, lots of empty space.
 
@@ -200,6 +202,7 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | MaskReveal | 🆕 | Text slides up from behind an invisible line | idea | P2 |
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
 | WordSwap | 🆕 | One word in a sentence rolls through options | refThree | P2 |
+| PhraseCards | 🆕 | **Type scene:** a sentence alone in the centre, built word by word in time with the voice (re-centres as it grows); each phrase replaces the last, with a slow scale drift, an accent word and an optional giant word as a beat. Replaces bottom captions at the story's key moments | refThree | P1 |
 | GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree | P2 |
 | WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence | refThree | P3 |
 | FlipDrop | 🆕 | An element (logo, word) drops in flipping on its X axis with motion blur and a glow bloom | refTwo | P2 |
