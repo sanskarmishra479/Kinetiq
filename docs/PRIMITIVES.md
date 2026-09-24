@@ -2,6 +2,8 @@
 
 > The motion primitives in [`packages/primitives`](../packages/primitives/) are the building blocks the Scene Coder combines into launch videos ([ARCHITECTURE § 6](ARCHITECTURE.md#6-dynamic-scene-runtime-sandbox)). This file tracks **what we have**, **what we saw in reference videos**, and **what to build next**.
 
+The director doesn't pick primitives directly: it picks a style and a shot per scene, and each shot names its primitives. See [SHOTS.md](SHOTS.md).
+
 **Status key:** ✅ built · 🔶 partly built (a related primitive exists and needs extending) · 🆕 not built yet · ⏸ paused
 
 ## How to use this file
@@ -37,7 +39,7 @@ Not every primitive should follow the brand. Each one is one of four kinds. The 
 **Rules:**
 - Never restyle a real-world replica with brand fonts, colors, corners or shadows. Their job is to look real, and restyling breaks that.
 - What's shown *inside* a replica is the product. It follows the product's real look, not the video's style.
-- Planned: a theme **energy** setting (calm / normal / playful) that picks the spring and easing presets, so motion-only primitives also move in the brand's personality. The references show it should be a whole **style profile**, not just easing: refTwo is energetic (camera moves, morphs), refThree is calm (locked camera, punch-in cuts, long holds). See [Style profile](#sound-and-system).
+- Planned: a theme **energy** setting (calm / normal / playful) that picks the spring and easing presets, so motion-only primitives also move in the brand's personality. The references show it should be a whole **style profile**, not just easing: refTwo is energetic (camera moves, morphs), refThree is calm (locked camera, punch-in cuts, long holds). See [Style profile](#sound-and-system); the style profiles are now defined in [SHOTS.md § 2](SHOTS.md#2-styles).
 
 ---
 

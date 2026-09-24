@@ -33,6 +33,7 @@
 | 7 | Renderer + scene sandbox | ✅ |
 | 8 | Pipeline on mock providers | ✅ |
 | 9 | Real providers | 🟡 first real video made locally; staging pending (Phase 12) |
+| 9b | Video quality: shot library | ⬜ |
 | 10 | Audio, edits, versions | ⬜ |
 | 11 | Billing (Dodo) | ⬜ |
 | 12 | Templates, admin, hardening, production infra | ⬜ |
@@ -390,6 +391,22 @@
 **Tests:** adapter contract tests (OpenRouter incl. BYOK cost, OpenAI direct, Firecrawl, ElevenLabs, Sarvam, OpenRouter voice, startup model and voice checks), prompt injection fencing, provider selection, research merging, model pinning per job, the cleanup task, the chat cap, benchmark metrics.
 
 **Exit criteria:** a real 15 s video from a real URL on staging, and its cost is recorded. **Status:** first real video made locally (23 Sep 2026): linear.app, 15 s asked, 23 s with voiceover, $0.66 (OpenAI direct: gpt-5.6-sol + luna; free OpenRouter voice), 16 min, 3 of 6 scenes fixed after QA (overflow). Findings to act on: the narration runs past the asked length, scene fixes are the slowest step (7 min), and text overflow is common. Everything is built and tested on recorded responses. What's left needs your side: a real run (a Firecrawl key, or `--scraper mock` with only the OpenRouter key) and the staging environment (Phase 12).
+
+---
+
+## Phase 9b: Video quality (shot library)
+
+Why: the first real video felt AI-made (constant motion, lime instead of Linear's black/white, overlapping UI, a caption bar on every scene). Nine reference videos were analysed ([PRIMITIVES.md § 3](PRIMITIVES.md#3-reference-log)) and turned into [SHOTS.md](SHOTS.md): styles → shots → primitives. Status: **docs written, awaiting review of its open questions.**
+
+**Step 1: the layers, with built primitives only** (every shot has a fallback):
+- [ ] Plan schema: `style`, `motif` on `DirectorPlan`; `shot`, `transitionIn` on `SceneBrief`; director prompt with the style and shot tables; plan validation for the video rules checkable on the plan (arc, limits, length range)
+- [ ] Shot recipes as data (`apps/worker/src/prompts/shots.ts`) with their primitives lists and example scenes
+- [ ] Split `packages/primitives/API.md` per primitive; the scene writer gets only its shot's primitives
+- [ ] Visual QA: rhythm check (holds, still ending) replaces "must always move"; accent-colour budget (≤ 5%); overlap check
+- [ ] Real brand colours (the Linear lime fix); the style's transitions in the renderer; bottom captions off by default
+- [ ] Tests for each (TEST_PLAN), then one paid run compared with the first Linear video
+
+**Step 2: new primitives** (primitives session), in the order of [SHOTS.md § 8](SHOTS.md#8-build-order): FlowGradient, PhraseCards, Screen3D, ShapeMorph, GiantType, WordSwap, InlineUI + SnapZoom + PunchIn, BrandMotif, NodeGraph + DrawPath, PanelSlide / ColorFlash / WordAccent.
 
 ---
 

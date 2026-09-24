@@ -38,6 +38,8 @@ This folder is the single source of truth for **what** we are building, **why**,
 |---|---|
 | [`../what-i-want.md`](../what-i-want.md) | The founder's original vision and running decision log |
 | [`../packages/primitives/`](../packages/primitives/) | The motion primitives library (Remotion): Cursor, Camera, Browser, BlurInText… |
+| [PRIMITIVES.md](PRIMITIVES.md) | Catalog of primitives, the reference-video log and the primitives backlog |
+| [SHOTS.md](SHOTS.md) | How a video is planned: styles, shot recipes, video rules (built from the reference videos) |
 | [PRIMITIVES.md](PRIMITIVES.md) | Primitives catalog: what's built, what reference videos use, and the build backlog |
 | [`../image.png`](../image.png) | UI reference for the project page (chat on the left, live preview on the right) |
 
