@@ -56,7 +56,7 @@ All files are in `packages/primitives/src/primitives/`. Demos render with `npx r
 
 | Primitive | Status | Kind | What it does | Key props | Demo |
 |---|---|---|---|---|---|
-| `Background` | ✅ | Brand | Theme background with a slowly drifting accent glow | `glow` | Showcase |
+| `Background` | ✅ | Brand | Theme background with a slowly drifting accent glow. To grow into FlowGradient (see backlog) | `glow` | Showcase |
 | `Camera` | ✅ | Motion | Keyframed pan/zoom with motion blur on fast moves | `shots`, `motionBlur` | Showcase, RefIntro |
 | `Cursor` | ✅ | Replica | Curved cursor path, click ripple, press squish. `cursorAt()` lets UI react to hover | `path`, `clicks`, `arc`, `hideBefore` | Showcase, RefIntro |
 | `Window` | ✅ | Replica | Simple macOS app or browser window for a rebuilt UI | `variant`, `title`, `url` | Showcase |
@@ -285,6 +285,36 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 - **A motif again** (the arrow): it opens the video, returns between acts, and leads the list.
 - **UI → pill → chip → hub:** one piece of UI shrinks into the next scene's element, then the scene builds around it.
 
+### saasDemo: "Numtera" SaaS product film
+`/mnt/d/Downloads/kinetiq-refs/saas demo.mp4` · 95s · 640×360 · 30fps · style: **calm, premium SaaS product film** (white and sky blue, flowing blue gradient backgrounds, the real product UI in 3D). Our core SaaS-demo reference. What the user liked: the screenshot coming in 3D and bending (0:16), the flowing gradient background (to become a primitive whose colours follow the brand or the chosen style), and the zooms and transitions.
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0–7s | "The same issue, Different channels" types in the centre while faded, grey product UI (dropdowns, chat bubbles with names, ticket lists) floats around it. "Different channels" is **selected like text and deleted**, and the sentence retypes: "Same investigation… again?" | Typewriter ✅, InlineUI 🆕, GlitchSelect 🆕 (select-delete) |
+| 7–10s | Snap zoom into "investigation…" (giant, cropped), cut; "Stop / Managing tickets" blurs in on white | SnapZoom 🔶, BlurInText ✅, GiantType 🆕 |
+| 10–15.6s | **Flowing blue gradient** appears; "Meet" rises letter by letter in huge type and shrinks to normal; "Meet [icon] Numtera": the app icon pops in between the words. "The AI-powered self-learning support OS" builds word by word, "AI-powered" in blue | FlowGradient 🔶, BlurInText ✅, InlineUI 🆕, WordAccent 🆕 |
+| 15.6–18.5s | **The 3D screenshot:** the product dashboard rises from the bottom as a big tilted plane (perspective, tipped back and turned), **bends slightly like a sheet**, and glides across with depth-of-field blur on the far edge; a label "For Complex Operations" slides in. The plane then flattens and settles face-on | Screen3D 🆕, ZoomFocus ✅ |
+| 18.5–22.5s | The flat UI with the cursor; zoom to one ticket; the ticket opens as a floating card, other panels blurred behind; soft diagonal light streaks across | ZoomFocus ✅, Cursor ✅, LightSweep 🆕 |
+| 22.5–29s | **Split wipe:** a dark panel slides in from the right with a glowing blue edge; left the light UI list, right a dark terminal-like log ("✓ Connected to your infrastructure", "Scanning internal memory" with a progress bar, "Verified source found", "Resolved case #442") | PanelSlide 🆕, CodeEditor 🆕 (log), StatCounter 🔶 |
+| 29–39s | "Agent Approves it as { learning }", the braces word in blue; the words fly off and "{ learning }" **becomes a blue progress bar**, which becomes the top of a card: "Numtera analyzing the solved ticket… Training ticket's data…" → "Knowledge Unit Created" | ShapeMorph 🆕, Typewriter ✅ |
+| 39.5–54.5s | **Dark navy flowing gradient:** "it turns the solution into [ Reusable knowledge ]" (brackets frame it, then close), "Auto-resolved", a giant "And", "when you know the outcome", "You can define the response" | FlowGradient 🔶, GiantType 🆕, WordAccent 🆕 |
+| 55–60s | The sidebar pops up as a floating panel; the cursor clicks "Workflows"; the page **swings in in 3D** from the lower left and settles | Screen3D 🆕, Cursor ✅ |
+| 60–72s | The camera **zooms far into a form field** as it types ("Manufacturing: Production Status"), pulls out, then steps 1, 2, 3 of a workflow build in with a vertical connecting line | ZoomFocus ✅, Typewriter ✅, CardGrid ✅ (`steps`) |
+| 72–78s | "Save Workflow" clicked; the page tilts away in 3D; blue gradient | Screen3D 🆕 |
+| 78–86s | "The system gets smarter — forever." "They close tickets" → "We Eliminate them" (in blue) → the app icon → icon + "Numtera" logo | BlurInText ✅, LogoReveal ✅ |
+| 86.5–93s | Black with **blue light blobs flowing around the edges**; "The self-learning support OS" and "Start a free trial now!" type in with a caret; the URL under it | FlowGradient 🔶, Typewriter ✅ |
+
+**Measured:**
+- Cuts: 13 in 95s; almost every change is a zoom, a 3D move or a wipe. Motion stays low (0–3 most seconds) with short peaks of 8–25 on the transitions. Calm, premium pace.
+- The gradient really flows: sampled over time, the light version stays sky blue `#BEE4FF` at the top to a saturated `#1F67EF` at the bottom, while the blobs drift (the top edge lightens from `#81D8FF` to `#A6D8F9` over 3s). The dark version drifts between navy `#002F53` and `#0B69B6`. Only one hue family (the brand blue), light or dark.
+
+**Lessons:**
+- **Show the real product in 3D:** the screenshot is a physical object (tilted, turned, slightly bent, depth blur) that glides and then settles flat. That makes a flat screenshot feel filmed.
+- **Zoom to explain:** the camera dives into the exact field or ticket being talked about, with the rest blurred, and pulls back.
+- **One hue, two moods:** the whole film uses one brand blue as a flowing gradient, light for the product and dark for statements. That's the FlowGradient primitive.
+- **Text and product share the frame:** faded UI floats around the opening sentence; the app icon sits inside "Meet [icon] Numtera"; a word becomes a progress bar.
+- A story arc again: problem ("same issue… again?") → "Stop" → "Meet" → product → the learning loop → "We Eliminate them" → call to action.
+
 ### Across references
 - Shared by all: something from the outgoing shot carries into the next one; holds long enough to read; a still ending; brand colour as accent or light, never big fills; one idea per beat.
 - They differ in energy: pick a style profile per brand or prompt (energetic like refTwo and refSix, calm like refThree, punchy like refFour) instead of one fixed motion rule.
@@ -310,8 +340,8 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
 | WordSwap | 🆕 | One word in a sentence rolls through options; or a vertical stack of words rolling up, the focused one sharp and its neighbours blurred; or a list scrolling past a fixed marker (arrow) | refThree, refSix, virticalRef, lightthemeref | P1 |
 | PhraseCards | 🆕 | **Type scene:** a sentence alone in the centre, built word by word in time with the voice (re-centres as it grows); each phrase replaces the last, with a slow scale drift, an accent word and an optional giant word as a beat. Replaces bottom captions at the story's key moments | refThree | P1 |
-| GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree, refFour | P1 |
-| InlineUI | 🆕 | A UI element (button, chip) sits inside a sentence as one of its words | refFour | P2 |
+| GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree, refFour, saasDemo | P1 |
+| InlineUI | 🆕 | A UI element (button, chip, app icon) sits inside a sentence as one of its words | refFour, saasDemo | P1 |
 | TypeTrack | 🔶 | Huge typing text cropped by the frame while the camera pans with the caret (extends Typewriter) | refFour | P2 |
 | ArcText | 🆕 | Text laid out on a 3D arc, letters bouncing | refFour | P3 |
 | WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence (or scatter into glyphs and re-form) | refThree, lightthemeref | P2 |
@@ -358,10 +388,11 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | ChatThread | 🔶 | Agent chat: user message, streamed reply, tool cards (extends ChatBubble) | refOne | P2 |
 | SidebarList | 🆕 | App sidebar list with status dots and notification badges | refOne | P2 |
 | PromptBar | 🔶 | Prompt or "Ask AI" input that types and submits (extends Typewriter) | refOne, ref-motion, refSix | P2 |
-| CodeEditor | 🆕 | Editor window where code types in; rows light up green ✓ or red ✗ with a status ("Fixing issue…"), and the scene can tint with the state | refSix | P2 |
+| CodeEditor | 🆕 | Editor window where code types in; rows light up green ✓ or red ✗ with a status ("Fixing issue…"), and the scene can tint with the state. Also a terminal-style log with checks and progress bars | refSix, saasDemo | P2 |
 | Skeleton | 🔶 | Placeholder bars that grow in, standing in for text | refOne | P3 |
 | Mac realism upgrade | ⏸ | Real-resolution desktop, detailed window chrome, original dock icons and wallpaper | ref-motion | P2 |
 | Device frames | 🆕 | Code-drawn laptop and phone with 3D tilt | ref-motion | P2 |
+| Screen3D | 🆕 | **A screenshot or rebuilt page as a physical plane in 3D:** rises in tilted and turned, bends slightly like a sheet, glides with depth-of-field blur on the far edge, then settles face-on (or swings away) | saasDemo | P1 |
 | Testimonial | 🆕 | Quote card with an initials avatar and rating | idea | P3 |
 | AvatarActor | 🆕 | An avatar or mascot that acts like a character: jumps out of a card, bounces across the frame, lands on and presses a button | virticalRef | P3 |
 | GlassCard | 🆕 | Frosted-glass card holding product UI over a photo backdrop | refThree, lightthemeref | P1 |
@@ -378,19 +409,19 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath | refOne, refFour, lightthemeref | P2 |
+| PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath (or a split wipe with a glowing edge: light on one side, dark on the other) | refOne, refFour, lightthemeref, saasDemo | P1 |
 | ColorFlash | 🆕 | One full-screen color frame (or gradient whip, or 2–3 stacked colour wipes with a colour-inverted frame) as a hard cut on the beat; or a whole-scene tint for a state (red on error) | refOne, refFour, refSix, lightthemeref | P1 |
 | FadeToBlack | 🆕 | Slow dip to black | refOne | P3 |
 | WhipPan | 🆕 | Fast blurred slide between scenes | idea | P2 |
 | ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea, refThree | P2 |
-| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring; text → icon → card; button → pill; range bar → pill → chip; icons → letters) | refTwo, refThree, refFour, refSix, virticalRef, lightthemeref | P1 |
+| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring; text → icon → card; button → pill; range bar → pill → chip; icons → letters; word → progress bar → card) | refTwo, refThree, refFour, refSix, virticalRef, lightthemeref, saasDemo | P1 |
 | PortalZoom | 🆕 | The camera flies through a ring (or several spawning rings) into the next scene | refSix | P2 |
 | FullBleedEnd | 🆕 | An element (pill, button, card) expands until the brand colour fills the frame, as the end card with the handle or URL | virticalRef | P2 |
 | CardBurst | 🆕 | A pressed button bursts content out radially (cards fanning around it), then it flies off to reveal the next shot | refSix | P2 |
 | DitherDissolve | 🆕 | A pixel or dither dissolve from one scene into a photo | refSix | P3 |
-| GlitchSelect | 🆕 | Text gets selected like in an editor, breaks into highlighted blocks and glitches into the next shot; or chromatic streaks | refSix, lightthemeref | P3 |
+| GlitchSelect | 🆕 | Text gets selected like in an editor, then is deleted and retyped, or breaks into highlighted blocks and glitches into the next shot; or chromatic streaks | refSix, lightthemeref, saasDemo | P2 |
 | AnchorMontage | 🆕 | **Fast montage around a fixed anchor:** hard cuts every few frames between variations (different buttons, or the same image in different styles), all in the same place and size; cuts accelerate, then a hard stop. Timed to the beat | refFour | P1 |
-| SnapZoom | 🔶 | A 2–3 frame slam zoom into a word or element with heavy motion blur (a Camera preset) | refFour, refSix | P1 |
+| SnapZoom | 🔶 | A 2–3 frame slam zoom into a word or element with heavy motion blur (a Camera preset) | refFour, refSix, saasDemo | P1 |
 | PunchIn | 🆕 | Hard cut from a wide shot to a tight crop of the same UI, then a very slow drift (locked-camera style) | refThree | P1 |
 | GlowDive | 🆕 | The background glow swells into a ring and swallows an element; new content rises out of the dark | refTwo | P2 |
 
@@ -400,6 +431,8 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 |---|---|---|---|---|
 | PrismFlare | 🆕 | Small rainbow lens flares drifting across the frame | refOne | P1 |
 | Grain | 🆕 | Fine film noise (deterministic, seeded) | refOne | P1 |
+| FlowGradient | 🔶 | **Flowing gradient background:** soft colour blobs drift and blend slowly behind the scene. Colours come from the brand (or the chosen style preset), in a light mood (white → brand colour) or a dark mood (near-black → brand colour); one hue family by default. Can change mood between scenes. Extends Background | saasDemo, refTwo, refSix | P1 |
+| LightSweep | 🆕 | Soft diagonal light streaks drifting across a light scene | saasDemo | P3 |
 | Soft light / vignette | 🔶 | Bright soft center and darker edges (extends Lens) | refOne, ref-motion | P2 |
 | Neon | 🆕 | Neon glow text on black | lightthemeref | P3 |
 | Bokeh | 🆕 | Big blurred shapes in front of and behind the UI for depth | refThree, refFour | P3 |
