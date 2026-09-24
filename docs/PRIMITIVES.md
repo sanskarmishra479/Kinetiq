@@ -37,7 +37,7 @@ Not every primitive should follow the brand. Each one is one of four kinds. The 
 **Rules:**
 - Never restyle a real-world replica with brand fonts, colors, corners or shadows. Their job is to look real, and restyling breaks that.
 - What's shown *inside* a replica is the product. It follows the product's real look, not the video's style.
-- Planned: a theme **energy** setting (calm / normal / playful) that picks the spring and easing presets, so motion-only primitives also move in the brand's personality.
+- Planned: a theme **energy** setting (calm / normal / playful) that picks the spring and easing presets, so motion-only primitives also move in the brand's personality. The references show it should be a whole **style profile**, not just easing: refTwo is energetic (camera moves, morphs), refThree is calm (locked camera, punch-in cuts, long holds). See [Style profile](#sound-and-system).
 
 ---
 
@@ -122,6 +122,66 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 
 **Built from this reference:** BlurInText, FocusPull.
 
+### refTwo: Spotify "Purity of Motion"
+`/mnt/d/Downloads/kinetiq-refs/refTwo.mp4` · 8.9s · 1276×718 · 30fps · style: **energetic brand spot** (black, green glow, camera moves, morph transitions). What the user liked: the camera, the smoothness, the transitions between frames, and the brand-true colours.
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0.0–0.4s | Logo drops in from the top, flipping on its X axis with motion blur. A green glow blooms behind it | FlipDrop 🆕, Background ✅ |
+| 0.4–1.2s | "Purity of Motion." slides in word by word, blur to sharp. "of" is smaller (mixed sizes) | BlurInText ✅, WordAccent 🆕 |
+| 1.2–1.7s | A pill outline wraps the lockup, shrinks into a circle, and the circle becomes the next shot's album cover | ShapeMorph 🆕 |
+| 1.7–2.5s | Three round covers; the centre one gets a green ring, the sides dim | CarouselFocus 🆕 |
+| 2.0–3.3s | Headline blurs in letter by letter, paragraph line by line, a "Go beyond" chip swings in tilted and straightens | BlurInText ✅, Chip ✅, TiltSettle 🆕 |
+| 3.3–4.1s | The one big move: the camera scrolls down the page and track rows stream up, edge rows dimmed | ScrollThrough 🔶, Camera ✅ |
+| 4.1–5.0s | Chips pop in (All → Friends → Podcasts) and the green "selected" state hops from chip to chip | ActiveTravel 🔶 |
+| 5.0–5.5s | Everything else fades, "Podcasts" centres, the glow swells into a ring and swallows it; new text rises out of the dark | GlowDive 🆕 |
+| 5.5–6.7s | Reading holds: "More than just audio", "Its an experience" (blur-in while letter spacing tightens) | BlurInText 🔶 (tracking ease) |
+| 6.7–8.9s | Logo pops, wordmark wipes in, then ~1.2s of complete stillness | LogoReveal ✅ |
+
+**Measured:**
+- Motion: gentle for 0–3s, one peak at 3.3–4.0s (the scroll), calm reading holds, a completely still last 1.2s. One climax, not constant motion.
+- Colour: 68% pure black, ~26% very dark green (the glow), bright green under 1% (logo, selected chip, focus ring). **Brand colour is used as light and small accents, never as big fills.**
+
+**Lessons:** something from each shot turns into the next one (no hard cuts, no plain fades); fast moves carry motion blur and arrive with a hard ease-out; focus comes from dimming the rest.
+
+### refThree: Island "The Control Plane for the Agentic Enterprise"
+`/mnt/d/Downloads/kinetiq-refs/refThree.mp4` · 103s · 1276×720 · 25fps · style: **calm story film** (locked camera, one brand motif, cream / nature photos / dark teal). What the user liked: the stable camera, and one dot carrying through every frame. The lesson is the *motif principle*, **not** "use dots in every video".
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0–2s | "Let's / talk / about" as a bulleted list building up, then "Agents" huge and cropped by the frame | BlurInText ✅, GiantType 🆕 |
+| 2–4s | Agents as soft gradient orbs with status labels ("Planning…", "Reviewing…"), more and more appear | Orb 🆕 |
+| 4–6s | "They're everywhere now": a dot field fills the screen around the text | DotField 🆕 |
+| 6–7s | Glimpses of agents inside apps (doc, dashboard, terminal typing), then the UI collapses into one dot | Window ✅, Typewriter ✅, BrandMotif 🆕 |
+| 7–9s | "Except your agent are your people": scattered words drift on arcs and settle into one line; "aren't" in red, underlined | WordsSettle 🆕, WordAccent 🆕 |
+| 10–14s | The sentence collapses into a row of filled/hollow dots, which become a conveyor of agents passing "Onboarding" and "Training" rows that flip to ✕ Skipped | BrandMotif 🆕, DataTable 🆕 |
+| 14–16s | Dots circle "Finalizing…" and squeeze into a "Done." pill → "Done. Their way." | LoaderRing 🆕, ShapeMorph 🆕 |
+| 17–20s | A dotted path with dots travelling along it; waypoint icons turn red one by one | PathTravel 🆕 |
+| 20–23s | Identities (API key, Ella S., service account, token) with filled/hollow status dots, which then carry badges | DotField 🆕, NodeGraph 🆕 |
+| 23–25s | Dashboard cards fill with data, big blurred dots in front and behind for depth | Bokeh 🆕, CardGrid ✅ |
+| 25–27s | "Planning…", "Invoking tool…" with red cost counters rolling (-$0.42 → -$129) | StatCounter 🔶 |
+| 27–34s | "But what if there was a way…" word by word, "your terms?" tinted, "Well…" huge, "well… there is." | BlurInText ✅, GiantType 🆕, WordAccent 🆕 |
+| 34–38s | Hard cut to a landscape photo: Island logo, then "The *Control Plane* for the Agentic Enterprise"; a glass pill sweeps across and tints "Control Plane" | FootageLayer 🆕, HighlightSweep 🆕 |
+| 38–42s | Frosted-glass platform ring over the landscape, slowly rotating | GlassCard 🆕, HUDRings 🆕 |
+| 42–51s | White dots on dark line up and reveal a table card over a landscape; AI apps, MCP servers, AI skills tables; a punch-in cut to a close-up of risk badges | GlassCard 🆕, DataTable 🆕, PunchIn 🆕 |
+| 51–60s | Orbs in the sky become app cards (GitHub, Salesforce, HomeOps); an Identity Gateway panel with toggles flipped by a named cursor | BrandMotif 🆕, Toggle 🔶, NamedCursor 🔶 |
+| 60–75s | The sun beside the app icon; a dark chat app types a question; tool call blocked; an insight card | ChatThread 🔶, PromptBar 🔶, Notification ✅ |
+| 75–92s | Sessions and model-cost tables; the cursor switches the model and the cost drops $149 → $0.32; threat dashboard | NamedCursor 🔶, Dropdown ✅, StatCounter 🔶, PunchIn 🆕 |
+| 92–96s | Dark teal: "So your [Writing / Researching…] and your people" with a rolling word; "get the job *done*" chip ticks | WordSwap 🆕, Checkbox 🔶 |
+| 96–98s | Giant cropped type, then "the future of *enterprise work* arrived early." | GiantType 🆕, WordAccent 🆕 |
+| 98–103s | A white dot rises into the text, flashes through three landscapes, becomes the logo mark → "Island" → island.io, held still | BrandMotif 🆕, FlashCuts 🆕, LogoReveal ✅ |
+
+**Measured:**
+- Motion: about 80% of seconds are almost still. Movement comes in 0.3–0.6s bursts followed by 1–3s holds (a pulse). The camera never flies: closer views are **punch-in cuts** (45.6s: the wide table holds ~0.9s, then a cut to a tight crop). About 15 hard cuts, each on a beat. The last ~3s are completely still.
+- Colour: warm cream `#F1EDE9` (problem act), dark teal-black `#061615` (payoff), nature photos behind frosted-glass UI (product act). Accents are tiny and mean something: soft red = danger, mint = safe, pastel orbs = agents. The three colour worlds follow the three acts.
+- Type: one neutral sans plus an *italic serif* accent word for emphasis.
+
+**Lessons:** the brand motif (here the logo's circle) is given a meaning, carried through almost every transition (the outgoing shot collapses into it, the next grows out of it) and paid off by becoming the logo. For other brands the motif comes from their own mark. The story has a turn ("But what if… Well… there is."); one idea per shot, lots of empty space.
+
+### Across references
+- Shared by all: something from the outgoing shot carries into the next one; holds long enough to read; a still ending; brand colour as accent or light, never big fills; one idea per beat.
+- They differ in energy: pick a style profile per brand or prompt (energetic like refTwo, calm like refThree) instead of one fixed motion rule.
+
 ---
 
 ## 4. Backlog
@@ -132,37 +192,45 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| StatCounter | 🔶 | A number counts or builds up ("0 → 0.01%", "10,000 users"), with a label and glow | refOne, ref-motion idea | P1 |
-| WordAccent | 🆕 | One word gets a different style (accent color, caps, huge, marker highlight) | refOne | P1 |
+| StatCounter | 🔶 | A number counts or builds up ("0 → 0.01%", "10,000 users"), with a label and glow. Can roll and shift colour (red costs climbing) | refOne, refThree, ref-motion idea | P1 |
+| WordAccent | 🆕 | One word gets a different style (accent color, caps, huge, marker highlight, *italic serif*, red underline, smaller "of") | refOne, refTwo, refThree | P1 |
 | EchoStack | 🆕 | A phrase repeated above and below itself, fading, like a scrolling list | refOne | P2 |
 | TextPush | 🆕 | Text swings in or past with 3D perspective and motion blur | refOne | P2 |
 | TitleCard | 🆕 | End-card layout: title and subtitle on black, blur in and out (built on BlurInText) | refOne | P2 |
 | MaskReveal | 🆕 | Text slides up from behind an invisible line | idea | P2 |
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
-| WordSwap | 🆕 | One word in a sentence rolls through options | idea | P3 |
+| WordSwap | 🆕 | One word in a sentence rolls through options | refThree | P2 |
+| GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree | P2 |
+| WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence | refThree | P3 |
+| FlipDrop | 🆕 | An element (logo, word) drops in flipping on its X axis with motion blur and a glow bloom | refTwo | P2 |
+| Tracking ease | 🔶 | Letter spacing tightens as text blurs in (extends BlurInText) | refTwo | P3 |
 
 ### Shapes and graphics
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| DotField | 🆕 | A dot grows into a circle or grid of dots. Some highlight or move. Pointer dot with a label | refOne | P1 |
+| DotField | 🆕 | A dot grows into a circle or grid of dots, or fills the screen as a crowd. Some highlight, move, or show filled/hollow status. Pointer dot with a label | refOne, refThree | P1 |
 | DotMatrix | 🆕 | A dot grid where dots light up into glowing shapes, like an LED display | refOne | P1 |
 | Ribbon | 🆕 | A thick brush ribbon sweeps across the frame with motion blur. Can fill the screen as a transition | refOne | P2 |
 | Doodles | 🆕 | Our own hand-drawn stickers (bulb, star, heart, flame, bubble) pop in with a wobble | refOne | P2 |
 | TickRuler | 🆕 | Rows of small ticks framing a title, sliding in | refOne | P3 |
 | BrandGlyph | 🆕 | A huge, soft, blurred version of the customer's logo shape behind every scene | refOne | P1 |
+| BrandMotif | 🆕 | **One shape from the customer's logo that carries meaning through the whole video**: scenes collapse into it and grow out of it, and it becomes the logo at the end. The shape comes from each brand's mark (never dots by default) | refThree, refOne | P1 |
+| Orb | 🆕 | Soft gradient orb with a status label, standing in for an agent or persona | refThree | P2 |
+| LoaderRing | 🆕 | Dots circle a label, then squeeze into a pill or button | refThree | P3 |
+| PathTravel | 🆕 | A dotted route with dots travelling along it; waypoint icons change state | refThree | P2 |
 | DrawPath | 🆕 | An SVG line or icon draws itself on | ref-motion | P2 |
-| NodeGraph | 🆕 | Boxes connected by lines that draw in, with dots travelling along them | ref-motion | P2 |
-| HUDRings | 🆕 | Rotating dashed rings and ticks, for a "tech" look | ref-motion | P3 |
-| Morph | 🆕 | One shape smoothly becomes another (e.g. logo morph) | ref-motion | P3 |
+| NodeGraph | 🆕 | Boxes connected by lines that draw in, with dots travelling along them | ref-motion, refThree | P2 |
+| HUDRings | 🆕 | Rotating dashed rings and ticks, for a "tech" look (also as a glass platform ring) | ref-motion, refThree | P3 |
+| Morph | 🆕 | One shape smoothly becomes another (e.g. logo morph). See ShapeMorph under Transitions | ref-motion, refTwo, refThree | P1 |
 
 ### Footage and images
 Needs the footage pipeline (customer uploads, free stock, AI images/video → saved to R2 → passed to scenes as URLs, since the render sandbox has no network). Not yet written into ARCHITECTURE.md.
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| FootageLayer | 🆕 | Full-screen clip with a slow push-in and a color treatment (dim, black & white, duotone) | refOne | P1 |
-| FlashCuts | 🆕 | Several clips cut quickly behind text that stays still | refOne | P2 |
+| FootageLayer | 🆕 | Full-screen clip or photo with a slow push-in and a color treatment (dim, black & white, duotone). Nature photos as the backdrop for UI | refOne, refThree | P1 |
+| FlashCuts | 🆕 | Several clips cut quickly behind text that stays still (or inside a growing motif) | refOne, refThree | P2 |
 | ImageStrip | 🆕 | Photos and color bars slide in one after another behind a title | refOne | P2 |
 | MediaGrid | 🆕 | A collage of photos pops in next to a big word | refOne | P2 |
 | Halftone | 🆕 | Turns footage into a dot or scanline print look | refOne | P3 |
@@ -178,6 +246,13 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | Mac realism upgrade | ⏸ | Real-resolution desktop, detailed window chrome, original dock icons and wallpaper | ref-motion | P2 |
 | Device frames | 🆕 | Code-drawn laptop and phone with 3D tilt | ref-motion | P2 |
 | Testimonial | 🆕 | Quote card with an initials avatar and rating | idea | P3 |
+| GlassCard | 🆕 | Frosted-glass card holding product UI over a photo backdrop | refThree | P1 |
+| DataTable | 🆕 | Clean table with coloured badges (CRITICAL/MEDIUM/LOW) and status cells that flip | refThree | P2 |
+| NamedCursor | 🔶 | Cursor with a persona name tag ("Sarah", "Admin") (extends Cursor) | refThree | P2 |
+| Toggle / Checkbox | 🔶 | Switches that flip and tick boxes that check under the cursor (extends Menu) | refThree | P2 |
+| ActiveTravel | 🔶 | The selected state hops across a row of chips or tabs (extends Chip) | refTwo | P2 |
+| CarouselFocus | 🆕 | A row of items; the centre one is ringed and the sides dim | refTwo | P3 |
+| ScrollThrough | 🔶 | A long list or page streams past under the camera, edge rows dimmed (extends Browser scroll) | refTwo | P2 |
 
 ### Transitions
 
@@ -187,7 +262,10 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | ColorFlash | 🆕 | One full-screen color frame as a hard cut on the beat | refOne | P3 |
 | FadeToBlack | 🆕 | Slow dip to black | refOne | P3 |
 | WhipPan | 🆕 | Fast blurred slide between scenes | idea | P2 |
-| ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea | P2 |
+| ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea, refThree | P2 |
+| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text) | refTwo, refThree | P1 |
+| PunchIn | 🆕 | Hard cut from a wide shot to a tight crop of the same UI, then a very slow drift (locked-camera style) | refThree | P1 |
+| GlowDive | 🆕 | The background glow swells into a ring and swallows an element; new content rises out of the dark | refTwo | P2 |
 
 ### Look and texture
 
@@ -196,13 +274,16 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | PrismFlare | 🆕 | Small rainbow lens flares drifting across the frame | refOne | P1 |
 | Grain | 🆕 | Fine film noise (deterministic, seeded) | refOne | P1 |
 | Soft light / vignette | 🔶 | Bright soft center and darker edges (extends Lens) | refOne, ref-motion | P2 |
+| Bokeh | 🆕 | Big blurred shapes in front of and behind the UI for depth | refThree | P3 |
+| MotionBlur helper | 🔶 | Motion blur for any fast-moving element, not only the camera (Camera has it) | refTwo | P2 |
 
 ### Sound and system
 
 | Item | Status | What it does | Priority |
 |---|---|---|---|
+| Style profile | 🆕 | Energetic (camera moves, morphs, one motion peak) or calm (locked camera, punch-in cuts, pulse rhythm, long holds), chosen by the director per brand or prompt; replaces the planned "energy" setting | P1 |
 | SFX cues | 🆕 | Whoosh, click, pop and riser timed to primitive events (royalty-free or generated) | P2 |
 | Music bed + ducking | 🆕 | Background music that dips under the voiceover | P2 |
 | Responsive pass | 🔶 | Every primitive checked in 16:9, 9:16 and 1:1 (Browser and BlurInText already are) | P2 |
-| `packages/primitives/API.md` | 🆕 | Compact props and examples for the Scene Coder prompt | P1 before the Scene Coder ships |
-| Visual baseline tests | 🆕 | `renderStill` + pixelmatch per primitive at key frames | P2 |
+| `packages/primitives/API.md` | ✅ | Compact props and examples for the Scene Coder prompt, generated from the source (Phase 7) | done |
+| Visual baseline tests | ✅ | `renderStill` + pixelmatch per primitive at key frames (`packages/primitives/visual-baselines`, Phase 7) | done |
