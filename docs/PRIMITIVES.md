@@ -234,6 +234,31 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 - **Real photos give warmth:** UI and words sit on real photographs (beach, forest, sky) between the graphic scenes, so the film doesn't feel flat or all-vector.
 - **Every transition is an event:** dots gather into a ring, fly through rings, a button press bursts into content, selected text glitches away. None are plain fades.
 
+### virticalRef: Instagram profile promo (vertical)
+`/mnt/d/Downloads/kinetiq-refs/virticalRef.mp4` · 11s · 720×1280 (9:16) · 30fps · style: **calm one-take** (light grey, black text, one red accent, brand blue at the end). Our first vertical reference.
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0–1.2s | "A new beginning" word by word, blur to sharp, "new beginning" tinted red | BlurInText ✅, WordAccent 🆕 |
+| 1.2–2.8s | **Vertical word roll:** "Motion / Design / Ideas" stack and roll upward; the word in focus is sharp and dark, its neighbours blurred and grey | WordSwap 🆕 (vertical roll) |
+| 2.8–4.2s | "Introducing new Instagram page to showcase my motion graphic works" as a narrow 3-line centred block, word by word; "Instagram" and "motion graphic" in red | BlurInText ✅, WordAccent 🆕 |
+| 4.2–5.0s | The sentence blurs away **into the app icon**; the icon **grows into a dark profile card** | ShapeMorph 🆕 |
+| 5.0–6.5s | The card fills in: avatar pops, name and bio type in, Follow and Message buttons pop | Typewriter ✅, Chip ✅ |
+| 6.5–7.4s | The camera pushes in until the card fills the width; Follow → "Followed"; the **avatar jumps out of the card** | Camera ✅, AvatarActor 🆕 |
+| 7.4–9.6s | The only hard cut: dark screen with the "Followed" button; the avatar **bounces in like a character and lands on the button**, which becomes a handle pill with the avatar | AvatarActor 🆕, ShapeMorph 🆕 |
+| 9.6–11s | The pill **expands to fill the whole screen in brand blue**; the handle "@thekx_" sits in the centre | FullBleedEnd 🆕 |
+
+**Measured:** one hard cut in 11s; the rest is one continuous chain of morphs. Motion stays near still (0–1) except one burst at 6.5–8s (the push-in and cut). Colour: 94% light grey `#D0D0D0` with black text and a red accent on key words; a dark card in the middle; brand blue `#3848E8` fills 99% of the last frame, the only big block of colour, used as the end card.
+
+**Vertical lessons:**
+- **One centre column:** everything sits in the middle band of the frame, clear of the top and bottom where Instagram/TikTok put their own buttons and captions.
+- **Narrow blocks:** sentences wrap into 3 short centred lines; UI cards are about 75% of the width, then the camera pushes in until they fill it.
+- **Stack vertically:** words roll up and down in a stack, which suits the tall frame.
+- Text here is small (about 2% of the height). On a phone it should be larger; keep the middle-band rule, not the size.
+- **One-take feel:** text → icon → card → button → pill → full screen, each element becoming the next.
+- A **character** (the avatar) acting in the scene makes a personal page feel personal.
+- A **full-bleed brand colour** end card with the handle works as the call to action for social.
+
 ### Across references
 - Shared by all: something from the outgoing shot carries into the next one; holds long enough to read; a still ending; brand colour as accent or light, never big fills; one idea per beat.
 - They differ in energy: pick a style profile per brand or prompt (energetic like refTwo and refSix, calm like refThree, punchy like refFour) instead of one fixed motion rule.
@@ -256,7 +281,7 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | TitleCard | 🆕 | End-card layout: title and subtitle on black, blur in and out (built on BlurInText) | refOne | P2 |
 | MaskReveal | 🆕 | Text slides up from behind an invisible line | idea | P2 |
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
-| WordSwap | 🆕 | One word in a sentence rolls through options | refThree, refSix | P1 |
+| WordSwap | 🆕 | One word in a sentence rolls through options; or a vertical stack of words rolling up, the focused one sharp and its neighbours blurred | refThree, refSix, virticalRef | P1 |
 | PhraseCards | 🆕 | **Type scene:** a sentence alone in the centre, built word by word in time with the voice (re-centres as it grows); each phrase replaces the last, with a slow scale drift, an accent word and an optional giant word as a beat. Replaces bottom captions at the story's key moments | refThree | P1 |
 | GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree, refFour | P1 |
 | InlineUI | 🆕 | A UI element (button, chip) sits inside a sentence as one of its words | refFour | P2 |
@@ -311,6 +336,7 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | Mac realism upgrade | ⏸ | Real-resolution desktop, detailed window chrome, original dock icons and wallpaper | ref-motion | P2 |
 | Device frames | 🆕 | Code-drawn laptop and phone with 3D tilt | ref-motion | P2 |
 | Testimonial | 🆕 | Quote card with an initials avatar and rating | idea | P3 |
+| AvatarActor | 🆕 | An avatar or mascot that acts like a character: jumps out of a card, bounces across the frame, lands on and presses a button | virticalRef | P3 |
 | GlassCard | 🆕 | Frosted-glass card holding product UI over a photo backdrop | refThree | P1 |
 | DataTable | 🆕 | Clean table with coloured badges (CRITICAL/MEDIUM/LOW) and status cells that flip | refThree | P2 |
 | NamedCursor | 🔶 | Cursor with a persona name tag ("Sarah", "Admin") (extends Cursor) | refThree | P2 |
@@ -328,8 +354,9 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | FadeToBlack | 🆕 | Slow dip to black | refOne | P3 |
 | WhipPan | 🆕 | Fast blurred slide between scenes | idea | P2 |
 | ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea, refThree | P2 |
-| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring) | refTwo, refThree, refFour, refSix | P1 |
+| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring; text → icon → card; button → pill) | refTwo, refThree, refFour, refSix, virticalRef | P1 |
 | PortalZoom | 🆕 | The camera flies through a ring (or several spawning rings) into the next scene | refSix | P2 |
+| FullBleedEnd | 🆕 | An element (pill, button, card) expands until the brand colour fills the frame, as the end card with the handle or URL | virticalRef | P2 |
 | CardBurst | 🆕 | A pressed button bursts content out radially (cards fanning around it), then it flies off to reveal the next shot | refSix | P2 |
 | DitherDissolve | 🆕 | A pixel or dither dissolve from one scene into a photo | refSix | P3 |
 | GlitchSelect | 🆕 | Text gets selected like in an editor, breaks into highlighted blocks and glitches into the next shot | refSix | P3 |
@@ -356,6 +383,6 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | BeatSync | 🆕 | Cuts and hits land on the music's beats: music tracks carry beat times (library metadata or detection), and scene timing snaps to them | P1 |
 | SFX cues | 🆕 | Whoosh, click, pop and riser timed to primitive events (royalty-free or generated) | P2 |
 | Music bed + ducking | 🆕 | Background music that dips under the voiceover | P2 |
-| Responsive pass | 🔶 | Every primitive checked in 16:9, 9:16 and 1:1 (Browser and BlurInText already are) | P2 |
+| Responsive pass | 🔶 | Every primitive checked in 16:9, 9:16 and 1:1 (Browser and BlurInText already are). 9:16 rules from virticalRef: one centre column, content inside the middle band (clear of the app's own UI at top and bottom), narrow text blocks, cards ~75% of the width | P1 |
 | `packages/primitives/API.md` | ✅ | Compact props and examples for the Scene Coder prompt, generated from the source (Phase 7) | done |
 | Visual baseline tests | ✅ | `renderStill` + pixelmatch per primitive at key frames (`packages/primitives/visual-baselines`, Phase 7) | done |
