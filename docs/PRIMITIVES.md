@@ -207,9 +207,37 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 - **Sync to music:** cuts start and end on sound hits. This needs music with known beat times.
 - A third style profile: **punchy** (cut-driven, social-ad pace), next to energetic (refTwo) and calm (refThree).
 
+### refSix: OpenAI-style "One place" concept ad
+`/mnt/d/Downloads/kinetiq-refs/refSix.mp4` · 31s · 1280×720 · 30fps · style: **energetic concept film** (dark navy with electric-blue glow → white → real photos; ideas drawn as growing graphs). What the user liked: the transitions, the real images in between, and the opening graph that connects to different elements.
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0–2.2s | Dark: tick marks and brackets fly in around "too many signals / tabs / thoughts" (word swaps, "too many" small blue), code fragments stream past in 3D; a pink highlight flash on "thoughts" | WordSwap 🆕, WordAccent 🆕, TextPush 🆕 |
+| 2.3–3.5s | The text blurs away and a **glowing blue point is left behind; it draws a squiggly signal line**, which then **splits into many curved branches** that draw on | NodeGraph 🆕 (signal source), DrawPath 🆕, ShapeMorph 🆕 |
+| 3.5–6.5s | Each branch ends in a **node: an icon plus a label that types in** ("12 new messages", "research_final_v4", "meeting at 5pm", "app.py", "tomorrow") with a small grey sub-label. The camera glides along the branches to read the nodes up close, then pulls back to show the whole graph | NodeGraph 🆕, Typewriter ✅, Camera ✅ |
+| 6.8–7.7s | Lines retract, nodes become white dots, the dots **gather into a circle**, stretch into ring segments, and the background flips to light | ShapeMorph 🆕 |
+| 7.7–9.2s | The segments join into a blue gradient **ring** around "connected." (word types in); new rings spawn and the camera **flies through them** to white | PortalZoom 🆕, Typewriter ✅ |
+| 9.2–11.2s | The wordmark builds letter by letter inside faint **construction grid lines**; then its letters spread apart and blur away | GridWordmark 🆕, Tracking ease 🔶 |
+| 11.2–12.8s | A pixel/dither dissolve into a **real beach photo**; "What will we build?" and a prompt bar where a prompt types in | DitherDissolve 🆕, FootageLayer 🆕, PromptBar 🔶 |
+| 12.8–14.7s | A snap push into the send button; it's pressed, and **poster cards burst out radially around it** like a fan while the arrow spins | SnapZoom 🔶, CardBurst 🆕 |
+| 14.7–15.6s | The cards fly off to reveal "Seconds."; the word is **selected like text**, breaks into highlighted blocks, and glitches into the next shot | GlitchSelect 🆕 |
+| 15.6–21s | Code editor over a **misty forest photo**: code types in, then the whole frame **tints red** on an error line (✗, "Fixing issue…"), rows light up green with ✓ as they pass; a 3D voxel cube appears beside it | CodeEditor 🆕, ColorFlash 🆕 (state tint), FootageLayer 🆕 |
+| 21–23s | Soft blur to cream: labelled data points (Clients, Feedback, Tasks, counts with arrows) drift in, then the camera pulls back to show dozens | DotField 🆕, StatCounter 🔶 |
+| 23–26.5s | A **tree grows from the corner** ("MONTHLY REPORT" written on the trunk), its branches reaching exactly to each data point; leaves and blossoms bloom and drift | GrowTree 🆕, DrawPath 🆕 |
+| 26.5–31s | Hard cut to a **real photo of sky and blossoms**: "One place to [Imagine / Build / Discover]." with the last word in blue and swapping; logo | WordSwap 🆕, FootageLayer 🆕, LogoReveal ✅ |
+
+**Measured:** about 10 real cuts in 31s; the rest are continuous transitions (ring fly-through, card burst, glitch). Motion is bursty: fast transitions (up to 26 on our motion scale) between calm reading holds (near 1). Colour: navy/black with electric-blue glow for the "chaos" act, white and light blue for the brand, then photos. One blue carries the brand throughout (signal point, ring, send button, the swapped word); red appears only for the error state.
+
+**Lessons:**
+- **Draw the idea:** abstract value becomes a picture that grows. "Too many things" becomes one point branching to everything, then a ring ("connected"); scattered data becomes a tree that reaches every point ("organised"). The same device is used twice, so the story rhymes.
+- **Graphs read because they build:** source → branches drawing on → nodes appearing one by one with typed labels → the camera travels along them → pull back to show the whole.
+- **Real photos give warmth:** UI and words sit on real photographs (beach, forest, sky) between the graphic scenes, so the film doesn't feel flat or all-vector.
+- **Every transition is an event:** dots gather into a ring, fly through rings, a button press bursts into content, selected text glitches away. None are plain fades.
+
 ### Across references
 - Shared by all: something from the outgoing shot carries into the next one; holds long enough to read; a still ending; brand colour as accent or light, never big fills; one idea per beat.
-- They differ in energy: pick a style profile per brand or prompt (energetic like refTwo, calm like refThree, punchy like refFour) instead of one fixed motion rule.
+- They differ in energy: pick a style profile per brand or prompt (energetic like refTwo and refSix, calm like refThree, punchy like refFour) instead of one fixed motion rule.
+- Draw the product's value as a picture that builds (refSix's branching graph and growing tree, refThree's dots): it's what turns a feature list into a story.
 
 ---
 
@@ -228,7 +256,7 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | TitleCard | 🆕 | End-card layout: title and subtitle on black, blur in and out (built on BlurInText) | refOne | P2 |
 | MaskReveal | 🆕 | Text slides up from behind an invisible line | idea | P2 |
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
-| WordSwap | 🆕 | One word in a sentence rolls through options | refThree | P2 |
+| WordSwap | 🆕 | One word in a sentence rolls through options | refThree, refSix | P1 |
 | PhraseCards | 🆕 | **Type scene:** a sentence alone in the centre, built word by word in time with the voice (re-centres as it grows); each phrase replaces the last, with a slow scale drift, an accent word and an optional giant word as a beat. Replaces bottom captions at the story's key moments | refThree | P1 |
 | GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree, refFour | P1 |
 | InlineUI | 🆕 | A UI element (button, chip) sits inside a sentence as one of its words | refFour | P2 |
@@ -236,13 +264,14 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | ArcText | 🆕 | Text laid out on a 3D arc, letters bouncing | refFour | P3 |
 | WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence | refThree | P3 |
 | FlipDrop | 🆕 | An element (logo, word) drops in flipping on its X axis with motion blur and a glow bloom | refTwo | P2 |
-| Tracking ease | 🔶 | Letter spacing tightens as text blurs in (extends BlurInText) | refTwo | P3 |
+| Tracking ease | 🔶 | Letter spacing tightens as text blurs in, or spreads apart as it blurs out (extends BlurInText) | refTwo, refSix | P2 |
+| GridWordmark | 🆕 | A wordmark builds letter by letter inside faint construction grid lines | refSix | P3 |
 
 ### Shapes and graphics
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| DotField | 🆕 | A dot grows into a circle or grid of dots, or fills the screen as a crowd. Some highlight, move, or show filled/hollow status. Pointer dot with a label | refOne, refThree | P1 |
+| DotField | 🆕 | A dot grows into a circle or grid of dots, or fills the screen as a crowd. Some highlight, move, or show filled/hollow status. Pointer dot with a label; labelled data points with counts | refOne, refThree, refSix | P1 |
 | DotMatrix | 🆕 | A dot grid where dots light up into glowing shapes, like an LED display | refOne | P1 |
 | Ribbon | 🆕 | A thick brush ribbon sweeps across the frame with motion blur. Can fill the screen as a transition | refOne | P2 |
 | Doodles | 🆕 | Our own hand-drawn stickers (bulb, star, heart, flame, bubble) pop in with a wobble | refOne, refFour | P2 |
@@ -252,8 +281,9 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | Orb | 🆕 | Soft gradient orb with a status label, standing in for an agent or persona | refThree | P2 |
 | LoaderRing | 🆕 | Dots circle a label, then squeeze into a pill or button | refThree | P3 |
 | PathTravel | 🆕 | A dotted route with dots travelling along it; waypoint icons change state | refThree | P2 |
-| DrawPath | 🆕 | An SVG line or icon draws itself on | ref-motion, refFour | P2 |
-| NodeGraph | 🆕 | Boxes connected by lines that draw in, with dots travelling along them | ref-motion, refThree | P2 |
+| DrawPath | 🆕 | An SVG line or icon draws itself on | ref-motion, refFour, refSix | P1 |
+| NodeGraph | 🆕 | A source (glowing point or box) whose lines draw on and branch out to nodes; each node is an icon plus a label that types in, with a sub-label. The camera can travel along branches, then pull back. Dots can travel along lines | ref-motion, refThree, refSix | P1 |
+| GrowTree | 🆕 | An organic tree grows from a corner, its branches reaching exactly to scattered labelled points; leaves and blossoms bloom | refSix | P3 |
 | HUDRings | 🆕 | Rotating dashed rings and ticks, for a "tech" look (also as a glass platform ring) | ref-motion, refThree | P3 |
 | Morph | 🆕 | One shape smoothly becomes another (e.g. logo morph). See ShapeMorph under Transitions | ref-motion, refTwo, refThree, refFour | P1 |
 
@@ -262,7 +292,7 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| FootageLayer | 🆕 | Full-screen clip or photo with a slow push-in and a color treatment (dim, black & white, duotone). Nature photos as the backdrop for UI | refOne, refThree | P1 |
+| FootageLayer | 🆕 | Full-screen clip or photo with a slow push-in and a color treatment (dim, black & white, duotone). Nature photos as the backdrop for UI | refOne, refThree, refSix | P1 |
 | FlashCuts | 🆕 | Several clips cut quickly behind text that stays still (or inside a growing motif) | refOne, refThree | P2 |
 | ImageStrip | 🆕 | Photos and color bars slide in one after another behind a title | refOne | P2 |
 | MediaGrid | 🆕 | A collage of photos pops in next to a big word | refOne, refFour | P2 |
@@ -275,7 +305,8 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 |---|---|---|---|---|
 | ChatThread | 🔶 | Agent chat: user message, streamed reply, tool cards (extends ChatBubble) | refOne | P2 |
 | SidebarList | 🆕 | App sidebar list with status dots and notification badges | refOne | P2 |
-| PromptBar | 🔶 | Prompt or "Ask AI" input that types and submits (extends Typewriter) | refOne, ref-motion | P2 |
+| PromptBar | 🔶 | Prompt or "Ask AI" input that types and submits (extends Typewriter) | refOne, ref-motion, refSix | P2 |
+| CodeEditor | 🆕 | Editor window where code types in; rows light up green ✓ or red ✗ with a status ("Fixing issue…"), and the scene can tint with the state | refSix | P2 |
 | Skeleton | 🔶 | Placeholder bars that grow in, standing in for text | refOne | P3 |
 | Mac realism upgrade | ⏸ | Real-resolution desktop, detailed window chrome, original dock icons and wallpaper | ref-motion | P2 |
 | Device frames | 🆕 | Code-drawn laptop and phone with 3D tilt | ref-motion | P2 |
@@ -293,13 +324,17 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
 | PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath | refOne, refFour | P2 |
-| ColorFlash | 🆕 | One full-screen color frame (or gradient whip) as a hard cut on the beat | refOne, refFour | P2 |
+| ColorFlash | 🆕 | One full-screen color frame (or gradient whip) as a hard cut on the beat; or a whole-scene tint for a state (red on error) | refOne, refFour, refSix | P2 |
 | FadeToBlack | 🆕 | Slow dip to black | refOne | P3 |
 | WhipPan | 🆕 | Fast blurred slide between scenes | idea | P2 |
 | ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea, refThree | P2 |
-| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon) | refTwo, refThree, refFour | P1 |
+| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring) | refTwo, refThree, refFour, refSix | P1 |
+| PortalZoom | 🆕 | The camera flies through a ring (or several spawning rings) into the next scene | refSix | P2 |
+| CardBurst | 🆕 | A pressed button bursts content out radially (cards fanning around it), then it flies off to reveal the next shot | refSix | P2 |
+| DitherDissolve | 🆕 | A pixel or dither dissolve from one scene into a photo | refSix | P3 |
+| GlitchSelect | 🆕 | Text gets selected like in an editor, breaks into highlighted blocks and glitches into the next shot | refSix | P3 |
 | AnchorMontage | 🆕 | **Fast montage around a fixed anchor:** hard cuts every few frames between variations (different buttons, or the same image in different styles), all in the same place and size; cuts accelerate, then a hard stop. Timed to the beat | refFour | P1 |
-| SnapZoom | 🔶 | A 2–3 frame slam zoom into a word or element with heavy motion blur (a Camera preset) | refFour | P1 |
+| SnapZoom | 🔶 | A 2–3 frame slam zoom into a word or element with heavy motion blur (a Camera preset) | refFour, refSix | P1 |
 | PunchIn | 🆕 | Hard cut from a wide shot to a tight crop of the same UI, then a very slow drift (locked-camera style) | refThree | P1 |
 | GlowDive | 🆕 | The background glow swells into a ring and swallows an element; new content rises out of the dark | refTwo | P2 |
 
