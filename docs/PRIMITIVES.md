@@ -259,9 +259,36 @@ Recreated as `RefIntro` (first 15s). Side-by-side: `out/compare.mp4`.
 - A **character** (the avatar) acting in the scene makes a personal page feel personal.
 - A **full-bleed brand colour** end card with the handle works as the call to action for social.
 
+### lightthemeref: "Wake Up" SaaS showreel (light theme)
+`/mnt/d/Downloads/kinetiq-refs/lightthemeref.mp4` · 20s · 1268×718 · 30fps · style: **light, playful UI showreel** (light grey `#E0E0E0`, black text, small colour accents; dark photo breaks). Our light-theme reference.
+
+| Time | What's on screen | Primitives |
+|---|---|---|
+| 0–1.5s | "Wake" and "Up" slide together; the words scatter into tiny glyphs (arrow, asterisk, "0", "1") that collapse into one blue **arrow**, which then leads "→ Wake Up" back in | WordsSettle 🆕, BrandMotif 🆕 (the arrow) |
+| 1.5–1.8s | **Colour-flash transition:** black → a lime blob wipes up → a purple/peach colour-inverted flash of the next shot → cut | ColorFlash 🆕 (stacked colour wipes) |
+| 1.8–4.1s | A **frosted-glass calendar** widget over a real mountain photo. The camera pushes in; the cursor drags across the dates and a blue range fills 9 → 16 | GlassCard 🆕, FootageLayer 🆕, Cursor ✅ |
+| 4.1–4.4s | The range bar **shrinks into a small pill under the cursor**, and a light panel slides across to wipe the photo away | ShapeMorph 🆕, PanelSlide 🆕 |
+| 4.4–5.4s | The pill **becomes a widget chip** ("Sun 22 · Wake up at 7am") on plain light grey | ShapeMorph 🆕, Chip ✅ |
+| 5.5–8.7s | Satellite widgets **pop in around the chip** (to-do list, "Editing", "Focus on life →", an illustration); a serif word beside it rolls "Concentrate → Collect → Accumulate" while the chip's date updates. Everything floats on soft coloured glows | Orbit layout 🆕, WordSwap 🆕, Chip ✅ |
+| 8.7–9.3s | Hard cut to black with the white **arrow** (the motif returns), then a mint flash | BrandMotif 🆕, ColorFlash 🆕 |
+| 9.3–12.1s | Dark still-life photo; a **list scrolls up past a fixed arrow**: "→ Craft / Creativity / Artistry / Animation / … / Motion". The item at the arrow is white, the others grey | WordSwap 🆕 (list roll) |
+| 12.2–15.3s | Light grey: one green icon; **colourful circular icons pop in one by one into a row**, then some of them turn into letters that spell "SaaS" | IconRow 🆕, ShapeMorph 🆕 |
+| 15.3–17.2s | The word settles into a small glass label over a night mountain photo | GlassCard 🆕, FootageLayer 🆕 |
+| 17.2–20s | Black: "MADE BY" in neon glow, with a **chromatic glitch-streak** transition, and a glowing signature | GlitchSelect 🆕, Neon 🆕 |
+
+**Measured:** about 12 cuts in 20s; motion comes in bursts (up to 65 at the first flash) with long calm holds (0–1) on the widget scenes. Colour: 39% light grey, 22% black (the dark breaks). Accents are small: blue on the arrow and the date range, a red or pink label on the chip, pastel glows under the widgets. Fonts: a clean sans plus a serif for the rolling words.
+
+**Light-theme lessons:**
+- **Depth without shadows:** light UI floats on soft coloured glows under each card instead of drop shadows, so white-on-grey still separates.
+- **Photos for contrast:** light scenes alternate with dark or photo scenes, so the eye resets, and the glass widgets sit on real photos.
+- **Accents stay tiny:** on a light background, one blue plus a small warm label is enough. Big colour appears only as a 1–2 frame flash.
+- **A motif again** (the arrow): it opens the video, returns between acts, and leads the list.
+- **UI → pill → chip → hub:** one piece of UI shrinks into the next scene's element, then the scene builds around it.
+
 ### Across references
 - Shared by all: something from the outgoing shot carries into the next one; holds long enough to read; a still ending; brand colour as accent or light, never big fills; one idea per beat.
 - They differ in energy: pick a style profile per brand or prompt (energetic like refTwo and refSix, calm like refThree, punchy like refFour) instead of one fixed motion rule.
+- Light themes need their own depth tricks: soft coloured glows under cards, and dark or photo scenes in between for contrast (lightthemeref).
 - Draw the product's value as a picture that builds (refSix's branching graph and growing tree, refThree's dots): it's what turns a feature list into a story.
 
 ---
@@ -281,13 +308,13 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | TitleCard | 🆕 | End-card layout: title and subtitle on black, blur in and out (built on BlurInText) | refOne | P2 |
 | MaskReveal | 🆕 | Text slides up from behind an invisible line | idea | P2 |
 | ScrambleText | 🆕 | Letters shuffle, then settle on the word (seeded randomness) | idea | P3 |
-| WordSwap | 🆕 | One word in a sentence rolls through options; or a vertical stack of words rolling up, the focused one sharp and its neighbours blurred | refThree, refSix, virticalRef | P1 |
+| WordSwap | 🆕 | One word in a sentence rolls through options; or a vertical stack of words rolling up, the focused one sharp and its neighbours blurred; or a list scrolling past a fixed marker (arrow) | refThree, refSix, virticalRef, lightthemeref | P1 |
 | PhraseCards | 🆕 | **Type scene:** a sentence alone in the centre, built word by word in time with the voice (re-centres as it grows); each phrase replaces the last, with a slow scale drift, an accent word and an optional giant word as a beat. Replaces bottom captions at the story's key moments | refThree | P1 |
 | GiantType | 🆕 | A word so big the frame crops it, as punctuation between beats | refThree, refFour | P1 |
 | InlineUI | 🆕 | A UI element (button, chip) sits inside a sentence as one of its words | refFour | P2 |
 | TypeTrack | 🔶 | Huge typing text cropped by the frame while the camera pans with the caret (extends Typewriter) | refFour | P2 |
 | ArcText | 🆕 | Text laid out on a 3D arc, letters bouncing | refFour | P3 |
-| WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence | refThree | P3 |
+| WordsSettle | 🆕 | Scattered words drift on arcs and settle into one sentence (or scatter into glyphs and re-form) | refThree, lightthemeref | P2 |
 | FlipDrop | 🆕 | An element (logo, word) drops in flipping on its X axis with motion blur and a glow bloom | refTwo | P2 |
 | Tracking ease | 🔶 | Letter spacing tightens as text blurs in, or spreads apart as it blurs out (extends BlurInText) | refTwo, refSix | P2 |
 | GridWordmark | 🆕 | A wordmark builds letter by letter inside faint construction grid lines | refSix | P3 |
@@ -302,7 +329,7 @@ Priority: **P1** next up · **P2** soon · **P3** later. "Seen in" lists the ref
 | Doodles | 🆕 | Our own hand-drawn stickers (bulb, star, heart, flame, bubble) pop in with a wobble | refOne, refFour | P2 |
 | TickRuler | 🆕 | Rows of small ticks framing a title, sliding in | refOne | P3 |
 | BrandGlyph | 🆕 | A huge, soft, blurred version of the customer's logo shape behind every scene | refOne | P1 |
-| BrandMotif | 🆕 | **One shape from the customer's logo that carries meaning through the whole video**: scenes collapse into it and grow out of it, and it becomes the logo at the end. The shape comes from each brand's mark (never dots by default) | refThree, refOne | P1 |
+| BrandMotif | 🆕 | **One shape from the customer's logo that carries meaning through the whole video**: scenes collapse into it and grow out of it, and it becomes the logo at the end. The shape comes from each brand's mark (never dots by default) | refThree, refOne, lightthemeref | P1 |
 | Orb | 🆕 | Soft gradient orb with a status label, standing in for an agent or persona | refThree | P2 |
 | LoaderRing | 🆕 | Dots circle a label, then squeeze into a pill or button | refThree | P3 |
 | PathTravel | 🆕 | A dotted route with dots travelling along it; waypoint icons change state | refThree | P2 |
@@ -317,7 +344,7 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| FootageLayer | 🆕 | Full-screen clip or photo with a slow push-in and a color treatment (dim, black & white, duotone). Nature photos as the backdrop for UI | refOne, refThree, refSix | P1 |
+| FootageLayer | 🆕 | Full-screen clip or photo with a slow push-in and a color treatment (dim, black & white, duotone). Nature photos as the backdrop for UI | refOne, refThree, refSix, lightthemeref | P1 |
 | FlashCuts | 🆕 | Several clips cut quickly behind text that stays still (or inside a growing motif) | refOne, refThree | P2 |
 | ImageStrip | 🆕 | Photos and color bars slide in one after another behind a title | refOne | P2 |
 | MediaGrid | 🆕 | A collage of photos pops in next to a big word | refOne, refFour | P2 |
@@ -337,7 +364,9 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | Device frames | 🆕 | Code-drawn laptop and phone with 3D tilt | ref-motion | P2 |
 | Testimonial | 🆕 | Quote card with an initials avatar and rating | idea | P3 |
 | AvatarActor | 🆕 | An avatar or mascot that acts like a character: jumps out of a card, bounces across the frame, lands on and presses a button | virticalRef | P3 |
-| GlassCard | 🆕 | Frosted-glass card holding product UI over a photo backdrop | refThree | P1 |
+| GlassCard | 🆕 | Frosted-glass card holding product UI over a photo backdrop | refThree, lightthemeref | P1 |
+| Orbit layout | 🆕 | Small widgets pop in around a central element, each floating on a soft coloured glow instead of a drop shadow (light-theme depth) | lightthemeref | P2 |
+| IconRow | 🆕 | Colourful circular icons pop in one by one into a row; some can turn into letters to spell a word | lightthemeref | P3 |
 | DataTable | 🆕 | Clean table with coloured badges (CRITICAL/MEDIUM/LOW) and status cells that flip | refThree | P2 |
 | NamedCursor | 🔶 | Cursor with a persona name tag ("Sarah", "Admin") (extends Cursor) | refThree | P2 |
 | Toggle / Checkbox | 🔶 | Switches that flip and tick boxes that check under the cursor (extends Menu) | refThree | P2 |
@@ -349,17 +378,17 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 
 | Primitive | Status | What it does | Seen in | Priority |
 |---|---|---|---|---|
-| PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath | refOne, refFour | P2 |
-| ColorFlash | 🆕 | One full-screen color frame (or gradient whip) as a hard cut on the beat; or a whole-scene tint for a state (red on error) | refOne, refFour, refSix | P2 |
+| PanelSlide | 🆕 | A panel slides aside to reveal the next scene underneath | refOne, refFour, lightthemeref | P2 |
+| ColorFlash | 🆕 | One full-screen color frame (or gradient whip, or 2–3 stacked colour wipes with a colour-inverted frame) as a hard cut on the beat; or a whole-scene tint for a state (red on error) | refOne, refFour, refSix, lightthemeref | P1 |
 | FadeToBlack | 🆕 | Slow dip to black | refOne | P3 |
 | WhipPan | 🆕 | Fast blurred slide between scenes | idea | P2 |
 | ShapeWipe | 🆕 | A circle or logo shape grows to reveal the next scene | idea, refThree | P2 |
-| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring; text → icon → card; button → pill) | refTwo, refThree, refFour, refSix, virticalRef | P1 |
+| ShapeMorph | 🆕 | **Continuity transition:** an element of the outgoing shot becomes the next shot's element (lockup → pill → circle → cover; UI → dot → text; line → pill → app icon; text → glowing point → graph; dots → ring; text → icon → card; button → pill; range bar → pill → chip; icons → letters) | refTwo, refThree, refFour, refSix, virticalRef, lightthemeref | P1 |
 | PortalZoom | 🆕 | The camera flies through a ring (or several spawning rings) into the next scene | refSix | P2 |
 | FullBleedEnd | 🆕 | An element (pill, button, card) expands until the brand colour fills the frame, as the end card with the handle or URL | virticalRef | P2 |
 | CardBurst | 🆕 | A pressed button bursts content out radially (cards fanning around it), then it flies off to reveal the next shot | refSix | P2 |
 | DitherDissolve | 🆕 | A pixel or dither dissolve from one scene into a photo | refSix | P3 |
-| GlitchSelect | 🆕 | Text gets selected like in an editor, breaks into highlighted blocks and glitches into the next shot | refSix | P3 |
+| GlitchSelect | 🆕 | Text gets selected like in an editor, breaks into highlighted blocks and glitches into the next shot; or chromatic streaks | refSix, lightthemeref | P3 |
 | AnchorMontage | 🆕 | **Fast montage around a fixed anchor:** hard cuts every few frames between variations (different buttons, or the same image in different styles), all in the same place and size; cuts accelerate, then a hard stop. Timed to the beat | refFour | P1 |
 | SnapZoom | 🔶 | A 2–3 frame slam zoom into a word or element with heavy motion blur (a Camera preset) | refFour, refSix | P1 |
 | PunchIn | 🆕 | Hard cut from a wide shot to a tight crop of the same UI, then a very slow drift (locked-camera style) | refThree | P1 |
@@ -372,6 +401,7 @@ Needs the footage pipeline (customer uploads, free stock, AI images/video → sa
 | PrismFlare | 🆕 | Small rainbow lens flares drifting across the frame | refOne | P1 |
 | Grain | 🆕 | Fine film noise (deterministic, seeded) | refOne | P1 |
 | Soft light / vignette | 🔶 | Bright soft center and darker edges (extends Lens) | refOne, ref-motion | P2 |
+| Neon | 🆕 | Neon glow text on black | lightthemeref | P3 |
 | Bokeh | 🆕 | Big blurred shapes in front of and behind the UI for depth | refThree, refFour | P3 |
 | MotionBlur helper | 🔶 | Motion blur for any fast-moving element, not only the camera (Camera has it) | refTwo | P2 |
 
