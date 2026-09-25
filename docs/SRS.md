@@ -88,18 +88,36 @@ This document turns the product features in [PRD.md](PRD.md) into **exact, numbe
 | FR-GEN-08 | The final output MUST be an H.264 MP4 at 1080p (the short side is 1080 for 9:16 and 1:1), 30 fps, at the requested duration ±0.5 s. |
 | FR-GEN-09 | Users MUST be able to cancel a running job. Unused reserved credits MUST be refunded. |
 | FR-GEN-10 | Each user MUST have a concurrent job limit set by their plan. Extra jobs MUST be queued, and the UI shows their queue position. |
-| FR-GEN-11 | Every job MUST have a hard deadline (default 20 min). Stalled or overdue jobs MUST be failed and refunded automatically. |
+| FR-GEN-11 | Every job MUST have a hard deadline (default 20 min) of running time; time spent waiting for approval doesn't count (FR-CANVAS-09). Stalled or overdue jobs MUST be failed and refunded automatically. |
 | FR-GEN-12 | Research results (scraped content, screenshots, brand) SHOULD be cached per normalized URL for 24 h to avoid paying twice. |
 | FR-GEN-13 | The setup questions MUST be a deterministic state machine that makes **no LLM calls**. |
 
 ### 4.5 Edits and versions (EDIT)
 | ID | Requirement |
 |---|---|
-| FR-EDIT-01 | Users MUST be able to request changes in chat after a video is generated. |
+| FR-EDIT-01 | Users MUST be able to request changes after a video is generated: on a canvas node (edit or regenerate, FR-CANVAS-05, 06) or in chat aimed at a node (FR-CANVAS-11). |
 | FR-EDIT-02 | An edit MUST re-run only the affected steps and scenes. Unchanged scenes' code MUST be reused. |
 | FR-EDIT-03 | Every successful generation or edit MUST create a new immutable version. |
 | FR-EDIT-04 | Users MUST be able to restore any earlier version. Restoring creates a new version that copies the old one. |
-| FR-EDIT-05 | The first 3 edits per video MUST be free. Later edits cost credits. |
+| FR-EDIT-05 | The first 3 edits per video MUST be free. Later edits cost credits. Direct edits of a node's output are free; regenerations count as edits (prices decided with pricing). |
+
+### 4.5a Canvas and approvals (CANVAS)
+The project page is a canvas: the pipeline as a fixed graph of nodes the user steers ([ARCHITECTURE § 5.3](ARCHITECTURE.md#53-approval-gates-the-canvas)). Users don't add or rewire nodes.
+
+| ID | Requirement |
+|---|---|
+| FR-CANVAS-01 | The project page MUST show the pipeline as connected nodes: **Website, Brand, Story, Voice, Scenes (one node per scene), Render**, each with its status (pending, running with progress, waiting for approval, approved, stale, failed) and its output. |
+| FR-CANVAS-02 | Each node MUST have a mode, **auto** or **manual**, saved per project. Defaults: Brand and Story manual, the rest auto. An "Auto all" switch MUST set every node to auto. |
+| FR-CANVAS-03 | A manual node MUST pause the job when it finishes and show its output; the job continues only after approve, edit or regenerate. An auto node MUST continue when its automatic checks pass (schema validation, the scene-code validator, visual QA). |
+| FR-CANVAS-04 | **Approve:** the job continues from the next node. |
+| FR-CANVAS-05 | **Edit:** the user MUST be able to change a node's output directly (the site copy, the theme's colours and fonts, the script and storyboard, a scene's text and props). The edit MUST be validated against the node's schema. Scene code MUST NOT be editable by hand; it's regenerated. Direct edits cost no credits. |
+| FR-CANVAS-06 | **Regenerate with a note:** the AI MUST redo the node with the user's note as a revision request. The note MUST be passed separately from website content (NFR-SEC-07) and be at most 500 characters. |
+| FR-CANVAS-07 | Changing a node (edit or regenerate) MUST mark exactly the nodes that depend on it as stale and re-run only those. Scenes that don't depend on the change MUST keep their code byte-for-byte. Regenerating one scene MUST NOT re-run the other scenes. |
+| FR-CANVAS-08 | A node MUST be regenerated at most 5 times per job (then `429`). Every regeneration's provider cost MUST be recorded (NFR-COST-01). |
+| FR-CANVAS-09 | A job waiting for approval MUST NOT hold a worker slot, and its deadline (FR-GEN-11) MUST be paused while it waits and restart when it resumes. It still counts toward the plan's concurrent-job limit (FR-GEN-10) and keeps its credit reservation. |
+| FR-CANVAS-10 | A job that has waited for approval for more than **7 days** MUST be cancelled and its unused credits refunded. |
+| FR-CANVAS-11 | A chat message MAY target the selected node (and scene). It then becomes that node's regeneration note, and counts toward the per-user chat cap (NFR-COST-04). |
+| FR-CANVAS-12 | After a video exists, changing any node MUST produce a new version when the re-run finishes (FR-EDIT-03). |
 
 ### 4.6 Audio (AUD)
 | ID | Requirement |
@@ -184,6 +202,7 @@ This document turns the product features in [PRD.md](PRD.md) into **exact, numbe
 | NFR-SEC-16 | Idempotency keys MUST be scoped per user, so one user can never receive another user's stored response. |
 | NFR-SEC-17 | Dependencies are pinned by the lockfile and updated through Renovate. GitHub Actions are pinned by commit SHA. |
 | NFR-SEC-18 | Free model endpoints (OpenRouter ids ending in `:free`) MAY be used only in local development. Staging and production MUST refuse them at startup: free endpoints can log or train on prompts, which would include customers' websites, scripts and uploads, and their rate limits are too low for real traffic. |
+| NFR-SEC-19 | Canvas actions (view outputs, approve, edit, regenerate, change modes) MUST be owner-scoped like every other resource (another user's job → `404`), use an `Idempotency-Key`, and validate every edited output with the node's zod schema before it's saved. Edited text reaches prompts only as fenced data, never as instructions. |
 
 ### 5.4 Cost control (COST)
 | ID | Requirement |

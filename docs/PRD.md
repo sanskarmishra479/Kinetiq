@@ -27,7 +27,9 @@ The user pastes their URL, and optionally adds screenshots, a screen recording, 
 3. **Directs** a script and storyboard.
 4. **Animates** each scene as code: the AI writes motion graphics using our hand-tuned primitives library, so text, UI and logos are pixel-sharp.
 5. **Adds audio:** optional voiceover, music and sound effects.
-6. **Delivers** an MP4 that the user can refine **by chat** ("make the intro faster").
+6. **Delivers** an MP4.
+
+Every step is shown on a **canvas**: the pipeline as connected nodes (Website → Brand → Story → Voice → Scenes → Render). Each node shows what it made, and the user can **approve** it, **edit** it directly, or **regenerate** it with a note, before the next step spends anything. Each node can also run on **auto**, where the AI's own checks approve it. A chat panel beside the canvas answers setup questions and can send a request to the selected node ("make the intro faster").
 
 **Why this approach wins:** we render motion graphics **from code**, not with text-to-video models. The frame-by-frame breakdown of the motion.so launch video in [`../what-i-want.md`](../what-i-want.md) shows that about 95% of a premium launch video is code-renderable motion graphics. AI video models are used only for occasional cinematic shots.
 
@@ -51,7 +53,7 @@ The user pastes their URL, and optionally adds screenshots, a screen recording, 
 | Scales | Handles a viral day | 100k visitors/month with no downtime |
 
 **Non-goals for v1:**
-- no timeline editor (editing is by chat only)
+- no timeline editor and no free-form node builder (editing is on the fixed canvas nodes and in chat)
 - no team workspaces
 - no public API for developers
 - no mobile app
@@ -60,18 +62,20 @@ The user pastes their URL, and optionally adds screenshots, a screen recording, 
 ## 5. User flow
 
 ```
-Landing page ──► chat box: URL + duration + ratio + model + attachments ──► Send
-     │                                                                        │
-     │ (not logged in → login with email or Google, request is kept)          ▼
-     │                                                          Project page (two panes)
-     │                                          ┌──────────────────────────┬───────────────────────────┐
-     │                                          │ LEFT: chat with the AI   │ RIGHT: live progress       │
-     │                                          │ • setup questions:       │ research → style → script  │
-     │                                          │   voiceover? voice?      │ → "designing scene 2/5"    │
-     │                                          │   design style?          │ → audio → final video      │
-     │                                          │ • edit requests          │ • video player + download  │
-     │                                          └──────────────────────────┴───────────────────────────┘
-     └──► or pick a TEMPLATE from the gallery ──► "Use this template" ──► same project page
+Landing page ──► chat box: URL + length + ratio + attachments ──► Send
+     │                                                               │
+     │ (not logged in → login with email or Google, request is kept) ▼
+     │                                              Project page: CANVAS + chat panel
+     │   ┌──────────────────────────────────────────────────────────────────┬────────────────┐
+     │   │  [Website] ──► [Brand] ──► [Story] ──► [Voice] ──► [Scene 1] ─┐  │ Chat panel      │
+     │   │   auto ✓       manual ⏸     manual      auto       [Scene 2] ─┼► │ • setup         │
+     │   │                palette,     script,                [Scene 3] ─┘  │   questions     │
+     │   │                fonts        storyboard                 │         │ • requests to   │
+     │   │                                                        ▼         │   the selected  │
+     │   │   Selected node: output ▸ Approve · Edit · Regenerate  [Render]   │   node          │
+     │   │   Auto / manual toggle per node · "Auto all"          video ▶ ⬇  │                 │
+     │   └──────────────────────────────────────────────────────────────────┴────────────────┘
+     └──► or pick a TEMPLATE from the gallery ──► "Use this template" ──► same canvas
 ```
 
 1. **Landing:** the visitor sees a gallery of example videos. **There is no free tier**, so these examples are how people judge quality before paying.
@@ -81,15 +85,16 @@ Landing page ──► chat box: URL + duration + ratio + model + attachments �
    - **Voiceover?** Yes or no. If yes: one of 5 voices, a language, and whether the AI writes the script.
    - **Design style (DESIGN.md)?** Auto from website (default), upload/paste your own, or a preset.
 5. **Credit estimate:** the user confirms, and credits are reserved.
-6. **Live generation:** the right pane shows every step as it happens.
-7. **Result:** the video plays in the right pane.
-8. **Chat edits:** only the affected scenes are re-rendered, and each edit creates a new version (V1, V2…) that can be restored.
-9. **Download** the MP4.
+6. **Canvas:** every node lights up as it runs and shows its output (the site copy and screenshot, the palette and fonts, the script and storyboard, the voice, each scene's preview frames, the video).
+7. **Approvals:** a node set to *manual* stops and waits; the user approves it, edits it directly, or regenerates it with a note. By default **Brand** and **Story** are manual and the rest are auto; an "Auto all" switch runs everything straight through.
+8. **Result:** the Render node plays the video.
+9. **Changes later:** editing or regenerating any node after the video exists re-runs only what depends on it and creates a new version (V1, V2…) that can be restored. The chat panel can send a request to the selected node.
+10. **Download** the MP4.
 
 ## 6. Features
 
 ### 6.0 MVP scope: launch small, secure from day one
-The MVP ships the **core loop** only: URL → video → chat edit → download → pay. **Security is never cut from the MVP.** Only features are cut.
+The MVP ships the **core loop** only: URL → canvas (approve / edit / regenerate) → video → download → pay. **Security is never cut from the MVP.** Only features are cut.
 
 | In the MVP | Deferred to after launch |
 |---|---|
@@ -97,7 +102,7 @@ The MVP ships the **core loop** only: URL → video → chat edit → download �
 | Projects, deterministic setup questions, uploads (images + mp4) | AI cinematic clips (F14): the most expensive and riskiest feature |
 | Full pipeline: research → style → script → scenes → QA (1 fix round) → render | Sarvam / Indian languages (F15) |
 | Optional voiceover (ElevenLabs, 5 voices), music from a small royalty-free library, SFX library | Generated music (ElevenLabs Music) |
-| Chat edits + versions + download | Admin UI (the MVP uses flags through a CLI script) |
+| Canvas with approvals, node edits + versions + download | Admin UI (the MVP uses flags through a CLI script) |
 | Credit ledger + **1 subscription plan + 2 credit packs** (Dodo) | Regional pricing, more plans |
 | Every security control in [SRS § 5.3](SRS.md#53-security-sec) | Nightly LLM evals (run manually before prompt changes instead) |
 | Unit, integration, contract and E2E tests on fakes; CI gates | Full visual regression suite (MVP covers primitives only) |
@@ -111,9 +116,9 @@ The MVP ships the **core loop** only: URL → video → chat edit → download �
 | F3 | Auth | Email magic link/OTP + Google |
 | F4 | Chat-based setup | Voiceover yes/no, voice (5 voices), language, design style |
 | F5 | DESIGN.md styles | Auto from website / upload / paste / preset (generic names, no brand names) |
-| F6 | Live progress pane | Every pipeline step streamed in real time |
+| F6 | Canvas | The pipeline as connected nodes, streamed live; each node shows its output. Approve, edit or regenerate with a note; auto/manual per node (default manual: Brand, Story) |
 | F7 | Product UI rebuild | The AI recreates the user's UI in code; screenshots are the fallback |
-| F8 | Chat edits + versions | Partial re-render; restore any version |
+| F8 | Node edits + versions | Changing a node re-runs only what depends on it; chat can target a node; restore any version |
 | F9 | Audio | Optional voiceover, music, auto-placed sound effects |
 | F10 | Download | MP4 |
 | F11 | Payments: hybrid model | Subscriptions with monthly credits + pay-as-you-go credit packs (prices TBD) |
@@ -141,7 +146,7 @@ The MVP ships the **core loop** only: URL → video → chat edit → download �
   - video by duration
   - voiceover
   - each AI clip
-  - edits after the free ones
+  - edits and regenerations after the free ones
 - Credits are **estimated → reserved → settled on real cost → refunded on failure**.
 - Credit prices are set to about 5× our real provider cost.
 

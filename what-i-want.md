@@ -40,7 +40,7 @@ The output is **not** a slideshow of screenshots with text on top. It should loo
    - **Left:** chat with the AI
    - **Right:** a live view of what the AI is doing. Research → style guide → script → storyboard → "Designing scene 2/5" with thumbnails as they finish → audio → final render
 6. **Result:** the finished video shows up automatically in the right pane.
-7. **Edits by chat only:** the user asks for changes in chat ("make the headline bigger", "slower intro", "swap scene 3", "change the music", "use Kira's voice"). **Only the affected scenes or audio are re-rendered**, not the whole video. Each change creates a new version (V1, V2…), and the user can go back to any version.
+7. **Edits on the canvas** (changed 25 Sep 2026; was "edits by chat only"): the project page is a canvas of connected nodes (Website → Brand → Story → Voice → Scenes → Render). Each node shows its output; the user approves it, edits it directly, or regenerates it with a note, and each node can run on auto or wait for approval (Brand and Story wait by default). The chat panel stays and can send a request to the selected node ("make the headline bigger", "slower intro"). **Only the affected scenes or audio are re-rendered**, not the whole video. Each change creates a new version (V1, V2…), and the user can go back to any version.
 8. **Download** the video (MP4).
 
 ---
@@ -119,7 +119,7 @@ Reusable building blocks the Scene Coder calls, so it doesn't reinvent the basic
    - Music through ElevenLabs Music or a licensed library. SFX from our own library plus ElevenLabs SFX.
 4. **Inputs:** a URL is required. Optional: screenshots, images, logo, screen recordings, reference videos, prompt/story. **The more the user gives, the better the video**, and the UI says so.
 5. **Global product:** multi-language voiceover and captions (Sarvam for Indian languages), a global CDN, and payments in local currencies (Dodo acts as Merchant of Record and handles tax).
-6. **Editing is chat only:** there's no timeline editor and no code view for users.
+6. **Editing is on canvas nodes and in chat:** there's no timeline editor and no code view for users (scene code is regenerated, never hand-edited).
 
 ---
 

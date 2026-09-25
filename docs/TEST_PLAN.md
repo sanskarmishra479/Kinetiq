@@ -107,7 +107,7 @@ GitHub Actions runs on every pull request. **Merging is blocked** unless every g
 - A node fails twice then succeeds: the job succeeds and earlier nodes are **not re-run** (checkpoint test counts FakeLlm calls).
 - The QA loop stops after 2 rounds. Falling back to screenshots is triggered (FR-GEN-07).
 - Output MP4: duration equals the requested duration ±0.5 s, resolution and fps are correct (checked with `ffprobe` on local renders).
-- Edits: "make the headline bigger" re-runs only scene N. Other scenes' code is byte-identical. A new version is created.
+- Edits: regenerating scene N re-runs only scene N. Other scenes' code is byte-identical. A new version is created.
 
 ### 6.3 Sandbox (scene code)
 - Every sample in the malicious corpus is **rejected** by the validator. The corpus includes the escape tricks `({}).constructor.constructor('…')()`, `obj['con'+'structor']`, `__proto__` pollution, tagged templates, and string-built code (NFR-SEC-13).
@@ -134,7 +134,18 @@ GitHub Actions runs on every pull request. **Merging is blocked** unless every g
 ### 6.5 Realtime
 - SSE: events arrive in order. A reconnect with `Last-Event-ID` replays missed events. The heartbeat keeps the connection alive through proxies.
 
-### 6.6 Primitives and templates
+### 6.6 Canvas and approvals
+- Story set to manual: the job stops `waiting` after the director, `step.awaiting` is sent, no worker slot is held, and the deadline doesn't advance while it waits (FR-CANVAS-03, 09).
+- Edit the storyboard → approve: the job resumes and finishes; research and designMd are **not** re-run (FakeLlm call counts).
+- The invalidation map, table-driven: each gate change clears exactly its downstream nodes (FR-CANVAS-07); regenerating one scene leaves the other scenes' code byte-identical.
+- An edit that doesn't fit the node's schema → `422`, nothing saved; scene code in an edit → rejected (FR-CANVAS-05).
+- The regenerate note reaches the prompt fenced as the user's request, apart from site content; a note with "ignore previous instructions" changes nothing else (FR-CANVAS-06, NFR-SEC-07).
+- The 6th regenerate of a gate → `429` (FR-CANVAS-08). Every regenerate adds provider-cost rows.
+- Another user's job → `404` on every gates route; a replayed `Idempotency-Key` doesn't act twice (NFR-SEC-19).
+- A job waiting 8 days → cancelled and refunded by the cleanup task (FR-CANVAS-10).
+- "Auto all" → the job runs straight through, identical to the pre-canvas pipeline (the existing API → MP4 e2e passes unchanged).
+
+### 6.7 Primitives and templates
 - Motion math unit tests: `keyframes` clamps and interpolates, `openClose` reaches 1 and returns to 0, `cursorAt` follows the path.
 - Visual baselines at chosen frames for every primitive and every template, for each ratio (16:9, 9:16, 1:1).
 - Template text overflow: max-length strings fit in their slots (QA check and a visual test).
@@ -166,7 +177,9 @@ Every SRS requirement maps to at least one test. Test files follow `<area>/<requ
 | FR-GEN-11 | Integration | `apps/worker/test/job-deadline.int.test.ts` |
 | FR-GEN-12 | Integration | `apps/worker/test/research-cache.int.test.ts` |
 | FR-GEN-13 | Unit | `packages/domain/setup/state-machine.test.ts` (asserts zero LlmPort calls) |
-| FR-EDIT-01…05 | Unit, integration, E2E | `packages/domain/edit/classify.test.ts`, `apps/worker/test/edit-graph.int.test.ts`, `e2e/chat-edit.spec.ts` |
+| FR-CANVAS-01…12 | Unit, integration, E2E | `apps/worker/src/pipeline/gates.test.ts`, `apps/worker/src/pipeline/pipeline.int.test.ts` (gates), `apps/api/src/routes/gates.int.test.ts`, `e2e/canvas.spec.ts` |
+| NFR-SEC-19 | Integration | `apps/api/src/routes/gates.int.test.ts` (IDOR, idempotency, schema) |
+| FR-EDIT-01…05 | Unit, integration, E2E | `apps/worker/src/pipeline/gates.test.ts`, `apps/worker/test/edit-from-version.int.test.ts`, `e2e/canvas.spec.ts` |
 | FR-AUD-01…03 | Unit, integration | `packages/domain/audio/timeline.test.ts`, `apps/worker/test/audio.int.test.ts` |
 | FR-CRD-01 | Integration | `apps/api/test/webhooks/dodo.int.test.ts` |
 | FR-CRD-02, 03 | Unit | `packages/domain/credits/buckets.test.ts` |

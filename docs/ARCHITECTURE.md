@@ -90,12 +90,21 @@ Browser                API                         Redis/BullMQ        Worker   
   │◄── video.ready ────│                            │                   │
 ```
 
-### 4.3 Chat edit
-1. The user message goes to `POST /messages`.
-2. The API creates an `edit` job.
-3. The worker's **edit graph** classifies the request (`script`, `scene:N`, `style`, `voice`, `music`, `format`).
-4. Only the affected nodes and scenes re-run. Unchanged scene code is copied as-is.
-5. A final re-render creates **Version N+1** (FR-EDIT-02, FR-EDIT-03).
+### 4.3 Approvals and node edits (the canvas)
+```
+Browser (canvas)          API                                Worker
+  │ node waits ◄── step.awaiting ─────────────────────────── │ gate reached → save checkpoint, stop (job: waiting)
+  │ Approve / Edit / Regenerate ─► POST /jobs/:id/gates/:gate/…
+  │                          edit: validate with the node's schema, write into the checkpoint
+  │                          regenerate: store the note
+  │                          both: mark downstream stale (FR-CANVAS-07)
+  │                          enqueue a continuation ───────► │ resume from the checkpoint:
+  │◄── step.* events ─────────────────────────────────────── │ only un-completed nodes run
+```
+1. A node set to **manual** finishes: the worker saves the checkpoint, emits `step.awaiting`, and ends the run with the job in `waiting` (no worker slot held, deadline paused).
+2. The user approves, edits or regenerates on the canvas (or sends a chat message aimed at that node, which becomes a regenerate note).
+3. The API changes the saved state, un-completes the affected nodes (§5.3), and enqueues a continuation. Only those nodes re-run; unchanged scene code is kept as-is.
+4. **After a video exists**, the same actions start an `edit` job from the finished state and end in **Version N+1** (FR-EDIT-02, FR-EDIT-03, FR-CANVAS-12). This replaces the earlier plan for a separate "edit graph" that classified free-text requests: the user now points at the node, so there's nothing to guess.
 
 ### 4.4 Payment
 ```
@@ -188,7 +197,7 @@ LangGraph would add a fast-moving dependency tree and its own database tables ou
 
 **Switch to LangGraph when any of these becomes true:**
 1. **Agent-style flows.** A model that calls tools and decides its own next step (e.g. an agentic director that browses the site, inspects screenshots and re-plans).
-2. **Pausing for people.** Several human approval points inside a run (approve the storyboard, then the voice, then the render), beyond the simple "save and resume" the runner can do.
+2. **Pausing for people beyond save-and-resume.** The canvas's approval gates (§5.3) are built on the runner's checkpoints: pause after a node, resume later. That's LangGraph's `interrupt()` in our own ~50 lines. Switch if approvals need more than that (e.g. several people approving in parallel branches, or time-travel through many past states).
 3. **Complex branching.** Many conditional paths, nested sub-pipelines or dynamic fan-out that make the runner's code hard to follow.
 4. **The runner misbehaves in production:** resumes wrongly, loses state, or its checkpoints can't keep up. We fix it first, and switch if the fix would mean rebuilding what LangGraph already offers.
 
@@ -210,6 +219,43 @@ Observability is **not** a reason to switch: LangSmith (or self-hosted Langfuse)
 2. Write `langgraphPipeline()` implementing `PipelinePort`, reusing the node functions and `PipelineState`.
 3. Choose the engine with an env var (`PIPELINE_ENGINE=runner | langgraph`), so both can run side by side.
 4. Run the full pipeline test suite and the `evals/` benchmark on both engines, then flip the default.
+
+### 5.3 Approval gates (the canvas)
+
+The canvas ([PRD § 5](PRD.md#5-user-flow), FR-CANVAS-01…12) shows six **gate nodes**. Each one covers one or more pipeline nodes, and a job can pause after a gate:
+
+| Gate (canvas node) | Pipeline nodes | Output shown | Editable directly |
+|---|---|---|---|
+| Website | research | copy, features, screenshot, brand colours/fonts | the copy (`ResearchCopy`) |
+| Brand | designMd | DESIGN.md: palette, fonts, style | theme tokens |
+| Story | director (or fillTemplate) | script + storyboard | `DirectorPlan` (text, order, lengths) |
+| Voice | voiceover | audio per line | no (regenerate only) |
+| Scenes (one per scene) | sceneCoder, validate, previewStills, visualQA, sceneFix | preview stills + QA notes | the scene's text and props; never its code |
+| Render | aiClips, audio, finalRender | the video | no |
+
+`settle` and `notify` are internal and never gate.
+
+**How a gate works:**
+- Each gate's mode (`auto` or `manual`) is saved in the project settings. Defaults: Brand and Story manual.
+- When the pipeline node that closes a gate finishes, the runner checks the mode:
+  - **auto:** the node's own checks (schema, validator, visual QA) already passed, so it continues;
+  - **manual:** it saves the checkpoint, emits `step.awaiting`, and returns. The job becomes `waiting`, the worker slot is freed, and the deadline clock stops (FR-CANVAS-09).
+- **Approve** adds the gate to `state.approved` and enqueues a continuation. The continuation's queue id is unique (`<jobId>-<n>`), because BullMQ ignores a second job with the same id.
+- **Edit** writes the validated output into the checkpoint, then invalidates downstream. **Regenerate** stores the user's note in `state.notes[gate]` (the prompts show it as the user's request, fenced apart from website content), then invalidates the gate itself and everything downstream.
+- **Invalidation** is one pure function (`apps/worker/src/pipeline/gates.ts`) over a fixed dependency map. It removes nodes from `state.completed` and clears their outputs:
+
+| Changed | Re-runs |
+|---|---|
+| Website | Brand, Story, Voice, all Scenes, Render |
+| Brand | all Scenes, Render |
+| Story | Voice, all Scenes, Render |
+| Voice | scene timings (not their code), Render |
+| One scene | that scene only, then Render |
+
+- **After the video exists**, the finished state is kept with the version, so any node can still be changed later. The change runs as an `edit` job from that state and ends in a new version.
+- **Waiting jobs expire:** the hourly cleanup task cancels jobs waiting more than 7 days and refunds them (FR-CANVAS-10).
+
+Why this fits our runner: it already saves a checkpoint after every node and skips finished nodes on resume (§5). A gate is "save, tell the browser, stop"; an edit is "change the saved state, un-finish some nodes, resume". Nothing else in the pipeline changes.
 
 ## 6. Dynamic scene runtime (sandbox)
 
@@ -408,6 +454,7 @@ Cinelaunch/
 | 7 | Ports and adapters with fakes | Testable, swappable providers, zero-cost local development |
 | 8 | Cloudflare R2 | No egress fees for video-heavy traffic |
 | 9 | Own pipeline runner now, LangGraph.js as the ready alternative (§5.2) | Fixed pipeline with one bounded loop; fewer dependencies, one migration system, simpler tests; switch behind `PipelinePort` when agent-style flows or complex branching arrive |
+| 10 | A fixed canvas of gate nodes with approve / edit / regenerate, built on the runner's checkpoints (§5.3) | Users steer the expensive steps before paying for them; pointing at a node replaces guessing what a chat edit means |
 
 ---
 ← [SRS](SRS.md) · **Next →** [API.md: API Reference](API.md)

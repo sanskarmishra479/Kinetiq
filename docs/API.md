@@ -127,12 +127,14 @@ Deletes the account and all its data (projects, assets, renders). The body must 
 ### `POST /v1/projects/:id/messages` (requires `Idempotency-Key`)
 ```json
 // request
-{ "content": "Make the intro faster", "answer": { "key": "voiceover", "value": "yes" } }
+{ "content": "Make the intro faster", "answer": { "key": "voiceover", "value": "yes" },
+  "target": { "gate": "scenes", "sceneIndex": 0 } }
 // 201
 { "message": { "id": "msg_3", "role": "user", "...": "..." }, "jobId": "job_9" }
 ```
 - During `setup`, answers update the project settings (voice, design style). The assistant replies arrive over SSE.
-- After a version exists, free text is treated as an **edit** and may start an `edit` job (`jobId` is set) [FR-EDIT-01].
+- `target` (optional) aims the message at a canvas node: it becomes that node's regeneration note, exactly like `POST /v1/jobs/:id/gates/:gate/regenerate` [FR-CANVAS-11]. Counts toward the chat daily cap.
+- After a version exists, a message with a `target` starts an `edit` job (`jobId` is set) [FR-EDIT-01]. Free text without a target gets an assistant reply asking which node to change.
 
 ## 6. Generation and jobs [FR-GEN-01…10, FR-CRD-04…06]
 
@@ -170,10 +172,49 @@ Errors:
   ],
   "reservedCredits": 23, "chargedCredits": null, "versionId": null, "error": null } }
 ```
-Job `status`: `queued | running | succeeded | failed | cancelled`.
+Job `status`: `queued | running | waiting | succeeded | failed | cancelled`. `waiting` = paused at a manual canvas node until the user acts [FR-CANVAS-03].
+Step `status`: `pending | running | awaiting_approval | done | stale | failed | skipped`.
 
 ### `POST /v1/jobs/:id/cancel`
 → `200 { job }` with `status: "cancelled"`. All reserved credits are refunded [FR-GEN-09]. A queued job is removed from the queue; a running job stops at its next step. `409` if the job already finished; a second cancel never refunds twice.
+
+### Canvas gates [FR-CANVAS-01…12]
+
+Gates (canvas nodes): `website | brand | story | voice | scenes | render` ([ARCHITECTURE § 5.3](ARCHITECTURE.md#53-approval-gates-the-canvas)). All routes are owner-scoped (another user's job → `404`), and every `POST` requires an `Idempotency-Key` [NFR-SEC-19].
+
+#### `GET /v1/jobs/:id/gates`
+```json
+{ "gates": [
+  { "gate": "brand", "mode": "manual", "status": "awaiting_approval",
+    "output": { "theme": { "colors": { "background": "#0A0A0A", "accent": "#C9CDD2" }, "fonts": ["Inter"] } },
+    "regenerations": 0 },
+  { "gate": "scenes", "mode": "auto", "status": "pending",
+    "scenes": [ { "index": 0, "status": "pending", "stillUrl": null, "qa": null } ] }
+] }
+```
+Stills and audio come as short-lived signed URLs.
+
+#### `POST /v1/jobs/:id/gates/:gate/approve`
+→ `202 { job }`: the job continues from the next node [FR-CANVAS-04]. `409` if the gate isn't waiting.
+
+#### `POST /v1/jobs/:id/gates/:gate/edit`
+```json
+{ "output": { "...": "the node's output, same shape as in GET" }, "sceneIndex": 0 }
+```
+→ `202 { job, stale: ["voice", "scenes", "render"] }`. The output is validated with the node's schema (`422` with the problems if it doesn't fit). Scene code can't be sent; only a scene's text and props. The gate counts as approved; the stale nodes re-run [FR-CANVAS-05, 07]. Free.
+
+#### `POST /v1/jobs/:id/gates/:gate/regenerate`
+```json
+{ "note": "Use black and silver, not lime", "sceneIndex": 2 }
+```
+→ `202 { job, stale: [...] }`. `note` is 1–500 characters and reaches the model as the user's request, never mixed with website content [FR-CANVAS-06]. `429 REGENERATE_LIMIT` after 5 regenerations of the same gate in one job [FR-CANVAS-08]. Counts as an edit for pricing (FR-EDIT-05).
+
+#### `PUT /v1/projects/:id/approval`
+```json
+// request and 200
+{ "modes": { "website": "auto", "brand": "manual", "story": "manual", "voice": "auto", "scenes": "auto", "render": "auto" } }
+```
+Saves each node's mode for this project [FR-CANVAS-02]. "Auto all" sends every gate as `auto`. A change applies to the next gate the running job reaches.
 
 ## 7. Versions [FR-EDIT-03, FR-EDIT-04]
 
@@ -199,6 +240,9 @@ Job `status`: `queued | running | succeeded | failed | cancelled`.
 | `step.progress` | `{ "jobId": "job_1", "node": "sceneCoder", "done": 2, "total": 5, "thumbUrl": "..." }` | Partial progress with a thumbnail |
 | `step.done` | `{ "jobId": "job_1", "node": "designMd", "summary": "Dark theme, violet accent" }` | Step finished |
 | `step.failed` | `{ "jobId": "job_1", "node": "aiClips", "retrying": true, "attempt": 2 }` | Failure; may retry |
+| `step.awaiting` | `{ "jobId": "job_1", "gate": "story", "summary": "6 scenes, 28 s" }` | A manual node finished; the job waits for the user |
+| `step.approved` | `{ "jobId": "job_1", "gate": "story", "by": "user" }` | Approved (`by`: `user` or `auto`) |
+| `step.invalidated` | `{ "jobId": "job_1", "gates": ["voice", "scenes", "render"], "sceneIndex": null }` | These nodes are stale and will re-run |
 | `message.created` | `{ "message": { ... } }` | New assistant chat message |
 | `version.ready` | `{ "versionId": "ver_2", "number": 2, "posterUrl": "..." }` | The video is ready |
 | `job.finished` | `{ "jobId": "job_1", "status": "succeeded", "chargedCredits": 21, "refunded": 2 }` | Final state and credits |
@@ -284,15 +328,15 @@ Payloads are zod schemas in `packages/shared/src/queues.ts`. The API and worker 
 
 | Queue | Payload | Producer | Retries | Notes |
 |---|---|---|---|---|
-| `generate` | `{ jobId, projectId, userId }` | API | 3, exponential | Runs the generate pipeline from its checkpoint (own runner today; LangGraph possible behind the same contract, ARCHITECTURE §5.2) |
-| `edit` | `{ jobId, projectId, userId, messageId }` | API | 3 | Edit graph |
+| `generate` | `{ jobId, projectId, userId }` | API | 3, exponential | Runs the generate pipeline from its checkpoint (own runner today; LangGraph possible behind the same contract, ARCHITECTURE §5.2). Also used to continue a job after a canvas action |
+| `edit` | `{ jobId, projectId, userId, fromVersionId }` | API | 3 | A canvas change after a video exists: runs from that version's saved state, ends in a new version |
 | `render` | `{ jobId, kind: "still" \| "final", versionId, inputPropsKey }` | Worker | 2 | Remotion Lambda |
 | `media-poll` | `{ jobId, clipId, providerJobId }` | Worker | backoff up to 20 min | Fallback when the video callback doesn't arrive |
 | `email` | `{ to, template, data }` | API / Worker | 5 | Resend |
 | `maintenance` | `{ kind: "probe-asset", userId, assetId }` or `{ kind: "purge-user-files", userId }` | API | 3 / 5 | ffprobe check of uploaded videos; delete `u/{userId}/` after account deletion |
-| `cron` | BullMQ job schedulers | worker | n/a | `deadline-sweep` (1 min), `refund-stale` (15 min, reservations > 2 h), `expire-credits` (15 min), `cleanup-uploads` (hourly), `purge-idempotency` (hourly). Later: reconcile Dodo subscriptions (daily) |
+| `cron` | BullMQ job schedulers | worker | n/a | `deadline-sweep` (1 min), `refund-stale` (15 min, reservations > 2 h), `expire-credits` (15 min), `cleanup-uploads` (hourly), `purge-idempotency` (hourly), `cleanup-job-leftovers` (hourly; also cancels and refunds jobs waiting for approval > 7 days, FR-CANVAS-10). Later: reconcile Dodo subscriptions (daily) |
 
-Queue job ids are the domain id where one exists (`generate` uses the job id, so enqueueing twice is a no-op). BullMQ forbids `:` in ids, so derived ids use `-` (`probe-ast_…`).
+Queue job ids are the domain id where one exists (`generate` uses the job id, so enqueueing twice is a no-op). A continuation after a canvas action uses `<jobId>-<n>` (n = the continuation count), since BullMQ ignores a second job with an id it already has. BullMQ forbids `:` in ids, so derived ids use `-` (`probe-ast_…`).
 
 ## 17. Rate limits (defaults; set through config)
 

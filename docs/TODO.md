@@ -34,16 +34,19 @@
 | 8 | Pipeline on mock providers | ✅ |
 | 9 | Real providers | 🟡 first real video made locally; staging pending (Phase 12) |
 | 9b | Video quality: shot library | ⬜ |
+| 10a | Canvas: approval gates (backend) | ⬜ |
 | 10 | Audio, edits, versions | ⬜ |
 | 11 | Billing (Dodo) | ⬜ |
 | 12 | Templates, admin, hardening, production infra | ⬜ |
 | 13 | Frontend setup (minimal) | ⬜ |
 | 14 | Frontend: auth + landing | ⬜ |
-| 15 | Frontend: project page | ⬜ |
+| 15 | Frontend: the canvas (project page) | ⬜ |
 | 16 | Frontend: billing + templates | ⬜ |
 | 17 | End-to-end tests | ⬜ |
 | 18 | Launch readiness | ⬜ |
 | 19 | Later: redesign + v1.x | ⬜ |
+
+**Build order from here** (changed 25 Sep 2026 for the canvas pivot, [ARCHITECTURE § 5.3](ARCHITECTURE.md#53-approval-gates-the-canvas)): **10a** (gates backend) alongside **9b** (shot library) → **13 → 14 → 15** (frontend with the canvas) → **10** (audio, versions) → **11** (billing) → 12 → 16 → 17 → 18. The canvas comes before billing so the core screen is real early.
 
 ---
 
@@ -410,22 +413,43 @@ Why: the first real video felt AI-made (constant motion, lime instead of Linear'
 
 ---
 
+## Phase 10a: Canvas: approval gates (backend)
+
+Why: the product becomes a canvas where users steer each step (approve / edit / regenerate, auto or manual per node) instead of chat → finished video ([PRD § 5](PRD.md#5-user-flow), [SRS § 4.5a](SRS.md#45a-canvas-and-approvals-canvas)). The runner's checkpoints already do most of the work ([ARCHITECTURE § 5.3](ARCHITECTURE.md#53-approval-gates-the-canvas)).
+
+- [ ] Contracts (`packages/shared`): `GATE_NODES` (website, brand, story, voice, scenes, render) and the pipeline-node → gate map; `JobStatus` + `waiting`; `StepStatus` + `awaiting_approval`, `stale`; events `step.awaiting`, `step.approved`, `step.invalidated`; the edit schema per gate (reusing `ResearchCopy`, theme tokens, `DirectorPlan`, scene props) [FR-CANVAS-01, 05]
+- [ ] Project approval modes (defaults: Brand and Story manual) + `PUT /v1/projects/:id/approval` [FR-CANVAS-02]
+- [ ] Runner: pause after a manual gate (save, `step.awaiting`, return); job → `waiting`, worker slot freed, deadline paused and restarted on resume [FR-CANVAS-03, 09]
+- [ ] `gates.ts` (pure): dependency map + `invalidate(state, gate, sceneIndex?)` [FR-CANVAS-07]
+- [ ] `PipelineState`: `approved`, `notes`, `regenerations`; prompts read `notes[gate]` as the user's request, fenced apart from site content [FR-CANVAS-06]
+- [ ] One-scene regenerate through the existing `sceneFix` path; the other scenes untouched
+- [ ] API: `GET /jobs/:id/gates`, `POST …/approve | edit | regenerate` (owner-scoped, idempotent, zod-validated; 5 regenerations per gate); continuation queue ids `<jobId>-<n>` [FR-CANVAS-04…08, NFR-SEC-19]
+- [ ] Chat messages with a `target` become regenerate notes [FR-CANVAS-11]
+- [ ] `cleanup-job-leftovers` cancels and refunds jobs waiting > 7 days [FR-CANVAS-10]
+- [ ] Keep the finished state with each version so nodes can be changed after the video exists (`edit` queue from a version) [FR-CANVAS-12]
+
+**Tests:** [TEST_PLAN § 6.6](TEST_PLAN.md#66-canvas-and-approvals), all on mock providers (free).
+
+**✅ Exit criteria:** with mock providers: generate → Story waits → edit a scene's text → approve → the job finishes; regenerate Brand with a note → only Brand, Scenes and Render re-run; "Auto all" runs straight through and the existing API → MP4 e2e still passes.
+
+---
+
 ## Phase 10: Audio, edits, versions
 - [ ] `ElevenLabsVoice` (5 named voices mapped to provider voice ids) + 🔜 `SarvamVoice` (Indian languages). Word timestamps drive scene lengths and captions [FR-AUD-01, 02]
 - [ ] Music + SFX: `MusicPort` (MVP: a small royalty-free music library; 🔜 generated music) + an SFX cue planner (pure: cut list → cues), ducking under the voiceover in the final mix [FR-AUD-03]
-- [ ] Edit graph: `classifyEdit` → affected nodes and scenes → re-run → new Version; unchanged scene code is reused byte-for-byte [FR-EDIT-01…03]
+- [x] ~~Edit graph (`classifyEdit`)~~: replaced by canvas node edits (Phase 10a); users point at the node instead of the AI guessing [FR-EDIT-01…03]
 - [ ] Versions API: list, restore (creates a copy), download/stream signed URLs [FR-EDIT-04]
 - [ ] Free-edit counter + edit credit charging [FR-EDIT-05]
 - [ ] 🔜 AI clips: `OpenRouterVideo` (submit → callback `/v1/webhooks/video/:token` with a single-use HMAC token, plus `media-poll` fallback). Plan-gated, with the kill-switch [F14, NFR-COST-03]
 
 **Tests:**
 - audio timeline unit tests
-- the edit re-runs only scene N (scene-code hash comparison)
+- a canvas change after the video exists re-runs only scene N (scene-code hash comparison)
 - restore creates a new version
 - a bad callback token is rejected
 - AI clips are blocked when the flag is off or the plan disallows them
 
-**✅ Exit criteria:** generate → chat edit → V2 → restore V1 → download, all working on staging.
+**✅ Exit criteria:** generate → change a node on the canvas → V2 → restore V1 → download, all working on staging.
 
 ---
 
@@ -502,8 +526,15 @@ Why: the first real video felt AI-made (constant motion, lime instead of Linear'
 
 **Tests:** the chat box validation component; the draft-survives-login logic; the upload flow with MSW.
 
-## Phase 15: Frontend project page (the core screen)
-Two panes, following [`../image.png`](../image.png):
+## Phase 15: Frontend: the canvas (project page, the core screen)
+The pipeline as connected nodes with a chat panel ([PRD § 5](PRD.md#5-user-flow)). Canvas with **React Flow (`@xyflow/react`, MIT)**. This phase gets its own detailed plan and layout mockups before it's built.
+- [ ] Node cards connected left to right: Website → Brand → Story → Voice → Scene 1…N → Render; status (pending, running with progress, waiting, approved, stale, failed) from SSE; an auto/manual toggle on each; "Auto all" [FR-CANVAS-01, 02]
+- [ ] Output previews: website copy + screenshot; palette, fonts and style; script + storyboard; voice player; each scene's QA stills (**server-rendered stills, never scene code running on our site**); the video
+- [ ] Side panel for the selected node: Approve · Edit (a form built from the node's schema) · Regenerate (a note, with the count left) [FR-CANVAS-04…08]
+- [ ] Chat panel docked beside the canvas, showing which node a message targets [FR-CANVAS-11]
+- [ ] 🔜 A live scene player inside a sandboxed iframe on the content domain (later; stills first)
+
+Earlier two-pane design (kept for the setup widgets, now inside the chat panel), following [`../image.png`](../image.png):
 - [ ] **Left: chat.** Message list; widgets for `choice`, `voicePicker` (plays preview clips), `designPicker` (auto / upload / paste / presets), `estimate` (credits + confirm button); input box; sending uses an `Idempotency-Key`
 - [ ] **Right: live pane.** Step timeline (research → style → script → scenes N/M → audio → render) from SSE, with thumbnails; queue position; errors and retries; then a video player for the latest version
 - [ ] Versions dropdown (V1, V2…) + restore + download button
